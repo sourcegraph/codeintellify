@@ -1,0 +1,8 @@
+
+steps:
+  - command: |-
+      npm ci
+      npm run prettier
+      npm run tslint
+      npm run build
+    label: ':typescript:'

@@ -1,0 +1,41 @@
+{
+  "name": "@sourcegraph/codeintellify",
+  "version": "0.0.1",
+  "description": "Adds code intelligence to code views on the web",
+  "main": "lib/index.js",
+  "files": [
+    "lib"
+  ],
+  "scripts": {
+    "prettier": "prettier '**/{*.{js?(on),ts?(x),scss},.*.js?(on)}' --write --list-different",
+    "tslint": "tslint -c tslint.json -p tsconfig.json 'src/*.ts?(x)'",
+    "build": "tsc -p .",
+    "watch": "tsc -p . -w"
+  },
+  "author": "Felix Becker <felix@sourcegraph.com>",
+  "dependencies": {
+    "@sourcegraph/icons": "^1.15.0",
+    "highlight.js": "^9.12.0",
+    "lodash": "^4.17.10",
+    "marked": "^0.4.0",
+    "mdi-react": "^4.0.0",
+    "rxjs": "^6.2.1",
+    "ts-key-enum": "^2.0.0",
+    "vscode-languageserver-types": "^3.8.2"
+  },
+  "peerDependencies": {
+    "react": "^16.0.0"
+  },
+  "devDependencies": {
+    "@sourcegraph/prettierrc": "^2.1.1",
+    "@sourcegraph/tsconfig": "^3.0.0",
+    "@sourcegraph/tslint-config": "^12.0.0",
+    "@types/highlight.js": "^9.12.3",
+    "@types/lodash": "^4.14.110",
+    "@types/marked": "^0.4.0",
+    "@types/react": "^16.4.4",
+    "prettier": "^1.13.6",
+    "tslint": "^5.10.0",
+    "typescript": "^2.9.2"
+  }
+}

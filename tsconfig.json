@@ -1,0 +1,17 @@
+{
+  "extends": "./node_modules/@sourcegraph/tsconfig/tsconfig.json",
+  "compilerOptions": {
+    "target": "es2018",
+    "module": "es2015",
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "declaration": true,
+    "outDir": "lib",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "jsx": "react",
+    "sourceRoot": "src",
+    "lib": ["es2017", "dom", "dom.iterable"]
+  },
+  "include": ["src/**/*"]
+}
