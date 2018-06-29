@@ -1,3 +1,5 @@
+import * as React from 'react'
+import { render, RenderResult } from 'react-testing-library'
 // import githubCode from '../../testdata/generated/github.html'
 import sourcegraphCode from '../../testdata/generated/sourcegraph.html'
 import { TEST_DATA_REVSPEC } from '../../testdata/rev'
@@ -252,10 +254,29 @@ export class DOM {
         return element as HTMLElement
     }
 
+    public render(element: React.ReactElement<any>): RenderResult {
+        const { container, unmount, ...rest } = render(element)
+        this.insert(container)
+
+        return {
+            container,
+            unmount: () => {
+                this.remove(container)
+                unmount()
+            },
+            ...rest,
+        }
+    }
+
     public cleanup = (): void => {
         for (const node of this.nodes) {
-            document.body.removeChild(node)
+            this.remove(node)
         }
+    }
+
+    private remove(node: Element): void {
+        this.nodes.delete(node)
+        document.body.removeChild(node)
     }
 
     private insert(node: Element): void {

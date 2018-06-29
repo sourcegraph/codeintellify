@@ -1,12 +1,13 @@
 import { isEqual } from 'lodash'
-import { fromEvent, Observable, of, Subject, Subscription } from 'rxjs'
+import { fromEvent, Observable, Subject, Subscription } from 'rxjs'
 import { distinctUntilChanged, filter, map } from 'rxjs/operators'
 import { TestScheduler } from 'rxjs/testing'
 import { Position } from 'vscode-languageserver-types'
 
-import { propertyIsDefined } from './helpers'
+import { isDefined, propertyIsDefined } from './helpers'
 import { createHoverifier, LOADER_DELAY, TOOLTIP_DISPLAY_DELAY } from './hoverifier'
 import { HoverOverlayProps } from './HoverOverlay'
+import { createDefaultHoverOverlay } from './testutils/defaults'
 import { BlobProps, DOM } from './testutils/dom'
 import { createHoverMerged, createStubHoverFetcher, createStubJumpURLFetcher } from './testutils/lsp'
 import { clickPosition } from './testutils/mouse'
@@ -31,15 +32,14 @@ describe('Hoverifier', () => {
             const hover = {}
             const defURL = 'def url'
 
+            const hoverOverlay = createDefaultHoverOverlay({ dom })
+
             scheduler.run(({ cold, expectObservable }) => {
                 const hoverifier = createHoverifier({
                     closeButtonClicks: new Observable<MouseEvent>(),
                     goToDefinitionClicks: new Observable<MouseEvent>(),
-                    hoverOverlayElements: of(null),
-                    hoverOverlayRerenders: new Observable<{
-                        hoverOverlayElement: HTMLElement
-                        scrollElement: HTMLElement
-                    }>(),
+                    hoverOverlayElements: hoverOverlay.refs,
+                    hoverOverlayRerenders: hoverOverlay.rerenders,
                     fetchHover: createStubHoverFetcher(hover, delayTime),
                     fetchJumpURL: createStubJumpURLFetcher(defURL, delayTime),
                     pushHistory: noop,
@@ -109,6 +109,13 @@ describe('Hoverifier', () => {
                         character: 6,
                     })
                 )
+
+                hoverifier.hoverStateUpdates
+                    .pipe(
+                        map(({ hoverOverlayProps }) => hoverOverlayProps),
+                        filter(isDefined)
+                    )
+                    .subscribe(hoverOverlay.update)
 
                 expectObservable(hoverAndDefinitionUpdates).toBe(outputDiagram, outputValues)
             })
