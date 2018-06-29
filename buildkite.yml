@@ -7,8 +7,8 @@ steps:
       npm run build
     label: ':typescript:'
 
-  - command: |-
-      npm ci
-      npm test
+  - command: |
+      npm ci &&
+      sudo -u buildkite npm test -- --single-run --browsers ChromeHeadless &&
       bash <(curl -s https://codecov.io/bash) -t df60f52a-e38d-4acc-98df-5ca520687bce
     label: ':karma:'
