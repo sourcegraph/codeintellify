@@ -38,7 +38,7 @@ module.exports = config => {
       bail: true,
     },
 
-    browsers: ['ChromeHeadlessNoSandbox', 'Firefox'],
+    browsers: ['Chrome', 'Firefox'],
     customLaunchers: {
       ChromeHeadlessNoSandbox: {
         base: 'ChromeHeadless',
