@@ -76,6 +76,8 @@ describe('Hoverifier', () => {
                         hoverOrError,
                     })),
                     distinctUntilChanged(isEqual),
+                    // For this test, only emit when both hover and def are here.
+                    // Even though the fetchers are emitting at the same time, this observable emits twice.
                     filter(
                         ({ definitionURLOrError, hoverOrError }) =>
                             !(
