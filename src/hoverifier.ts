@@ -595,7 +595,13 @@ export const createHoverifier = ({
             map(internalToExternalState),
             distinctUntilChanged((a, b) => isEqual(a, b))
         ),
-        hoverify({ codeMouseMoves, codeMouseOvers, codeClicks, positionJumps, resolveContext }: HoverifyOptions): Subscription {
+        hoverify({
+            codeMouseMoves,
+            codeMouseOvers,
+            codeClicks,
+            positionJumps,
+            resolveContext,
+        }: HoverifyOptions): Subscription {
             const subscription = new Subscription()
             const eventWithContextResolver = map((event: React.MouseEvent<HTMLElement>) => ({ event, resolveContext }))
             // Broadcast all events from this code view
