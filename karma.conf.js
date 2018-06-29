@@ -43,7 +43,7 @@ module.exports = config => {
       ChromeNoSandbox: {
         base: 'Chrome',
         // CI runs as root so we need to disable sandbox
-        flags: ['--no-sandbox'],
+        flags: ['--no-sandbox', '--disable-setuid-sandbox'],
       },
     },
   })
