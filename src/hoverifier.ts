@@ -105,7 +105,7 @@ export interface HoverifyOptions {
         /**
          * The position within the code view to jump to
          */
-        position: Position
+        position: LineOrPositionOrRange
         /**
          * The code view
          */
@@ -233,7 +233,7 @@ export const createHoverifier = ({
     const allCodeMouseOvers = new Subject<MouseEventTrigger>()
     const allCodeClicks = new Subject<MouseEventTrigger>()
     const allPositionJumps = new Subject<{
-        position: Position
+        position: LineOrPositionOrRange
         codeElement: HTMLElement
         scrollElement: HTMLElement
         resolveContext: ContextResolver
@@ -306,6 +306,14 @@ export const createHoverifier = ({
         codeElement: HTMLElement
         resolveContext: ContextResolver
     }> = allPositionJumps.pipe(
+        // Only use line and character for comparison
+        map(({ position: { line, character }, ...rest }) => ({ position: { line, character }, ...rest })),
+        // Ignore same values
+        // It's important to do this before filtering otherwise navigating from
+        // a position, to a line-only position, back to the first position would get ignored
+        distinctUntilChanged((a, b) => isEqual(a, b)),
+        // Ignore undefined or partial positions (e.g. line only)
+        filter((jump): jump is typeof jump & { position: Position } => Position.is(jump.position)),
         map(({ position, codeElement, ...rest }) => {
             const row = getRowInCodeElement(codeElement, position.line)
             if (!row) {
