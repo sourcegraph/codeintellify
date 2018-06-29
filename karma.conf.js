@@ -38,10 +38,10 @@ module.exports = config => {
       bail: true,
     },
 
-    browsers: ['ChromeNoSandbox', 'Firefox'],
+    browsers: ['ChromeHeadlessNoSandbox', 'Firefox'],
     customLaunchers: {
-      ChromeNoSandbox: {
-        base: 'Chrome',
+      ChromeHeadlessNoSandbox: {
+        base: 'ChromeHeadless',
         // CI runs as root so we need to disable sandbox
         flags: ['--no-sandbox', '--disable-setuid-sandbox'],
       },
