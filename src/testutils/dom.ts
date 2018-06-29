@@ -64,6 +64,7 @@ export const getWidthOfCharactersFromCell = (cell: HTMLElement): number =>
 
 export interface BlobProps {
     element: HTMLElement
+    injectedElement: HTMLElement
     revSpec: typeof TEST_DATA_REVSPEC
 
     getCodeElementFromTarget: (target: HTMLElement) => HTMLElement | null
@@ -206,7 +207,9 @@ const createSourcegraphBlob = (): BlobProps => {
     }
 
     return {
-        element: blob,
+        injectedElement: blob,
+
+        element: blob.querySelector('code')!,
         revSpec: TEST_DATA_REVSPEC,
         getCodeElementFromTarget,
         getCodeElementFromLineNumber,
@@ -234,10 +237,10 @@ export class DOM {
     private nodes = new Set<Element>()
 
     public createBlobs(): BlobProps[] {
-        const blobs: BlobProps[] = [createSourcegraphBlob() /*, createGitHubBlob()*/]
+        const blobs: BlobProps[] = [createSourcegraphBlob() /*, createGitHubBlob() */]
 
-        for (const { element } of blobs) {
-            this.insert(element)
+        for (const { injectedElement } of blobs) {
+            this.insert(injectedElement)
         }
 
         return blobs

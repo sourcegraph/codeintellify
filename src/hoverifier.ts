@@ -189,10 +189,10 @@ const internalToExternalState = (internalState: InternalHoverifierState): HoverS
 })
 
 /** The time in ms after which to show a loader if the result has not returned yet */
-const LOADER_DELAY = 300
+export const LOADER_DELAY = 300
 
 /** The time in ms after the mouse has stopped moving in which to show the tooltip */
-const TOOLTIP_DISPLAY_DELAY = 100
+export const TOOLTIP_DISPLAY_DELAY = 100
 
 export type HoverFetcher = (position: HoveredToken & HoveredTokenContext) => Observable<HoverMerged | null>
 export type JumpURLFetcher = (position: HoveredToken & HoveredTokenContext) => Observable<string | null>
@@ -260,10 +260,7 @@ export const createHoverifier = ({
             // When the mouse stopped for TOOLTIP_DISPLAY_DELAY, show tooltip
             // Don't use mouseover for this because it is only fired once per token,
             // not continuously while moving the mouse
-            allCodeMouseMoves.pipe(
-                debounceTime(TOOLTIP_DISPLAY_DELAY),
-                map(() => false)
-            )
+            allCodeMouseMoves.pipe(debounceTime(TOOLTIP_DISPLAY_DELAY), map(() => false))
         ).subscribe(mouseIsMoving => {
             container.update({ mouseIsMoving })
         })
@@ -398,14 +395,9 @@ export const createHoverifier = ({
             // 1. Reset the hover content, so no old hover content is displayed at the new position while fetching
             // 2. Show a loader if the hover fetch hasn't returned after 100ms
             // 3. Show the hover once it returned
-            return merge(
-                [undefined],
-                of(LOADING).pipe(
-                    delay(LOADER_DELAY),
-                    takeUntil(hoverFetch)
-                ),
-                hoverFetch
-            ).pipe(map(hoverOrError => ({ hoverOrError, codeElement })))
+            return merge([undefined], of(LOADING).pipe(delay(LOADER_DELAY), takeUntil(hoverFetch)), hoverFetch).pipe(
+                map(hoverOrError => ({ hoverOrError, codeElement }))
+            )
         }),
         share()
     )
@@ -473,10 +465,7 @@ export const createHoverifier = ({
     subscription.add(
         definitionObservables
             // flatten inner Observables
-            .pipe(
-                switchMap(definitionObservable => definitionObservable),
-                share()
-            )
+            .pipe(switchMap(definitionObservable => definitionObservable), share())
             .subscribe(definitionURLOrError => {
                 container.update({ definitionURLOrError })
                 // If the j2d button was already clicked and we now have the result, jump to it
