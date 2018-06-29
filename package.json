@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "commitmsg": "commitlint -e $GIT_PARAMS",
+    "semantic-release": "semantic-release",
     "prettier": "prettier '**/{*.{js?(on),ts?(x),scss},.*.js?(on)}' --write --list-different",
     "tslint": "tslint -c tslint.json -p tsconfig.json './src/*.ts?(x)' './testdata/*.ts?(x)' './*.ts?(x)'",
     "build": "npm run tsc && cpy 'src/**/*.scss' lib/",
@@ -74,6 +75,7 @@
     "raw-loader": "^0.5.1",
     "react": "^16.3.0",
     "rimraf": "^2.6.2",
+    "semantic-release": "^15.6.0",
     "sinon": "^6.0.1",
     "ts-node": "^7.0.0",
     "tslint": "^5.10.0",
