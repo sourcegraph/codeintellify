@@ -6,3 +6,8 @@ steps:
       npm run tslint
       npm run build
     label: ':typescript:'
+
+  - command: |-
+      npm ci
+      npm test
+    label: ':karma:'
