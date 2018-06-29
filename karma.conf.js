@@ -19,8 +19,10 @@ module.exports = config => {
       },
     ],
     preprocessors: {
-      'src/**/*.ts': ['webpack', 'sourcemap', 'coverage'],
-      'src/**/*.tsx': ['webpack', 'sourcemap', 'coverage'],
+      'src/**/*.test.ts': ['webpack', 'sourcemap'],
+      'src/**/*.test.tsx': ['webpack', 'sourcemap'],
+      'src/**/!(*test).ts': ['webpack', 'sourcemap', 'coverage'],
+      'src/**/!(*test).tsx': ['webpack', 'sourcemap', 'coverage'],
     },
 
     // Ignore the npm package entry point
