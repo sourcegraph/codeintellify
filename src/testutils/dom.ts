@@ -1,4 +1,4 @@
-import githubCode from '../../testdata/generated/github.html'
+// import githubCode from '../../testdata/generated/github.html'
 import sourcegraphCode from '../../testdata/generated/sourcegraph.html'
 import { TEST_DATA_REVSPEC } from '../../testdata/rev'
 
@@ -77,81 +77,81 @@ export const wrapCharsInSpans = (line: string) =>
         .map((c, j) => `<span data-char="${j}">${c}</span>`)
         .join('')
 
-const createGitHubBlob = (): BlobProps => {
-    const blob = document.createElement('div')
+// const createGitHubBlob = (): BlobProps => {
+//     const blob = document.createElement('div')
 
-    blob.innerHTML = githubCode
-    blob.style.clear = 'both'
+//     blob.innerHTML = githubCode
+//     blob.style.clear = 'both'
 
-    const getCodeElementFromTarget = (target: HTMLElement): HTMLElement | null => {
-        const row = target.closest('tr')
-        if (!row) {
-            return null
-        }
+//     const getCodeElementFromTarget = (target: HTMLElement): HTMLElement | null => {
+//         const row = target.closest('tr')
+//         if (!row) {
+//             return null
+//         }
 
-        const codeCell = row.children.item(1) as HTMLElement
+//         const codeCell = row.children.item(1) as HTMLElement
 
-        if (!codeCell.classList.contains('blob-code')) {
-            // Line element mouse overs probably
-            return null
-        }
+//         if (!codeCell.classList.contains('blob-code')) {
+//             // Line element mouse overs probably
+//             return null
+//         }
 
-        return codeCell
-    }
+//         return codeCell
+//     }
 
-    const getCodeElementFromLineNumber = (b: HTMLElement, line: number): HTMLElement | null => {
-        const numCell = b.querySelector(`[data-line-number="${line + 1}"]`)
-        if (!numCell) {
-            return null
-        }
+//     const getCodeElementFromLineNumber = (b: HTMLElement, line: number): HTMLElement | null => {
+//         const numCell = b.querySelector(`[data-line-number="${line + 1}"]`)
+//         if (!numCell) {
+//             return null
+//         }
 
-        const row = numCell.closest('tr') as HTMLElement
-        if (!row) {
-            return row
-        }
+//         const row = numCell.closest('tr') as HTMLElement
+//         if (!row) {
+//             return row
+//         }
 
-        return row.children.item(1) as HTMLElement | null
-    }
+//         return row.children.item(1) as HTMLElement | null
+//     }
 
-    const getLineNumberFromCodeElement = (codeCell: HTMLElement): number => {
-        const row = codeCell.closest('tr')
-        if (!row) {
-            return -1
-        }
-        const numCell = row.children.item(0) as HTMLElement
-        if (!numCell || (numCell && !numCell.dataset.lineNumber)) {
-            return -1
-        }
+//     const getLineNumberFromCodeElement = (codeCell: HTMLElement): number => {
+//         const row = codeCell.closest('tr')
+//         if (!row) {
+//             return -1
+//         }
+//         const numCell = row.children.item(0) as HTMLElement
+//         if (!numCell || (numCell && !numCell.dataset.lineNumber)) {
+//             return -1
+//         }
 
-        return parseInt(numCell.dataset.lineNumber as string, 10) - 1
-    }
+//         return parseInt(numCell.dataset.lineNumber as string, 10) - 1
+//     }
 
-    return {
-        element: blob,
-        revSpec: TEST_DATA_REVSPEC,
-        getCodeElementFromTarget,
-        getCodeElementFromLineNumber,
-        getLineNumberFromCodeElement,
-        insertRow: (text: string) => {
-            const lastRow = blob.querySelector('tbody tr:last-of-type')!
+//     return {
+//         element: blob,
+//         revSpec: TEST_DATA_REVSPEC,
+//         getCodeElementFromTarget,
+//         getCodeElementFromLineNumber,
+//         getLineNumberFromCodeElement,
+//         insertRow: (text: string) => {
+//             const lastRow = blob.querySelector('tbody tr:last-of-type')!
 
-            const node = lastRow.cloneNode(true) as HTMLElement
-            const line = parseInt((lastRow.children.item(0) as HTMLElement).dataset.lineNumber as string, 10) + 1
+//             const node = lastRow.cloneNode(true) as HTMLElement
+//             const line = parseInt((lastRow.children.item(0) as HTMLElement).dataset.lineNumber as string, 10) + 1
 
-            const lineNode = node.children.item(0)! as HTMLElement
-            lineNode.id = `L${line}`
-            lineNode.dataset.lineNumber = line.toString()
+//             const lineNode = node.children.item(0)! as HTMLElement
+//             lineNode.id = `L${line}`
+//             lineNode.dataset.lineNumber = line.toString()
 
-            const codeNode = node.children.item(1)! as HTMLElement
-            codeNode.id = `LC${line}`
-            codeNode.innerHTML = wrapCharsInSpans(text)
+//             const codeNode = node.children.item(1)! as HTMLElement
+//             codeNode.id = `LC${line}`
+//             codeNode.innerHTML = wrapCharsInSpans(text)
 
-            blob.querySelector('tbody')!.appendChild(node)
+//             blob.querySelector('tbody')!.appendChild(node)
 
-            return node
-        },
-    }
-}
+//             return node
+//         },
+//     }
+// }
 
 const createSourcegraphBlob = (): BlobProps => {
     const blob = document.createElement('div')
