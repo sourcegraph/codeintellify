@@ -19,8 +19,8 @@ module.exports = config => {
       },
     ],
     preprocessors: {
-      'src/**/*.ts': ['webpack', 'sourcemap'],
-      'src/**/*.tsx': ['webpack', 'sourcemap'],
+      'src/**/*.ts': ['webpack', 'sourcemap', 'coverage'],
+      'src/**/*.tsx': ['webpack', 'sourcemap', 'coverage'],
     },
 
     // Ignore the npm package entry point
@@ -45,6 +45,11 @@ module.exports = config => {
         // CI runs as root so we need to disable sandbox
         flags: ['--no-sandbox', '--disable-setuid-sandbox'],
       },
+    },
+
+    reporters: ['progress', 'coverage'],
+    coverageReporter: {
+      type: 'json',
     },
   })
 }
