@@ -7,10 +7,16 @@
     "lib"
   ],
   "scripts": {
+    "commitmsg": "commitlint -e $GIT_PARAMS",
     "prettier": "prettier '**/{*.{js?(on),ts?(x),scss},.*.js?(on)}' --write --list-different",
     "tslint": "tslint -c tslint.json -p tsconfig.json 'src/*.ts?(x)'",
     "build": "tsc -p .",
     "watch": "tsc -p . -w"
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
   },
   "author": "Felix Becker <felix@sourcegraph.com>",
   "dependencies": {
@@ -27,6 +33,8 @@
     "react": "^16.0.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^7.0.0",
+    "@commitlint/config-conventional": "^7.0.1",
     "@sourcegraph/prettierrc": "^2.1.1",
     "@sourcegraph/tsconfig": "^3.0.0",
     "@sourcegraph/tslint-config": "^12.0.0",
@@ -34,6 +42,7 @@
     "@types/lodash": "^4.14.110",
     "@types/marked": "^0.4.0",
     "@types/react": "^16.4.4",
+    "husky": "^0.14.3",
     "prettier": "^1.13.6",
     "tslint": "^5.10.0",
     "typescript": "^2.9.2"
