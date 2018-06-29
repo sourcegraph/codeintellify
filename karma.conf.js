@@ -51,7 +51,8 @@ module.exports = config => {
 
     reporters: ['progress', 'coverage'],
     coverageReporter: {
-      type: 'json',
+      dir: 'coverage/',
+      reporters: [{ type: 'json' }, { type: 'lcov' }],
     },
   })
 }
