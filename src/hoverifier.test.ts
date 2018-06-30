@@ -4,6 +4,7 @@ import { distinctUntilChanged, filter, map } from 'rxjs/operators'
 import { TestScheduler } from 'rxjs/testing'
 import { Position } from 'vscode-languageserver-types'
 
+import { noop } from 'lodash'
 import { propertyIsDefined } from './helpers'
 import { createHoverifier, LOADER_DELAY, TOOLTIP_DISPLAY_DELAY } from './hoverifier'
 import { HoverOverlayProps } from './HoverOverlay'
@@ -11,8 +12,6 @@ import { BlobProps, DOM } from './testutils/dom'
 import { createHoverMerged, createStubHoverFetcher, createStubJumpURLFetcher } from './testutils/lsp'
 import { clickPosition } from './testutils/mouse'
 import { LOADING } from './types'
-
-const noop = () => undefined
 
 describe('Hoverifier', () => {
     const dom = new DOM()
@@ -43,7 +42,7 @@ describe('Hoverifier', () => {
                     fetchHover: createStubHoverFetcher(hover, delayTime),
                     fetchJumpURL: createStubJumpURLFetcher(defURL, delayTime),
                     pushHistory: noop,
-                    logTelementryEvent: () => noop,
+                    logTelemetryEvent: noop,
                 })
 
                 const positionJumps = new Subject<{

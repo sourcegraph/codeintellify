@@ -61,7 +61,7 @@ interface HoverifierOptions {
     /**
      * Called to log telemetry events
      */
-    logTelementryEvent: (eventLabel: string, eventProperties?: any) => void
+    logTelemetryEvent: (event: string, data?: any) => void
 
     fetchHover: HoverFetcher
     fetchJumpURL: JumpURLFetcher
@@ -207,7 +207,7 @@ export const createHoverifier = ({
     pushHistory,
     fetchHover,
     fetchJumpURL,
-    logTelementryEvent,
+    logTelemetryEvent,
 }: HoverifierOptions): Hoverifier => {
     // Internal state that is not exposed to the caller
     // Shared between all hoverified code views
@@ -452,7 +452,7 @@ export const createHoverifier = ({
                 filter(HoverMerged.is)
             )
             .subscribe(() => {
-                logTelementryEvent('SymbolHovered')
+                logTelemetryEvent('SymbolHovered')
             })
     )
 
@@ -536,7 +536,7 @@ export const createHoverifier = ({
     subscription.add(
         goToDefinitionClicks.subscribe(event => {
             // Telemetry
-            logTelementryEvent('GoToDefClicked')
+            logTelemetryEvent('GoToDefClicked')
 
             // If we don't have a result yet that would be jumped to by the native <a> tag...
             if (!isJumpURL(container.values.definitionURLOrError)) {
