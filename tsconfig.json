@@ -10,8 +10,7 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "jsx": "react",
-    "sourceRoot": "src",
-    "lib": ["es2017", "dom", "dom.iterable"]
-  },
-  "include": ["src/**/*"]
+    "lib": ["es2017", "dom", "dom.iterable"],
+    "sourceRoot": "src"
+  }
 }

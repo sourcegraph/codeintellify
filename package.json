@@ -10,10 +10,10 @@
     "commitmsg": "commitlint -e $GIT_PARAMS",
     "prettier": "prettier '**/{*.{js?(on),ts?(x),scss},.*.js?(on)}' --write --list-different",
     "tslint": "tslint -c tslint.json -p tsconfig.json 'src/*.ts?(x)'",
-    "build": "tsc -p .",
-    "watch": "tsc -p . -w",
-    "test": "karma start",
-    "pretest": "ts-node --project ./testdata/tsconfig.json ./testdata/generate.ts"
+    "build": "tsc -p tsconfig.dist.json",
+    "watch": "npm run build -- --watch",
+    "test": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' karma start",
+    "pretest": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' ts-node ./testdata/generate.ts"
   },
   "commitlint": {
     "extends": [
@@ -43,6 +43,8 @@
     "@types/chai": "^4.1.4",
     "@types/fs-extra": "^5.0.3",
     "@types/highlight.js": "^9.12.3",
+    "@types/karma": "^1.7.3",
+    "@types/karma-webpack": "^2.0.4",
     "@types/lodash": "^4.14.110",
     "@types/marked": "^0.4.0",
     "@types/mocha": "^5.2.3",

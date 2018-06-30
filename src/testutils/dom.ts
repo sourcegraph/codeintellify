@@ -1,6 +1,6 @@
 // import githubCode from '../../testdata/generated/github.html'
 import sourcegraphCode from '../../testdata/generated/sourcegraph.html'
-import { TEST_DATA_REVSPEC } from '../../testdata/rev'
+import { TEST_DATA_REVSPEC } from './rev'
 
 export const getTextNodes = (node: Node): Node[] => {
     if (node.childNodes.length === 0 && node.TEXT_NODE === node.nodeType && node.nodeValue) {
