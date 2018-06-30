@@ -14,5 +14,5 @@ const code = fs
     .toString()
     .split('\n')
 
-fs.writeFile(path.join(generatedDir, 'github.html'), generateGithubCodeTable(code))
-fs.writeFile(path.join(generatedDir, 'sourcegraph.html'), generateSourcegraphCodeTable(code))
+fs.writeFileSync(path.join(generatedDir, 'github.html'), generateGithubCodeTable(code))
+fs.writeFileSync(path.join(generatedDir, 'sourcegraph.html'), generateSourcegraphCodeTable(code))
