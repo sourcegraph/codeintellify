@@ -1,6 +1,11 @@
-const path = require('path')
-const { CheckerPlugin } = require('awesome-typescript-loader')
+// @ts-check
 
+const path = require('path')
+const webpack = require('webpack')
+
+/**
+ * @type {import('webpack').Configuration}
+ */
 const config = {
   mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   devtool: 'inline-source-map',
@@ -12,9 +17,19 @@ const config = {
         exclude: /node_modules/,
       },
       {
-        test: /\.(ts|tsx)$/,
+        test: /\.tsx?$/,
         use: 'awesome-typescript-loader',
         exclude: /node_modules/,
+      },
+      {
+        test: /src\/.*\.tsx?$/,
+        exclude: /(node_modules|\.test\.tsx?$|\.d.ts$)/,
+        loader: 'istanbul-instrumenter-loader',
+        include: path.resolve(__dirname, 'src'),
+        enforce: 'post',
+        options: {
+          esModules: true,
+        },
       },
     ],
   },
@@ -27,7 +42,12 @@ const config = {
     library: ['react-annotator', '[name]'],
     libraryTarget: 'umd',
   },
-  plugins: [new CheckerPlugin()],
+  plugins: [
+    new webpack.SourceMapDevToolPlugin({
+      filename: null,
+      test: /\.(ts|js)($|\?)/i,
+    }),
+  ],
 }
 
 module.exports = config

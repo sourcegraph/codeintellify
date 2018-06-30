@@ -19,10 +19,7 @@ module.exports = config => {
       },
     ],
     preprocessors: {
-      'src/**/*.test.ts': ['webpack', 'sourcemap'],
-      'src/**/*.test.tsx': ['webpack', 'sourcemap'],
-      'src/**/!(*test).ts': ['webpack', 'sourcemap', 'coverage'],
-      'src/**/!(*test).tsx': ['webpack', 'sourcemap', 'coverage'],
+      'src/**/*.ts?(x)': ['webpack', 'sourcemap'],
     },
 
     // Ignore the npm package entry point
@@ -49,10 +46,10 @@ module.exports = config => {
       },
     },
 
-    reporters: ['progress', 'coverage'],
-    coverageReporter: {
-      dir: 'coverage/',
-      reporters: [{ type: 'json' }],
+    reporters: ['progress', 'coverage-istanbul'],
+    coverageIstanbulReporter: {
+      reports: ['json'],
+      fixWebpackSourcePaths: true,
     },
   })
 }
