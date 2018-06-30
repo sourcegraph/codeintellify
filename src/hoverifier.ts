@@ -1,5 +1,4 @@
 import { isEqual } from 'lodash'
-import * as React from 'react'
 import { combineLatest, concat, fromEvent, merge, Observable, of, Subject, Subscription, zip } from 'rxjs'
 import {
     catchError,
@@ -93,9 +92,9 @@ export interface Hoverifier {
 }
 
 export interface HoverifyOptions {
-    codeMouseMoves: Observable<React.MouseEvent<HTMLElement>>
-    codeMouseOvers: Observable<React.MouseEvent<HTMLElement>>
-    codeClicks: Observable<React.MouseEvent<HTMLElement>>
+    codeMouseMoves: Observable<MouseEvent>
+    codeMouseOvers: Observable<MouseEvent>
+    codeClicks: Observable<MouseEvent>
 
     /**
      * Emit on this Observable to trigger the overlay on a position in this code view.
@@ -190,10 +189,10 @@ const internalToExternalState = (internalState: InternalHoverifierState): HoverS
 })
 
 /** The time in ms after which to show a loader if the result has not returned yet */
-const LOADER_DELAY = 300
+export const LOADER_DELAY = 300
 
 /** The time in ms after the mouse has stopped moving in which to show the tooltip */
-const TOOLTIP_DISPLAY_DELAY = 100
+export const TOOLTIP_DISPLAY_DELAY = 100
 
 export type HoverFetcher = (position: HoveredToken & HoveredTokenContext) => Observable<HoverMerged | null>
 export type JumpURLFetcher = (position: HoveredToken & HoveredTokenContext) => Observable<string | null>
@@ -224,7 +223,7 @@ export const createHoverifier = ({
     })
 
     interface MouseEventTrigger {
-        event: React.MouseEvent<HTMLElement>
+        event: MouseEvent
         resolveContext: ContextResolver
     }
 
@@ -271,9 +270,10 @@ export const createHoverifier = ({
     )
 
     const codeMouseOverTargets = allCodeMouseOvers.pipe(
+        filter(({ event }) => event.currentTarget !== null),
         map(({ event, ...rest }) => ({
             target: event.target as HTMLElement,
-            codeElement: event.currentTarget,
+            codeElement: event.currentTarget as HTMLElement,
             ...rest,
         })),
         // SIDE EFFECT (but idempotent)
@@ -292,9 +292,10 @@ export const createHoverifier = ({
     )
 
     const codeClickTargets = codeClicksWithoutSelections.pipe(
+        filter(({ event }) => event.currentTarget !== null),
         map(({ event, ...rest }) => ({
             target: event.target as HTMLElement,
-            codeElement: event.currentTarget,
+            codeElement: event.currentTarget as HTMLElement,
             ...rest,
         })),
         share()
@@ -611,7 +612,7 @@ export const createHoverifier = ({
             resolveContext,
         }: HoverifyOptions): Subscription {
             const subscription = new Subscription()
-            const eventWithContextResolver = map((event: React.MouseEvent<HTMLElement>) => ({ event, resolveContext }))
+            const eventWithContextResolver = map((event: MouseEvent) => ({ event, resolveContext }))
             // Broadcast all events from this code view
             subscription.add(codeMouseMoves.pipe(eventWithContextResolver).subscribe(allCodeMouseMoves))
             subscription.add(codeMouseOvers.pipe(eventWithContextResolver).subscribe(allCodeMouseOvers))

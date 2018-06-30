@@ -5,8 +5,21 @@
 
 > Adds code intelligence to code views on the web
 
-# API
+## API
 
 Use in React TODO
 
 Use with native DOM TODO
+
+## Development
+
+```shell
+npm i
+npm test
+```
+
+Development is done by running tests. [Karma](https://github.com/karma-runner/karma) is used to run
+[Mocha](https://github.com/mochajs/mocha) tests in the browser. You can debug by opening http://localhost:9876/debug.html in
+a browser while the test running is active.
+
+All tests are ran against DOM that is generated to match the DOM used by the supported code hosts.

@@ -1,2 +1,4 @@
 node_modules/
 lib
+testdata/generated/
+coverage/
