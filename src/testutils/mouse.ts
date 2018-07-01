@@ -1,5 +1,8 @@
+import { CharacterPositions } from 'event-positions'
+
 import { Position } from 'vscode-languageserver-types'
 
+import { convertNode } from '../token_position'
 import { BlobProps } from './dom'
 
 interface Coordinates {
@@ -20,23 +23,68 @@ export const createMouseEvent = (type: string) => (coords: Coordinates) => {
 export const createMouseMoveEvent = createMouseEvent('mousemove')
 export const createClickEvent = createMouseEvent('click')
 
+const invalidPosition = ({ line, character }: Position, message: string) =>
+    `Invalid postion L${line}:${character}. ${message}. Remember, LSP Positions are 0-indexed.`
+
+export const clickPositionImpure = ({ element, getCodeElementFromLineNumber }: BlobProps, position: Position) => {
+    const line = getCodeElementFromLineNumber(element, position.line)
+    if (!line) {
+        throw new Error(invalidPosition(position, 'Line not found'))
+    }
+
+    convertNode(line)
+
+    let characterOffset = 0
+    for (const child of line.childNodes) {
+        const value = child.textContent
+        if (!value) {
+            continue
+        }
+
+        if (characterOffset <= position.character && characterOffset + value.length >= position.character) {
+            const rect = line.getBoundingClientRect()
+            const { top, height, left, width } = rect
+
+            const event = createClickEvent({
+                x: left + width / 2,
+                y: top + height / 2,
+            })
+
+            child.dispatchEvent(event)
+
+            return
+        }
+
+        characterOffset += value.length
+    }
+}
+
+/**
+ * Dispatch a click event at a position in the blob.
+ *
+ * @param blob the BlobProps from the generated test cases
+ * @param position the 0-indexed position to click
+ */
 export const clickPosition = ({ element, getCodeElementFromLineNumber }: BlobProps, position: Position) => {
     const line = getCodeElementFromLineNumber(element, position.line)
     if (!line) {
-        throw new Error('invalid position')
+        throw new Error(invalidPosition(position, 'Line not found'))
     }
 
-    const char = line.querySelector(`[data-char="${position.character}"]`)
-    if (!char) {
-        throw new Error('invalid position')
-    }
+    const positions = new CharacterPositions(line)
 
-    const charRect = char.getBoundingClientRect()
+    const left = positions.getCharacterOffset(position.character, line, true)
+    const right = positions.getCharacterOffset(position.character, line, false)
+    const width = right - left
+
+    const rect = line.getBoundingClientRect()
+    const top = rect.top
+    const height = rect.height
 
     const event = createClickEvent({
-        x: charRect.left + charRect.width / 2,
-        y: charRect.top + charRect.height / 2,
+        x: left + width / 2,
+        y: top + height / 2,
     })
 
-    char.dispatchEvent(event)
+    line.dispatchEvent(event)
 }

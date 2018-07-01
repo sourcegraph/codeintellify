@@ -15,7 +15,7 @@ import { LOADING } from './types'
 
 describe('Hoverifier', () => {
     const dom = new DOM()
-    // after(dom.cleanup)
+    after(dom.cleanup)
 
     let testcases: BlobProps[] = []
     before(() => {
