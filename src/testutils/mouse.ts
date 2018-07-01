@@ -26,13 +26,22 @@ export const createClickEvent = createMouseEvent('click')
 const invalidPosition = ({ line, character }: Position, message: string) =>
     `Invalid postion L${line}:${character}. ${message}. Remember, LSP Positions are 0-indexed.`
 
+/**
+ * Click the given position in a code element. This is impure because the current hoverifier implementation
+ * requires the click event to come from the already tokenized DOM elements. Ideally we would not rely on this at all.
+ *
+ * @param blob the blob props from the test cases.
+ * @param position the position to click.
+ */
 export const clickPositionImpure = ({ element, getCodeElementFromLineNumber }: BlobProps, position: Position) => {
     const line = getCodeElementFromLineNumber(element, position.line)
     if (!line) {
         throw new Error(invalidPosition(position, 'Line not found'))
     }
 
-    convertNode(line)
+    if (!line.classList.contains('annotated')) {
+        convertNode(line)
+    }
 
     let characterOffset = 0
     for (const child of line.childNodes) {

@@ -1,5 +1,5 @@
 import { isEqual } from 'lodash'
-import { fromEvent, Observable, of, Subject, Subscription } from 'rxjs'
+import { Observable, of, Subject, Subscription } from 'rxjs'
 import { distinctUntilChanged, filter, map } from 'rxjs/operators'
 import { TestScheduler } from 'rxjs/testing'
 import { Position } from 'vscode-languageserver-types'
@@ -8,14 +8,15 @@ import { noop } from 'lodash'
 import { propertyIsDefined } from './helpers'
 import { createHoverifier, LOADER_DELAY, TOOLTIP_DISPLAY_DELAY } from './hoverifier'
 import { HoverOverlayProps } from './HoverOverlay'
+import { findPositionsFromEvents } from './positions'
 import { BlobProps, DOM } from './testutils/dom'
 import { createHoverMerged, createStubHoverFetcher, createStubJumpURLFetcher } from './testutils/lsp'
-import { clickPosition } from './testutils/mouse'
+import { clickPositionImpure } from './testutils/mouse'
 import { LOADING } from './types'
 
 describe('Hoverifier', () => {
     const dom = new DOM()
-    after(dom.cleanup)
+    // after(dom.cleanup)
 
     let testcases: BlobProps[] = []
     before(() => {
@@ -51,18 +52,14 @@ describe('Hoverifier', () => {
                     scrollElement: HTMLElement
                 }>()
 
-                const codeMouseMoves = fromEvent<MouseEvent>(blob.element, 'mousemove')
-                const codeMouseOvers = fromEvent<MouseEvent>(blob.element, 'mouseover')
-                const codeClicks = fromEvent<MouseEvent>(blob.element, 'click')
+                const positionEvents = of(blob.element).pipe(findPositionsFromEvents())
 
                 const subscriptions = new Subscription()
 
                 subscriptions.add(hoverifier)
                 subscriptions.add(
                     hoverifier.hoverify({
-                        codeMouseMoves,
-                        codeMouseOvers,
-                        codeClicks,
+                        positionEvents,
                         positionJumps,
                         resolveContext: () => blob.revSpec,
                     })
@@ -103,13 +100,18 @@ describe('Hoverifier', () => {
 
                 // Click https://sourcegraph.sgdev.org/github.com/gorilla/mux@cb4698366aa625048f3b815af6a0dea8aef9280a/-/blob/mux.go#L24:6
                 cold(inputDiagram).subscribe(() =>
-                    clickPosition(blob, {
+                    clickPositionImpure(blob, {
                         line: 23,
                         character: 6,
                     })
                 )
 
                 expectObservable(hoverAndDefinitionUpdates).toBe(outputDiagram, outputValues)
+
+                // Assert that the correct token is highlighted
+                const highlighted = blob.element.querySelector('.selection-highlight')
+                chai.expect(highlighted).to.not.equal(null)
+                chai.expect(highlighted!.textContent).to.equal('NewRouter')
             })
         }
     })
