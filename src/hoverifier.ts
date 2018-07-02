@@ -14,7 +14,7 @@ import {
     withLatestFrom,
 } from 'rxjs/operators'
 import { Key } from 'ts-key-enum'
-import { Position } from 'vscode-languageserver-types/lib/umd/main'
+import { Position } from 'vscode-languageserver-types'
 import { asError, ErrorLike } from './errors'
 import { propertyIsDefined } from './helpers'
 import { overlayUIHasContent, scrollIntoCenterIfNeeded } from './helpers'

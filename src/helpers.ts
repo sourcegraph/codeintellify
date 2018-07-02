@@ -1,5 +1,5 @@
 import { highlight, highlightAuto } from 'highlight.js/lib/highlight'
-import { MarkupContent } from 'vscode-languageserver-types/lib/umd/main'
+import { MarkupContent } from 'vscode-languageserver-types'
 import { HoverOverlayProps, isJumpURL } from './HoverOverlay'
 import { HoverMerged } from './types'
 
