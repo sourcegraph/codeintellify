@@ -18,14 +18,14 @@ import { toPrettyBlobURL } from './url'
  */
 const ButtonOrLink: React.StatelessComponent<
     { linkComponent: React.ComponentType<{ to: string }>; to?: string } & React.HTMLAttributes<HTMLElement>
-> = props => {
-    const Link = props.linkComponent
-    return props.to ? (
-        <Link to={props.to} {...props}>
-            {props.children}
+> = ({ linkComponent, to, children, ...rest }) => {
+    const Link = linkComponent
+    return to ? (
+        <Link to={to} {...rest}>
+            {children}
         </Link>
     ) : (
-        <button {...props}>{props.children}</button>
+        <button {...rest}>{children}</button>
     )
 }
 
