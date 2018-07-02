@@ -15,11 +15,9 @@ steps:
 
   - wait
 
-  # `git fetch --tags` is a workaround until https://github.com/semantic-release/semantic-release/issues/841 is fixed
   - command: |-
       npm ci
       npm run build
-      git fetch --tags
       npm run semantic-release
     branches: master
     label: ':npm:'
