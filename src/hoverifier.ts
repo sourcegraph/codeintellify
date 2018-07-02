@@ -481,10 +481,7 @@ export const createHoverifier = ({
     subscription.add(
         definitionObservables
             // flatten inner Observables
-            .pipe(
-                switchMap(definitionObservable => definitionObservable),
-                share()
-            )
+            .pipe(switchMap(definitionObservable => definitionObservable))
             .subscribe(definitionURLOrError => {
                 container.update({ definitionURLOrError })
                 // If the j2d button was already clicked and we now have the result, jump to it
