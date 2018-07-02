@@ -10,8 +10,8 @@
     "commitmsg": "commitlint -e $GIT_PARAMS",
     "prettier": "prettier '**/{*.{js?(on),ts?(x),scss},.*.js?(on)}' --write --list-different",
     "tslint": "tslint -c tslint.json -p tsconfig.json './src/*.ts?(x)' './testdata/*.ts?(x)' './*.ts?(x)'",
-    "build": "tsc -p tsconfig.dist.json",
-    "watch": "npm run build -- --watch",
+    "build": "npm run tsc && cpy 'src/**/*.scss' lib/",
+    "tsc": "tsc -p tsconfig.dist.json",
     "test": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' karma start",
     "pretest": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' ts-node ./testdata/generate.ts"
   },
@@ -55,6 +55,7 @@
     "@types/webpack-env": "^1.13.6",
     "awesome-typescript-loader": "^5.2.0",
     "chai": "^4.1.2",
+    "cpy-cli": "^2.0.0",
     "esm": "^3.0.55",
     "fs-extra": "^6.0.1",
     "husky": "^0.14.3",
