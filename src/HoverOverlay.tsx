@@ -1,13 +1,12 @@
 import Loader from '@sourcegraph/icons/lib/Loader'
 import { castArray, upperFirst } from 'lodash'
-import marked from 'marked'
 import AlertCircleOutlineIcon from 'mdi-react/AlertCircleOutlineIcon'
 import CloseIcon from 'mdi-react/CloseIcon'
 import InformationOutlineIcon from 'mdi-react/InformationOutlineIcon'
 import * as React from 'react'
 import { MarkedString, MarkupContent, MarkupKind } from 'vscode-languageserver-types'
 import { asError, ErrorLike, isErrorLike } from './errors'
-import { highlightCodeSafe } from './helpers'
+import { highlightCodeSafe, renderMarkdown } from './helpers'
 import { HoveredTokenContext } from './hoverifier'
 import { HoveredToken } from './token_position'
 import { HoverMerged, LOADING } from './types'
@@ -118,18 +117,11 @@ export const HoverOverlay: React.StatelessComponent<HoverOverlayProps> = props =
                             if (MarkupContent.is(content)) {
                                 if (content.kind === MarkupKind.Markdown) {
                                     try {
-                                        const rendered = marked(content.value, {
-                                            gfm: true,
-                                            breaks: true,
-                                            sanitize: true,
-                                            highlight: (code, language) =>
-                                                '<code>' + highlightCodeSafe(code, language) + '</code>',
-                                        })
                                         return (
                                             <div
                                                 className="hover-overlay__content hover-overlay__row e2e-tooltip-content"
                                                 key={i}
-                                                dangerouslySetInnerHTML={{ __html: rendered }}
+                                                dangerouslySetInnerHTML={{ __html: renderMarkdown(content.value) }}
                                             />
                                         )
                                     } catch (err) {
