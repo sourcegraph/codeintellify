@@ -1,4 +1,6 @@
 import { highlight, highlightAuto } from 'highlight.js/lib/highlight'
+import marked from 'marked'
+import sanitize from 'sanitize-html'
 import { MarkupContent } from 'vscode-languageserver-types'
 import { HoverOverlayProps, isJumpURL } from './HoverOverlay'
 import { HoverMerged } from './types'
@@ -70,3 +72,17 @@ export const highlightCodeSafe = (code: string, language?: string): string => {
         return escape(code)
     }
 }
+
+/**
+ * Renders the given markdown to HTML, highlighting code and sanitizing dangerous HTML.
+ * Can throw an exception on parse errors.
+ */
+export const renderMarkdown = (markdown: string): string =>
+    sanitize(
+        marked(markdown, {
+            gfm: true,
+            breaks: true,
+            sanitize: false,
+            highlight: (code, language) => '<code>' + highlightCodeSafe(code, language) + '</code>',
+        })
+    )
