@@ -1,5 +1,17 @@
 import { isEqual } from 'lodash'
-import { combineLatest, concat, fromEvent, merge, Observable, of, Subject, Subscription, zip } from 'rxjs'
+import {
+    combineLatest,
+    concat,
+    from,
+    fromEvent,
+    merge,
+    Observable,
+    of,
+    Subject,
+    Subscribable,
+    Subscription,
+    zip,
+} from 'rxjs'
 import {
     catchError,
     debounceTime,
@@ -39,19 +51,19 @@ interface HoverifierOptions {
     /**
      * Emit the HoverOverlay element on this after it was rerendered when its content changed and it needs to be repositioned.
      */
-    hoverOverlayRerenders: Observable<{ hoverOverlayElement: HTMLElement; scrollElement: HTMLElement }>
+    hoverOverlayRerenders: Subscribable<{ hoverOverlayElement: HTMLElement; scrollElement: HTMLElement }>
 
     /**
      * Emit on this Observable when the Go-To-Definition button in the HoverOverlay was clicked
      */
-    goToDefinitionClicks: Observable<MouseEvent>
+    goToDefinitionClicks: Subscribable<MouseEvent>
 
     /**
      * Emit on this Observable when the close button in the HoverOverlay was clicked
      */
-    closeButtonClicks: Observable<MouseEvent>
+    closeButtonClicks: Subscribable<MouseEvent>
 
-    hoverOverlayElements: Observable<HTMLElement | null>
+    hoverOverlayElements: Subscribable<HTMLElement | null>
 
     /**
      * Called for programmatic navigation (like `history.push()`)
@@ -92,15 +104,15 @@ export interface Hoverifier {
 }
 
 export interface HoverifyOptions {
-    codeMouseMoves: Observable<MouseEvent>
-    codeMouseOvers: Observable<MouseEvent>
-    codeClicks: Observable<MouseEvent>
+    codeMouseMoves: Subscribable<MouseEvent>
+    codeMouseOvers: Subscribable<MouseEvent>
+    codeClicks: Subscribable<MouseEvent>
 
     /**
      * Emit on this Observable to trigger the overlay on a position in this code view.
      * This Observable is intended to be used to trigger a Hover after a URL change with a position.
      */
-    positionJumps: Observable<{
+    positionJumps: Subscribable<{
         /**
          * The position within the code view to jump to
          */
@@ -337,7 +349,7 @@ export const createHoverifier = ({
     // latest hover target by the time componentDidUpdate is triggered from the setState() in the second chain
     subscription.add(
         // Take every rerender
-        hoverOverlayRerenders
+        from(hoverOverlayRerenders)
             .pipe(
                 // with the latest target that came from either a mouseover, click or location change (whatever was the most recent)
                 withLatestFrom(merge(codeMouseOverTargets, codeClickTargets, jumpTargets)),
@@ -531,7 +543,7 @@ export const createHoverifier = ({
 
     // On every click on a go to definition button, reveal loader/error/not found UI
     subscription.add(
-        goToDefinitionClicks.subscribe(event => {
+        from(goToDefinitionClicks).subscribe(event => {
             // Telemetry
             logTelemetryEvent('GoToDefClicked')
 
@@ -588,7 +600,7 @@ export const createHoverifier = ({
         })
     )
     subscription.add(
-        goToDefinitionClicks.subscribe(event => {
+        from(goToDefinitionClicks).subscribe(event => {
             container.update({ clickedGoToDefinition: event.ctrlKey || event.metaKey ? 'new-tab' : 'same-tab' })
         })
     )
@@ -611,10 +623,26 @@ export const createHoverifier = ({
             const subscription = new Subscription()
             const eventWithContextResolver = map((event: MouseEvent) => ({ event, resolveContext }))
             // Broadcast all events from this code view
-            subscription.add(codeMouseMoves.pipe(eventWithContextResolver).subscribe(allCodeMouseMoves))
-            subscription.add(codeMouseOvers.pipe(eventWithContextResolver).subscribe(allCodeMouseOvers))
-            subscription.add(codeClicks.pipe(eventWithContextResolver).subscribe(allCodeClicks))
-            subscription.add(positionJumps.pipe(map(jump => ({ ...jump, resolveContext }))).subscribe(allPositionJumps))
+            subscription.add(
+                from(codeMouseMoves)
+                    .pipe(eventWithContextResolver)
+                    .subscribe(allCodeMouseMoves)
+            )
+            subscription.add(
+                from(codeMouseOvers)
+                    .pipe(eventWithContextResolver)
+                    .subscribe(allCodeMouseOvers)
+            )
+            subscription.add(
+                from(codeClicks)
+                    .pipe(eventWithContextResolver)
+                    .subscribe(allCodeClicks)
+            )
+            subscription.add(
+                from(positionJumps)
+                    .pipe(map(jump => ({ ...jump, resolveContext })))
+                    .subscribe(allPositionJumps)
+            )
             return subscription
         },
         unsubscribe(): void {
