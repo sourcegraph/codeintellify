@@ -10,7 +10,6 @@ import {
     share,
     switchMap,
     takeUntil,
-    tap,
     withLatestFrom,
 } from 'rxjs/operators'
 import { Key } from 'ts-key-enum'
@@ -230,12 +229,7 @@ export const createHoverifier = ({
 
     const allCodeMouseMoves = allPositionsFromEvents.pipe(filter(({ eventType }) => eventType === 'mousemove'))
     const allCodeMouseOvers = allPositionsFromEvents.pipe(filter(({ eventType }) => eventType === 'mouseover'))
-    const allCodeClicks = allPositionsFromEvents.pipe(
-        tap(a => {
-            console.log(a)
-        }),
-        filter(({ eventType }) => eventType === 'click')
-    )
+    const allCodeClicks = allPositionsFromEvents.pipe(filter(({ eventType }) => eventType === 'click'))
 
     const allPositionJumps = new Subject<{
         position: LineOrPositionOrRange

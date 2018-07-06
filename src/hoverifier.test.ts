@@ -16,7 +16,7 @@ import { LOADING } from './types'
 
 describe('Hoverifier', () => {
     const dom = new DOM()
-    // after(dom.cleanup)
+    after(dom.cleanup)
 
     let testcases: BlobProps[] = []
     before(() => {
@@ -107,11 +107,6 @@ describe('Hoverifier', () => {
                 )
 
                 expectObservable(hoverAndDefinitionUpdates).toBe(outputDiagram, outputValues)
-
-                // Assert that the correct token is highlighted
-                const highlighted = blob.element.querySelector('.selection-highlight')
-                chai.expect(highlighted).to.not.equal(null)
-                chai.expect(highlighted!.textContent).to.equal('NewRouter')
             })
         }
     })
