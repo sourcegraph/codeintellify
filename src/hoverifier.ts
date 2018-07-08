@@ -260,7 +260,10 @@ export const createHoverifier = ({
             // When the mouse stopped for TOOLTIP_DISPLAY_DELAY, show tooltip
             // Don't use mouseover for this because it is only fired once per token,
             // not continuously while moving the mouse
-            allCodeMouseMoves.pipe(debounceTime(TOOLTIP_DISPLAY_DELAY), map(() => false))
+            allCodeMouseMoves.pipe(
+                debounceTime(TOOLTIP_DISPLAY_DELAY),
+                map(() => false)
+            )
         ).subscribe(mouseIsMoving => {
             container.update({ mouseIsMoving })
         })
@@ -389,9 +392,14 @@ export const createHoverifier = ({
             // 1. Reset the hover content, so no old hover content is displayed at the new position while fetching
             // 2. Show a loader if the hover fetch hasn't returned after 100ms
             // 3. Show the hover once it returned
-            return merge([undefined], of(LOADING).pipe(delay(LOADER_DELAY), takeUntil(hoverFetch)), hoverFetch).pipe(
-                map(hoverOrError => ({ hoverOrError, codeElement }))
-            )
+            return merge(
+                [undefined],
+                of(LOADING).pipe(
+                    delay(LOADER_DELAY),
+                    takeUntil(hoverFetch)
+                ),
+                hoverFetch
+            ).pipe(map(hoverOrError => ({ hoverOrError, codeElement })))
         }),
         share()
     )
