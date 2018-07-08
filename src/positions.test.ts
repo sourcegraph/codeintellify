@@ -21,7 +21,7 @@ describe('position_listener', () => {
 
     it('can find the position from a mouse event', () => {
         for (const blob of testcases) {
-            const scheduler = new TestScheduler(chai.assert.deepEqual)
+            const scheduler = new TestScheduler((a, b) => chai.assert.deepEqual(a, b))
 
             scheduler.run(({ cold, expectObservable }) => {
                 const diagram = '-ab'
