@@ -306,14 +306,14 @@ export const createHoverifier = ({
         map(({ position, codeElement, ...rest }) => {
             const row = getRowInCodeElement(codeElement, position.line)
             if (!row) {
-                return { target: undefined, codeElement, position, ...rest }
+                return { target: undefined, codeElement, ...rest }
             }
             const cell = row.cells[1]!
             const target = findElementWithOffset(cell, position.character)
             if (!target) {
                 console.warn('Could not find target for position in file', position)
             }
-            return { target, codeElement, position, ...rest }
+            return { target, codeElement, ...rest }
         }),
         filter(propertyIsDefined('target'))
     )
