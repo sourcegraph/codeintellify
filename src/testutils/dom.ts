@@ -70,6 +70,7 @@ export interface BlobProps {
     getCodeElementFromTarget: (target: HTMLElement) => HTMLElement | null
     getCodeElementFromLineNumber: (blob: HTMLElement, line: number) => HTMLElement | null
     getLineNumberFromCodeElement: (target: HTMLElement) => number
+
     insertRow: (text: string) => HTMLElement
 }
 

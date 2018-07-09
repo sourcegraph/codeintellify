@@ -10,7 +10,6 @@ import {
     share,
     switchMap,
     takeUntil,
-    withLatestFrom,
 } from 'rxjs/operators'
 import { Key } from 'ts-key-enum'
 import { Position } from 'vscode-languageserver-types'
@@ -18,7 +17,6 @@ import { asError, ErrorLike } from './errors'
 import { propertyIsDefined } from './helpers'
 import { overlayUIHasContent, scrollIntoCenterIfNeeded } from './helpers'
 import { HoverOverlayProps, isJumpURL } from './HoverOverlay'
-import { calculateOverlayPosition } from './overlay_position'
 import { PositionEvent } from './positions'
 import { createObservableStateContainer } from './state'
 import {
@@ -122,7 +120,10 @@ export interface HoverState {
     /**
      * The props to pass to `HoverOverlay`, or `undefined` if it should not be rendered.
      */
-    hoverOverlayProps?: Pick<HoverOverlayProps, Exclude<keyof HoverOverlayProps, 'linkComponent' | 'logTelemetryEvent'>>
+    hoverOverlayProps?: Pick<
+        HoverOverlayProps,
+        Exclude<keyof HoverOverlayProps, 'linkComponent' | 'logTelemetryEvent' | 'scrollableElements'>
+    >
 
     /**
      * The currently selected position, if any.
@@ -139,7 +140,8 @@ interface InternalHoverifierState {
     hoverOverlayIsFixed: boolean
 
     /** The desired position of the hover overlay */
-    hoverOverlayPosition?: { left: number; top: number }
+    // hoverOverlayPosition?: { left: number; top: number }
+    hoveredTokenClientRect?: ClientRect
 
     /**
      * Whether the user has clicked the go to definition button for the current overlay yet,
@@ -173,7 +175,8 @@ const internalToExternalState = (internalState: InternalHoverifierState): HoverS
     selectedPosition: internalState.selectedPosition,
     hoverOverlayProps: shouldRenderOverlay(internalState)
         ? {
-              overlayPosition: internalState.hoverOverlayPosition,
+              //   overlayPosition: internalState.hoverOverlayPosition,
+              hoveredTokenClientRect: internalState.hoveredTokenClientRect,
               hoverOrError: internalState.hoverOrError,
               definitionURLOrError:
                   // always modify the href, but only show error/loader/not found after the button was clicked
@@ -215,7 +218,8 @@ export const createHoverifier = ({
         definitionURLOrError: undefined,
         hoveredToken: undefined,
         hoverOrError: undefined,
-        hoverOverlayPosition: undefined,
+        // hoverOverlayPosition: undefined,
+        hoveredTokenClientRect: undefined,
         mouseIsMoving: false,
         selectedPosition: undefined,
     })
@@ -331,19 +335,24 @@ export const createHoverifier = ({
     // It's important to add this subscription first so that withLatestFrom will be guaranteed to have gotten the
     // latest hover target by the time componentDidUpdate is triggered from the setState() in the second chain
     subscription.add(
-        // Take every rerender
-        hoverOverlayRerenders
-            .pipe(
-                // with the latest target that came from either a mouseover, click or location change (whatever was the most recent)
-                withLatestFrom(merge(codeMouseOverTargets, codeClickTargets, jumpTargets)),
-                map(([{ hoverOverlayElement, scrollElement }, { target }]) =>
-                    calculateOverlayPosition(scrollElement, target, hoverOverlayElement)
-                )
-            )
-            .subscribe(hoverOverlayPosition => {
-                container.update({ hoverOverlayPosition })
-            })
+        merge(codeMouseOverTargets, codeClickTargets, jumpTargets).subscribe(({ target }) =>
+            container.update({ hoveredTokenClientRect: target.getBoundingClientRect() })
+        )
     )
+    // subscription.add(
+    //     // Take every rerender
+    //     hoverOverlayRerenders
+    //         .pipe(
+    //             // with the latest target that came from either a mouseover, click or location change (whatever was the most recent)
+    //             withLatestFrom(merge(codeMouseOverTargets, codeClickTargets, jumpTargets)),
+    //             map(([{ hoverOverlayElement, scrollElement }, { target }]) =>
+    //                 calculateOverlayPosition(scrollElement, target, hoverOverlayElement)
+    //             )
+    //         )
+    //         .subscribe(hoverOverlayPosition => {
+    //             container.update({ hoverOverlayPosition })
+    //         })
+    // )
 
     /** Emits new positions at which a tooltip needs to be shown from clicks, mouseovers and URL changes. */
     const positions: Observable<{
@@ -411,7 +420,8 @@ export const createHoverifier = ({
                 container.update({
                     hoverOrError,
                     // Reset the hover position, it's gonna be repositioned after the hover was rendered
-                    hoverOverlayPosition: undefined,
+                    // hoverOverlayPosition: undefined,
+                    hoveredTokenClientRect: undefined,
                 })
                 const currentHighlighted = codeElement!.querySelector('.selection-highlight')
                 if (currentHighlighted) {
@@ -541,7 +551,8 @@ export const createHoverifier = ({
             event.preventDefault()
             container.update({
                 hoverOverlayIsFixed: false,
-                hoverOverlayPosition: undefined,
+                // hoverOverlayPosition: undefined,
+                hoveredTokenClientRect: undefined,
                 hoverOrError: undefined,
                 hoveredToken: undefined,
                 definitionURLOrError: undefined,
