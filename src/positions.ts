@@ -1,7 +1,6 @@
 import { fromEvent, merge, Observable } from 'rxjs'
-import { filter, map, share, switchMap, tap } from 'rxjs/operators'
+import { filter, map, switchMap, tap } from 'rxjs/operators'
 import { Position } from 'vscode-languageserver-types'
-
 import { convertCodeCellIdempotent, getTableDataCell, HoveredToken, locateTarget } from './token_position'
 
 export type SupportedMouseEvent = 'click' | 'mousemove' | 'mouseover'
