@@ -7,8 +7,7 @@ export type SupportedMouseEvent = 'click' | 'mousemove' | 'mouseover'
 
 export interface PositionEvent {
     /**
-     * The 1-indexed position at which a new tooltip is to be shown,
-     * or undefined when a target was hovered/clicked that does not correspond to a position (e.g. after the end of the line)
+     * The event object
      */
     event: MouseEvent
     /**
@@ -17,6 +16,7 @@ export interface PositionEvent {
     eventType: SupportedMouseEvent
     /**
      * The position of the token that the event occured at.
+     * or undefined when a target was hovered/clicked that does not correspond to a position (e.g. after the end of the line)
      */
     position: HoveredToken | undefined
     /**
