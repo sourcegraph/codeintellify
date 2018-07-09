@@ -65,7 +65,7 @@ export const findPositionsFromEvents = () => (elements: Observable<HTMLElement>)
         // Find out the position that was hovered over
         map(({ target, codeElement, ...rest }) => {
             const hoveredToken = locateTarget(target, codeElement, false)
-            const position = Position.is(hoveredToken) ? { ...hoveredToken } : undefined
+            const position = Position.is(hoveredToken) ? hoveredToken : undefined
             return { position, codeElement, ...rest }
         })
     )
