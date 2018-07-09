@@ -270,10 +270,8 @@ export const createHoverifier = ({
     )
 
     const codeMouseOverTargets = allCodeMouseOvers.pipe(
-        filter(({ event }) => event.currentTarget !== null),
         map(({ event, ...rest }) => ({
             target: event.target as HTMLElement,
-            codeElement: event.currentTarget as HTMLElement,
             ...rest,
         })),
         debounceTime(50),
@@ -286,7 +284,6 @@ export const createHoverifier = ({
         filter(({ event }) => event.currentTarget !== null),
         map(({ event, ...rest }) => ({
             target: event.target as HTMLElement,
-            codeElement: event.currentTarget as HTMLElement,
             ...rest,
         })),
         share()
@@ -299,11 +296,7 @@ export const createHoverifier = ({
         resolveContext: ContextResolver
     }> = allPositionJumps.pipe(
         // Only use line and character for comparison
-        map(({ position: { line, character }, ...rest }) => ({
-            position: { line, character },
-            eventType: 'locationchange',
-            ...rest,
-        })),
+        map(({ position: { line, character }, ...rest }) => ({ position: { line, character }, ...rest })),
         // Ignore same values
         // It's important to do this before filtering otherwise navigating from
         // a position, to a line-only position, back to the first position would get ignored
