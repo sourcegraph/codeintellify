@@ -415,10 +415,7 @@ export const createHoverifier = ({
                 }
                 // LSP is 0-indexed, the code in the webapp currently is 1-indexed
                 const { line, character } = hoverOrError.range.start
-                const token = getTokenAtPosition(codeElement!, {
-                    line: line + 1,
-                    character: character + 1,
-                })
+                const token = getTokenAtPosition(codeElement!, { line: line + 1, character: character + 1 })
                 if (!token) {
                     return
                 }
@@ -571,9 +568,7 @@ export const createHoverifier = ({
     )
     subscription.add(
         goToDefinitionClicks.subscribe(event => {
-            container.update({
-                clickedGoToDefinition: event.ctrlKey || event.metaKey ? 'new-tab' : 'same-tab',
-            })
+            container.update({ clickedGoToDefinition: event.ctrlKey || event.metaKey ? 'new-tab' : 'same-tab' })
         })
     )
 
