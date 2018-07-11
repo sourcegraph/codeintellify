@@ -15,7 +15,7 @@ describe('can create dom elements from generated code tables', () => {
                 getLineNumberFromCodeElement,
             } = blob
 
-            for (let i = 0; i < 10; i++) {
+            for (let i = 1; i < 10; i++) {
                 const cellFromLine = getCodeElementFromLineNumber(element, i)
                 expect(cellFromLine).to.not.equal(null)
                 const cellFromTarget = getCodeElementFromTarget(cellFromLine!)

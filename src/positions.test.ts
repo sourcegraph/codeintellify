@@ -27,8 +27,8 @@ describe('position_listener', () => {
                 const diagram = '-ab'
 
                 const positions: { [key: string]: Position } = {
-                    a: { line: 4, character: 3 },
-                    b: { line: 17, character: 4 },
+                    a: { line: 5, character: 3 },
+                    b: { line: 18, character: 4 },
                 }
 
                 const tokens: { [key: string]: HoveredToken } = {
@@ -45,7 +45,7 @@ describe('position_listener', () => {
                 }
 
                 const clickedTokens = of(blob.element).pipe(
-                    findPositionsFromEvents(),
+                    findPositionsFromEvents(blob),
                     filter(propertyIsDefined('position')),
                     map(({ position: { line, character, word } }) => ({ line, character, word }))
                 )
