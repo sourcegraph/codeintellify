@@ -4,8 +4,8 @@ import { LineOrPositionOrRange } from './url'
 export interface DOMOptions {
     getCodeElementFromTarget: (target: HTMLElement) => HTMLElement | null
     getCodeElementFromLineNumber: (codeView: HTMLElement, line: number) => HTMLElement | null
-    getLineNumberFromCodeElement: (target: HTMLElement) => number
-    getDiffCodePart?: (target: HTMLElement, content: string) => 'old' | 'new' | undefined
+    getLineNumberFromCodeElement: (codeElement: HTMLElement) => number
+    getDiffCodePart?: (codeElement: HTMLElement) => 'old' | 'new' | undefined
 }
 
 /**
@@ -135,30 +135,6 @@ function consumeNextToken(txt: string): string {
 }
 
 /**
- * Get the all of the text nodes under a given node in the DOM tree.
- *
- * @param node is the node in which you want to get all of the text nodes from it's children
- */
-export const getTextNodes = (node: Node): Node[] => {
-    if (node.childNodes.length === 0 && node.TEXT_NODE === node.nodeType && node.nodeValue) {
-        return [node]
-    }
-
-    const nodes: Node[] = []
-
-    for (const child of Array.from(node.childNodes)) {
-        nodes.push(...getTextNodes(child))
-    }
-
-    return nodes
-}
-
-const getTextContent = (node: Node) =>
-    getTextNodes(node)
-        .map(({ nodeValue }) => nodeValue)
-        .join('')
-
-/**
  * Returns the <span> (descendent of a <td> containing code) which contains text beginning
  * at the specified character offset (1-indexed).
  * Will convert tokens in the code cell if needed.
@@ -210,7 +186,6 @@ export interface HoveredToken {
     line: number
     /** 1-indexed */
     character: number
-    word: string
     part?: 'old' | 'new'
 }
 
@@ -230,16 +205,15 @@ export function locateTarget(
     target: HTMLElement,
     { ignoreFirstChar, getCodeElementFromTarget, getDiffCodePart, getLineNumberFromCodeElement }: LocateTargetOptions
 ): Line | HoveredToken | undefined {
-    const targetContainer = getCodeElementFromTarget(target)
+    const codeElement = getCodeElementFromTarget(target)
 
-    if (!targetContainer) {
+    if (!codeElement) {
         // Make sure we're looking at an element we've annotated line number for (otherwise we have no idea )
         return undefined
     }
 
-    const line = getLineNumberFromCodeElement(targetContainer)
-
-    const part = getDiffCodePart ? getDiffCodePart(targetContainer, getTextContent(targetContainer)) : undefined
+    const line = getLineNumberFromCodeElement(codeElement)
+    const part = getDiffCodePart && getDiffCodePart(codeElement)
 
     let character = 1
     // Iterate recursively over the current target's children until we find the original target;
@@ -274,8 +248,8 @@ export function locateTarget(
         return false
     }
     // Start recursion.
-    if (findOrigTarget(targetContainer)) {
-        return { line, character, word: target.innerText, part }
+    if (findOrigTarget(codeElement)) {
+        return { line, character, part }
     }
     return { line }
 }

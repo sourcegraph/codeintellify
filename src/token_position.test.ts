@@ -1,16 +1,28 @@
 import { CodeViewProps, DOM } from './testutils/dom'
-import {
-    convertNode,
-    findElementWithOffset,
-    getTextNodes,
-    getTokenAtPosition,
-    HoveredToken,
-    locateTarget,
-} from './token_position'
+import { convertNode, findElementWithOffset, getTokenAtPosition, locateTarget } from './token_position'
 
 const { expect } = chai
 
 const tabChar = String.fromCharCode(9)
+
+/**
+ * Get the all of the text nodes under a given node in the DOM tree.
+ *
+ * @param node is the node in which you want to get all of the text nodes from it's children
+ */
+export const getTextNodes = (node: Node): Node[] => {
+    if (node.childNodes.length === 0 && node.TEXT_NODE === node.nodeType && node.nodeValue) {
+        return [node]
+    }
+
+    const nodes: Node[] = []
+
+    for (const child of Array.from(node.childNodes)) {
+        nodes.push(...getTextNodes(child))
+    }
+
+    return nodes
+}
 
 describe('token_positions', () => {
     const dom = new DOM()
@@ -19,35 +31,6 @@ describe('token_positions', () => {
     let testcases: CodeViewProps[] = []
     before(() => {
         testcases = dom.createCodeViews()
-    })
-
-    it('gets the correct text nodes', () => {
-        const elems = [
-            {
-                // Has nodes at multiple depths
-                elem: '<div><span>He</span><span>llo,<span> Wo</span></span><span>rld!</span></div>',
-                nodeValues: ['He', 'llo,', ' Wo', 'rld!'],
-            },
-            {
-                // Has a tab inside a span
-                elem: `<div><span>${tabChar}He</span><span>llo,<span> Wo</span></span><span>rld!</span></div>`,
-                nodeValues: [tabChar + 'He', 'llo,', ' Wo', 'rld!'],
-            },
-            {
-                // Has leading whitespace
-                elem: `${tabChar}<span>He</span><span>llo,<span> Wo</span></span><span>rld!</span>`,
-                nodeValues: [tabChar, 'He', 'llo,', ' Wo', 'rld!'],
-            },
-        ]
-
-        for (const { elem, nodeValues } of elems) {
-            const nodes = getTextNodes(dom.createElementFromString(elem))
-            expect(nodes.length).to.equal(nodeValues.length)
-
-            for (const [i, val] of nodeValues.entries()) {
-                expect(nodes[i].nodeValue).to.equal(val)
-            }
-        }
     })
 
     it('convertNode tokenizes text properly', () => {
@@ -191,13 +174,12 @@ describe('token_positions', () => {
         ]
 
         for (const { element, ...domOptions } of testcases) {
-            for (const { position, token } of positions) {
+            for (const { position } of positions) {
                 const target = getTokenAtPosition(element, position, domOptions)
 
                 const found = locateTarget(target!, domOptions)
 
                 expect(found).to.not.equal(undefined)
-                expect((found as HoveredToken).word).to.equal(token)
             }
         }
     })

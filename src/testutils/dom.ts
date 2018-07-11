@@ -62,8 +62,8 @@ export const wrapCharsInSpans = (line: string) =>
         .map((c, j) => `<span data-char="${j}">${c}</span>`)
         .join('')
 
-const getDiffCodePart = (target: HTMLElement, content: string) => {
-    switch (content.charAt(0)) {
+const getDiffCodePart = (codeElement: HTMLElement): 'new' | 'old' | undefined => {
+    switch (codeElement.textContent!.charAt(0)) {
         case '+':
             return 'new'
         case '-':

@@ -28,7 +28,6 @@ import {
     getCodeElementsInRange,
     getTokenAtPosition,
     HoveredToken,
-    locateTarget,
 } from './token_position'
 import { EMODENOTFOUND, HoverMerged, LOADING } from './types'
 import { FileSpec, LineOrPositionOrRange, RepoSpec, ResolvedRevSpec, RevSpec } from './url'
@@ -318,15 +317,8 @@ export const createHoverifier = ({
                 console.warn('Could not find target for position in file', position)
                 return undefined
             }
-            // TODO locateTarget is purely needed here to get `hoveredToken.part` for diffs
-            //      We should define a function that takes care of _only_ figuring out the `part`
-            //      so we don't have to use locateTarget
-            const hoveredToken = locateTarget(target, { ignoreFirstChar: false, ...dom })
-            if (!Position.is(hoveredToken)) {
-                console.warn('Could not find target for position in file', position)
-                return undefined
-            }
-            return { ...rest, eventType: 'jump' as 'jump', target, position: hoveredToken, codeView }
+            const part = dom.getDiffCodePart && dom.getDiffCodePart(target)
+            return { ...rest, eventType: 'jump' as 'jump', target, position: { ...position, part }, codeView }
         }),
         filter(isDefined)
     )
