@@ -23,7 +23,7 @@ import { PositionEvent, SupportedMouseEvent } from './positions'
 import { createObservableStateContainer } from './state'
 import {
     convertNode,
-    DOMOptions,
+    DOMFunctions,
     findElementWithOffset,
     getCodeElementsInRange,
     getTokenAtPosition,
@@ -55,7 +55,7 @@ interface HoverifierOptions {
 
     hoverOverlayElements: Observable<HTMLElement | null>
 
-    dom: DOMOptions
+    dom: DOMFunctions
 
     /**
      * Called for programmatic navigation (like `history.push()`)

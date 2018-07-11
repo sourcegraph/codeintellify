@@ -1,10 +1,37 @@
 import { Position } from 'vscode-languageserver-types'
 import { LineOrPositionOrRange } from './url'
 
-export interface DOMOptions {
+/**
+ * A collection of methods needed to tell codeintellify how to look at the DOM. These are required for
+ * ensuring that we don't rely on any sort of specific DOM structure.
+ *
+ *
+ */
+export interface DOMFunctions {
+    /**
+     * Get the element containing the code for a line from an event target.
+     * @param target is the event target.
+     * @returns the element containing the code for a line or null if it can't be found. For example, the second <td> inside a <tr> on Sourcegraph and Github.
+     */
     getCodeElementFromTarget: (target: HTMLElement) => HTMLElement | null
+    /**
+     * Get the element containing the code for a line from a code view given a line number.
+     * @param codeView is the code view itself. For example, the <code> element on Sourcegraph or a <table> on GitHub.
+     * @returns the element containing the code for the given line number or null if it can't be found.
+     */
     getCodeElementFromLineNumber: (codeView: HTMLElement, line: number) => HTMLElement | null
+    /**
+     * Gets the line number for a given element containing code for a line.
+     * @param codeElement is the element containing code for a line. When this function is called,
+     * it will be passed the result of either `getCodeElementFromTarget` or `getCodeElementFromLineNumber`.
+     * @returns the line number.
+     */
     getLineNumberFromCodeElement: (codeElement: HTMLElement) => number
+    /**
+     * Determine whether a code element is from the old or new part of a diff or not part of a diff.
+     * @param codeElement is the element containing a line of code.
+     * @returns whether the line is `'old'`, `'new'` or `undefined` if not part of a diff.
+     */
     getDiffCodePart?: (codeElement: HTMLElement) => 'old' | 'new' | undefined
 }
 
@@ -189,7 +216,7 @@ export interface HoveredToken {
     part?: 'old' | 'new'
 }
 
-interface LocateTargetOptions extends DOMOptions {
+interface LocateTargetOptions extends DOMFunctions {
     ignoreFirstChar?: boolean
 }
 
@@ -254,7 +281,7 @@ export function locateTarget(
     return { line }
 }
 
-interface GetCodeElementsInRangeOptions extends DOMOptions {
+interface GetCodeElementsInRangeOptions extends DOMFunctions {
     position?: LineOrPositionOrRange
 }
 
@@ -291,7 +318,7 @@ export const getCodeElementsInRange = (
 export const getTokenAtPosition = (
     codeView: HTMLElement,
     position: Position,
-    options: DOMOptions
+    options: DOMFunctions
 ): HTMLElement | undefined => {
     const codeCell = options.getCodeElementFromLineNumber(codeView, position.line)
     if (!codeCell) {

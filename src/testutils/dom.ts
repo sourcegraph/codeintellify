@@ -1,9 +1,9 @@
 import githubCode from '../../testdata/generated/github.html'
 import sourcegraphCode from '../../testdata/generated/sourcegraph.html'
-import { DOMOptions, getTextNodes } from '../token_position'
+import { DOMFunctions } from '../token_position'
 import { TEST_DATA_REVSPEC } from './rev'
 
-const createElementFromString = (html: string): HTMLElement => {
+const createElementFromString = (html: string): HTMLDivElement => {
     const elem = document.createElement('div')
 
     elem.innerHTML = html
@@ -17,43 +17,30 @@ const createElementFromString = (html: string): HTMLElement => {
     return elem
 }
 
-export const getCharacterWidth = (character: string): number =>
-    createElementFromString(character).getBoundingClientRect().width
+/** Gets all of the text nodes within a given node. Used for testing. */
+export const getTextNodes = (node: Node): Node[] => {
+    if (node.childNodes.length === 0 && node.TEXT_NODE === node.nodeType && node.nodeValue) {
+        return [node]
+    }
 
-export const getCharacterWidthInContainer = (container: HTMLElement, character: string, idx: number): number => {
-    const span = document.createElement('span')
-    span.innerHTML = character
-    span.dataset.char = idx + ''
-    span.dataset.charCode = character.charCodeAt(0) + ''
-    span.style.visibility = 'hidden'
-    span.style.cssFloat = 'left'
-    span.style.height = '0'
+    const nodes: Node[] = []
 
-    container.appendChild(span)
-    const width = span.getBoundingClientRect().width
-    container.removeChild(span)
+    for (const child of Array.from(node.childNodes)) {
+        nodes.push(...getTextNodes(child))
+    }
 
-    return width
+    return nodes
 }
 
-const getCharactersInCell = (cell: HTMLElement) =>
-    Array.from(
-        getTextNodes(cell)
-            .map(node => node.nodeValue)
-            .join('')
-    )
-
-export const getNumberOfCharactersFromCell = (cell: HTMLElement): number => getCharactersInCell(cell).length
-export const getWidthOfCharactersFromCell = (cell: HTMLElement): number =>
-    getCharactersInCell(cell)
-        .map((c, i) => getCharacterWidthInContainer(cell, c, i))
-        .reduce((a, b) => a + b, 0)
-
-export interface CodeViewProps extends DOMOptions {
-    element: HTMLElement
-    injectedElement: HTMLElement
+/** The props used for the generated test cases(e.g. GitHub and Sourcegraph flavored dom). */
+export interface CodeViewProps extends DOMFunctions {
+    /** The code view for the given test case(e.g. a <code> element in Sourcegraph and <table> in GitHub) */
+    codeView: HTMLElement
+    /** The container of the code view. (e.g. The scrollable contaienr in Sourcegraph and a parent <div> in GitHub) */
+    container: HTMLElement
+    /** The revision and repository information for the file used in the generated test cases. */
     revSpec: typeof TEST_DATA_REVSPEC
-
+    /** A helper method for adding rows to the test case. */
     insertRow: (text: string) => HTMLElement
 }
 
@@ -61,6 +48,8 @@ export const wrapCharsInSpans = (line: string) =>
     Array.from(line)
         .map((c, j) => `<span data-char="${j}">${c}</span>`)
         .join('')
+
+// BEGIN setup test cases
 
 const getDiffCodePart = (codeElement: HTMLElement): 'new' | 'old' | undefined => {
     switch (codeElement.textContent!.charAt(0)) {
@@ -123,8 +112,8 @@ const createGitHubCodeView = (): CodeViewProps => {
     }
 
     return {
-        injectedElement: codeView,
-        element: codeView,
+        container: codeView,
+        codeView,
 
         revSpec: TEST_DATA_REVSPEC,
         getCodeElementFromTarget,
@@ -204,9 +193,9 @@ const createSourcegraphCodeView = (): CodeViewProps => {
     }
 
     return {
-        injectedElement: codeView,
+        container: codeView,
 
-        element: codeView.querySelector('code')!,
+        codeView: codeView.querySelector('code')!,
         revSpec: TEST_DATA_REVSPEC,
         getCodeElementFromTarget,
         getCodeElementFromLineNumber,
@@ -231,31 +220,51 @@ const createSourcegraphCodeView = (): CodeViewProps => {
     }
 }
 
+// END setup test cases
+
+/**
+ * DOM is a testing utility class that keeps track of all elements a test suite is adding to the DOM
+ * so that we can clean up after the test suite has finished.
+ */
 export class DOM {
+    /** The inserted nodes. We save them so that we can remove them on cleanup. */
     private nodes = new Set<Element>()
 
+    /**
+     * Creates and inserts the generated test cases into the DOM
+     * @returns the CodeViewProps for the test cases added to the DOM.
+     */
     public createCodeViews(): CodeViewProps[] {
         const codeViews: CodeViewProps[] = [createSourcegraphCodeView(), createGitHubCodeView()]
 
-        for (const { injectedElement } of codeViews) {
-            this.insert(injectedElement)
+        for (const { container } of codeViews) {
+            this.insert(container)
         }
 
         return codeViews
     }
 
-    public createElementFromString(html: string): HTMLElement {
+    /**
+     * Creates a div with some arbitrary content.
+     * @param html the content of the element you wish to create.
+     * @returns the created div.
+     */
+    public createElementFromString(html: string): HTMLDivElement {
         const element = createElementFromString(html)
         this.insert(element)
-        return element as HTMLElement
+        return element as HTMLDivElement
     }
 
+    /**
+     * Removes all nodes that were inserted from the DOM. This should be called after a test suite has ran.
+     */
     public cleanup = (): void => {
         for (const node of this.nodes) {
             document.body.removeChild(node)
         }
     }
 
+    /** The funnel for inserting elements into the DOM so that we know to remove it in `cleanup()`. */
     private insert(node: Element): void {
         document.body.appendChild(node)
 

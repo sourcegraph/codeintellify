@@ -31,8 +31,8 @@ const invalidPosition = ({ line, character }: Position, message: string) =>
  * @param codeViewProps the codeViewProps props from the test cases.
  * @param position the position to click.
  */
-export const clickPositionImpure = ({ element, getCodeElementFromLineNumber }: CodeViewProps, position: Position) => {
-    const line = getCodeElementFromLineNumber(element, position.line)
+export const clickPositionImpure = ({ codeView, getCodeElementFromLineNumber }: CodeViewProps, position: Position) => {
+    const line = getCodeElementFromLineNumber(codeView, position.line)
     if (!line) {
         throw new Error(invalidPosition(position, 'Line not found'))
     }
@@ -72,8 +72,8 @@ export const clickPositionImpure = ({ element, getCodeElementFromLineNumber }: C
  * @param codeViewProps the CodeViewProps from the generated test cases
  * @param position the 0-indexed position to click
  */
-export const clickPosition = ({ element, getCodeElementFromLineNumber }: CodeViewProps, position: Position) => {
-    const line = getCodeElementFromLineNumber(element, position.line)
+export const clickPosition = ({ codeView, getCodeElementFromLineNumber }: CodeViewProps, position: Position) => {
+    const line = getCodeElementFromLineNumber(codeView, position.line)
     if (!line) {
         throw new Error(invalidPosition(position, 'Line not found'))
     }

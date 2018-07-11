@@ -1,8 +1,7 @@
 import { fromEvent, merge, Observable } from 'rxjs'
 import { filter, map, switchMap, tap } from 'rxjs/operators'
 import { Position } from 'vscode-languageserver-types'
-import { convertCodeElementIdempotent, DOMOptions, HoveredToken, locateTarget } from './token_position'
-
+import { convertCodeElementIdempotent, DOMFunctions, HoveredToken, locateTarget } from './token_position'
 export type SupportedMouseEvent = 'click' | 'mousemove' | 'mouseover'
 
 export interface PositionEvent {
@@ -25,7 +24,7 @@ export interface PositionEvent {
     codeView: HTMLElement
 }
 
-export const findPositionsFromEvents = (options: DOMOptions) => (
+export const findPositionsFromEvents = (options: DOMFunctions) => (
     elements: Observable<HTMLElement>
 ): Observable<PositionEvent> =>
     merge(

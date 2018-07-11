@@ -53,7 +53,7 @@ describe('Hoverifier', () => {
                     scrollElement: HTMLElement
                 }>()
 
-                const positionEvents = of(codeView.element).pipe(findPositionsFromEvents(codeView))
+                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
 
                 const subscriptions = new Subscription()
 
