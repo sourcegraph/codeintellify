@@ -49,7 +49,7 @@ describe('Hoverifier', () => {
 
                 const positionJumps = new Subject<{
                     position: Position
-                    codeElement: HTMLElement
+                    codeView: HTMLElement
                     scrollElement: HTMLElement
                 }>()
 

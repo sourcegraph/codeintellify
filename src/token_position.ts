@@ -3,7 +3,7 @@ import { LineOrPositionOrRange } from './url'
 
 export interface DOMOptions {
     getCodeElementFromTarget: (target: HTMLElement) => HTMLElement | null
-    getCodeElementFromLineNumber: (blob: HTMLElement, line: number) => HTMLElement | null
+    getCodeElementFromLineNumber: (codeView: HTMLElement, line: number) => HTMLElement | null
     getLineNumberFromCodeElement: (target: HTMLElement) => number
     getDiffCodePart?: (target: HTMLElement, content: string) => 'old' | 'new' | undefined
 }
@@ -315,11 +315,11 @@ export const getCodeElementsInRange = (
  * @param position 1-indexed position
  */
 export const getTokenAtPosition = (
-    codeElement: HTMLElement,
+    codeView: HTMLElement,
     position: Position,
     options: DOMOptions
 ): HTMLElement | undefined => {
-    const codeCell = options.getCodeElementFromLineNumber(codeElement, position.line)
+    const codeCell = options.getCodeElementFromLineNumber(codeView, position.line)
     if (!codeCell) {
         return undefined
     }

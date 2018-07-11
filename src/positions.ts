@@ -20,9 +20,9 @@ export interface PositionEvent {
      */
     position: HoveredToken | undefined
     /**
-     * The current code element.
+     * The current code view.
      */
-    codeElement: HTMLElement
+    codeView: HTMLElement
 }
 
 export const findPositionsFromEvents = (options: DOMOptions) => (
@@ -36,13 +36,13 @@ export const findPositionsFromEvents = (options: DOMOptions) => (
             map(({ event, ...rest }) => ({
                 event,
                 target: event.target as HTMLElement,
-                codeElement: event.currentTarget as HTMLElement,
+                codeView: event.currentTarget as HTMLElement,
                 ...rest,
             })),
             // SIDE EFFECT (but idempotent)
             // If not done for this cell, wrap the tokens in this cell to enable finding the precise positioning.
             // This may be possible in other ways (looking at mouse position and rendering characters), but it works
-            tap(({ target, codeElement }) => {
+            tap(({ target }) => {
                 const code = options.getCodeElementFromTarget(target)
                 if (code) {
                     convertCodeElementIdempotent(code)
@@ -59,15 +59,15 @@ export const findPositionsFromEvents = (options: DOMOptions) => (
             map(({ event, ...rest }) => ({
                 event,
                 target: event.target as HTMLElement,
-                codeElement: event.currentTarget as HTMLElement,
+                codeView: event.currentTarget as HTMLElement,
                 ...rest,
             }))
         )
     ).pipe(
         // Find out the position that was hovered over
-        map(({ target, codeElement, ...rest }) => {
+        map(({ target, codeView, ...rest }) => {
             const hoveredToken = locateTarget(target, options)
             const position = Position.is(hoveredToken) ? hoveredToken : undefined
-            return { position, codeElement, ...rest }
+            return { position, codeView, ...rest }
         })
     )
