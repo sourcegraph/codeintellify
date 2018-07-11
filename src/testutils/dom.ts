@@ -1,20 +1,7 @@
-// import githubCode from '../../testdata/generated/github.html'
+import githubCode from '../../testdata/generated/github.html'
 import sourcegraphCode from '../../testdata/generated/sourcegraph.html'
+import { DOMOptions, getTextNodes } from '../token_position'
 import { TEST_DATA_REVSPEC } from './rev'
-
-export const getTextNodes = (node: Node): Node[] => {
-    if (node.childNodes.length === 0 && node.TEXT_NODE === node.nodeType && node.nodeValue) {
-        return [node]
-    }
-
-    const nodes: Node[] = []
-
-    for (const child of Array.from(node.childNodes)) {
-        nodes.push(...getTextNodes(child))
-    }
-
-    return nodes
-}
 
 const createElementFromString = (html: string): HTMLElement => {
     const elem = document.createElement('div')
@@ -62,14 +49,11 @@ export const getWidthOfCharactersFromCell = (cell: HTMLElement): number =>
         .map((c, i) => getCharacterWidthInContainer(cell, c, i))
         .reduce((a, b) => a + b, 0)
 
-export interface BlobProps {
+export interface BlobProps extends DOMOptions {
     element: HTMLElement
     injectedElement: HTMLElement
     revSpec: typeof TEST_DATA_REVSPEC
 
-    getCodeElementFromTarget: (target: HTMLElement) => HTMLElement | null
-    getCodeElementFromLineNumber: (blob: HTMLElement, line: number) => HTMLElement | null
-    getLineNumberFromCodeElement: (target: HTMLElement) => number
     insertRow: (text: string) => HTMLElement
 }
 
@@ -78,81 +62,96 @@ export const wrapCharsInSpans = (line: string) =>
         .map((c, j) => `<span data-char="${j}">${c}</span>`)
         .join('')
 
-// const createGitHubBlob = (): BlobProps => {
-//     const blob = document.createElement('div')
+const getDiffCodePart = (target: HTMLElement, content: string) => {
+    switch (content.charAt(0)) {
+        case '+':
+            return 'new'
+        case '-':
+            return 'old'
+        default:
+            return undefined
+    }
+}
 
-//     blob.innerHTML = githubCode
-//     blob.style.clear = 'both'
+const createGitHubBlob = (): BlobProps => {
+    const blob = document.createElement('div')
 
-//     const getCodeElementFromTarget = (target: HTMLElement): HTMLElement | null => {
-//         const row = target.closest('tr')
-//         if (!row) {
-//             return null
-//         }
+    blob.innerHTML = githubCode
+    blob.style.clear = 'both'
 
-//         const codeCell = row.children.item(1) as HTMLElement
+    const getCodeElementFromTarget = (target: HTMLElement): HTMLElement | null => {
+        const row = target.closest('tr')
+        if (!row) {
+            return null
+        }
 
-//         if (!codeCell.classList.contains('blob-code')) {
-//             // Line element mouse overs probably
-//             return null
-//         }
+        const codeCell = row.children.item(1) as HTMLElement
 
-//         return codeCell
-//     }
+        if (!codeCell.classList.contains('blob-code')) {
+            // Line element mouse overs probably
+            return null
+        }
 
-//     const getCodeElementFromLineNumber = (b: HTMLElement, line: number): HTMLElement | null => {
-//         const numCell = b.querySelector(`[data-line-number="${line + 1}"]`)
-//         if (!numCell) {
-//             return null
-//         }
+        return codeCell
+    }
 
-//         const row = numCell.closest('tr') as HTMLElement
-//         if (!row) {
-//             return row
-//         }
+    const getCodeElementFromLineNumber = (b: HTMLElement, line: number): HTMLElement | null => {
+        const numCell = b.querySelector(`[data-line-number="${line}"]`)
+        if (!numCell) {
+            return null
+        }
 
-//         return row.children.item(1) as HTMLElement | null
-//     }
+        const row = numCell.closest('tr') as HTMLElement
+        if (!row) {
+            return row
+        }
 
-//     const getLineNumberFromCodeElement = (codeCell: HTMLElement): number => {
-//         const row = codeCell.closest('tr')
-//         if (!row) {
-//             return -1
-//         }
-//         const numCell = row.children.item(0) as HTMLElement
-//         if (!numCell || (numCell && !numCell.dataset.lineNumber)) {
-//             return -1
-//         }
+        return row.children.item(1) as HTMLElement | null
+    }
 
-//         return parseInt(numCell.dataset.lineNumber as string, 10) - 1
-//     }
+    const getLineNumberFromCodeElement = (codeCell: HTMLElement): number => {
+        const row = codeCell.closest('tr')
+        if (!row) {
+            return -1
+        }
+        const numCell = row.children.item(0) as HTMLElement
+        if (!numCell || (numCell && !numCell.dataset.lineNumber)) {
+            return -1
+        }
 
-//     return {
-//         element: blob,
-//         revSpec: TEST_DATA_REVSPEC,
-//         getCodeElementFromTarget,
-//         getCodeElementFromLineNumber,
-//         getLineNumberFromCodeElement,
-//         insertRow: (text: string) => {
-//             const lastRow = blob.querySelector('tbody tr:last-of-type')!
+        return parseInt(numCell.dataset.lineNumber as string, 10)
+    }
 
-//             const node = lastRow.cloneNode(true) as HTMLElement
-//             const line = parseInt((lastRow.children.item(0) as HTMLElement).dataset.lineNumber as string, 10) + 1
+    return {
+        injectedElement: blob,
+        element: blob,
 
-//             const lineNode = node.children.item(0)! as HTMLElement
-//             lineNode.id = `L${line}`
-//             lineNode.dataset.lineNumber = line.toString()
+        revSpec: TEST_DATA_REVSPEC,
+        getCodeElementFromTarget,
+        getCodeElementFromLineNumber,
+        getLineNumberFromCodeElement,
+        getDiffCodePart,
 
-//             const codeNode = node.children.item(1)! as HTMLElement
-//             codeNode.id = `LC${line}`
-//             codeNode.innerHTML = wrapCharsInSpans(text)
+        insertRow: (text: string) => {
+            const lastRow = blob.querySelector('tbody tr:last-of-type')!
 
-//             blob.querySelector('tbody')!.appendChild(node)
+            const node = lastRow.cloneNode(true) as HTMLElement
+            const line = parseInt((lastRow.children.item(0) as HTMLElement).dataset.lineNumber as string, 10) + 1
 
-//             return node
-//         },
-//     }
-// }
+            const lineNode = node.children.item(0)! as HTMLElement
+            lineNode.id = `L${line}`
+            lineNode.dataset.lineNumber = line.toString()
+
+            const codeNode = node.children.item(1)! as HTMLElement
+            codeNode.id = `LC${line}`
+            codeNode.innerHTML = wrapCharsInSpans(text)
+
+            blob.querySelector('tbody')!.appendChild(node)
+
+            return node
+        },
+    }
+}
 
 const createSourcegraphBlob = (): BlobProps => {
     const blob = document.createElement('div')
@@ -177,7 +176,7 @@ const createSourcegraphBlob = (): BlobProps => {
     }
 
     const getCodeElementFromLineNumber = (b: HTMLElement, line: number): HTMLElement | null => {
-        const numCell = b.querySelector(`[data-line="${line + 1}"]`)
+        const numCell = b.querySelector(`[data-line="${line}"]`)
         if (!numCell) {
             return null
         }
@@ -201,9 +200,7 @@ const createSourcegraphBlob = (): BlobProps => {
             return -1
         }
 
-        // data-line - 1 because 0-based in LSP
-        // https://sourcegraph.com/github.com/Microsoft/vscode-languageserver-node/-/blob/types/src/main.ts#L20:5
-        return parseInt(numCell.dataset.line as string, 10) - 1
+        return parseInt(numCell.dataset.line as string, 10)
     }
 
     return {
@@ -214,6 +211,7 @@ const createSourcegraphBlob = (): BlobProps => {
         getCodeElementFromTarget,
         getCodeElementFromLineNumber,
         getLineNumberFromCodeElement,
+        getDiffCodePart,
         insertRow: (text: string) => {
             const lastRow = blob.querySelector('tbody tr:last-of-type')!
 
@@ -237,7 +235,7 @@ export class DOM {
     private nodes = new Set<Element>()
 
     public createBlobs(): BlobProps[] {
-        const blobs: BlobProps[] = [createSourcegraphBlob() /*, createGitHubBlob() */]
+        const blobs: BlobProps[] = [createSourcegraphBlob(), createGitHubBlob()]
 
         for (const { injectedElement } of blobs) {
             this.insert(injectedElement)

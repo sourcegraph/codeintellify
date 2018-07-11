@@ -1,16 +1,23 @@
 import { Position } from 'vscode-languageserver-types'
 import { LineOrPositionOrRange } from './url'
 
+export interface DOMOptions {
+    getCodeElementFromTarget: (target: HTMLElement) => HTMLElement | null
+    getCodeElementFromLineNumber: (blob: HTMLElement, line: number) => HTMLElement | null
+    getLineNumberFromCodeElement: (target: HTMLElement) => number
+    getDiffCodePart?: (target: HTMLElement, content: string) => 'old' | 'new' | undefined
+}
+
 /**
  * Like `convertNode`, but idempotent.
  * The CSS class `annotated` is used to check if the cell is already converted.
  *
  * @param cell The code `<td>` to convert.
  */
-export function convertCodeCellIdempotent(cell: HTMLTableCellElement): void {
-    if (cell && !cell.classList.contains('annotated')) {
-        convertNode(cell)
-        cell.classList.add('annotated')
+export function convertCodeElementIdempotent(element: HTMLElement): void {
+    if (element && !element.classList.contains('annotated')) {
+        convertNode(element)
+        element.classList.add('annotated')
     }
 }
 
@@ -128,31 +135,40 @@ function consumeNextToken(txt: string): string {
 }
 
 /**
- * getTableDataCell attempts to find the <td> element nearest in ancestry to
- * target that is a parent of target and a child of boundary.
+ * Get the all of the text nodes under a given node in the DOM tree.
+ *
+ * @param node is the node in which you want to get all of the text nodes from it's children
  */
-export function getTableDataCell(target: HTMLElement, boundary: HTMLElement): HTMLTableDataCellElement | undefined {
-    while (target && target.tagName !== 'TD' && target.tagName !== 'BODY' && target !== boundary) {
-        // Find ancestor which wraps the whole line of code, not just the target token.
-        target = target.parentNode as HTMLElement
+export const getTextNodes = (node: Node): Node[] => {
+    if (node.childNodes.length === 0 && node.TEXT_NODE === node.nodeType && node.nodeValue) {
+        return [node]
     }
-    if (target.tagName === 'TD' && target !== boundary) {
-        return target as HTMLTableDataCellElement
+
+    const nodes: Node[] = []
+
+    for (const child of Array.from(node.childNodes)) {
+        nodes.push(...getTextNodes(child))
     }
-    return undefined
+
+    return nodes
 }
+
+const getTextContent = (node: Node) =>
+    getTextNodes(node)
+        .map(({ nodeValue }) => nodeValue)
+        .join('')
 
 /**
  * Returns the <span> (descendent of a <td> containing code) which contains text beginning
  * at the specified character offset (1-indexed).
  * Will convert tokens in the code cell if needed.
  *
- * @param cell the <td> containing syntax highlighted code
- * @param offset character offset
+ * @param codeElement the element containing syntax highlighted code
+ * @param offset character offset (1-indexed)
  */
-export function findElementWithOffset(cell: HTMLTableCellElement, offset: number): HTMLElement | undefined {
+export function findElementWithOffset(codeElement: HTMLElement, offset: number): HTMLElement | undefined {
     // Without being converted first, finding the position is inaccurate
-    convertCodeCellIdempotent(cell)
+    convertCodeElementIdempotent(codeElement)
 
     let currOffset = 0
     const walkNode = (currNode: HTMLElement): HTMLElement | undefined => {
@@ -161,7 +177,7 @@ export function findElementWithOffset(cell: HTMLTableCellElement, offset: number
             const child = currNode.childNodes[i]
             switch (child.nodeType) {
                 case Node.TEXT_NODE:
-                    if (currOffset + child.textContent!.length >= offset) {
+                    if (currOffset < offset && currOffset + child.textContent!.length >= offset) {
                         return currNode
                     }
                     currOffset += child.textContent!.length
@@ -177,7 +193,7 @@ export function findElementWithOffset(cell: HTMLTableCellElement, offset: number
         }
         return undefined
     }
-    return walkNode(cell)
+    return walkNode(codeElement)
 }
 
 /**
@@ -198,6 +214,10 @@ export interface HoveredToken {
     part?: 'old' | 'new'
 }
 
+interface LocateTargetOptions extends DOMOptions {
+    ignoreFirstChar?: boolean
+}
+
 /**
  * Determines the line and character offset for some source code, identified by its HTMLElement wrapper.
  * It works by traversing the DOM until the HTMLElement's TD ancestor. Once the ancestor is found, we traverse the DOM again
@@ -208,47 +228,30 @@ export interface HoveredToken {
  */
 export function locateTarget(
     target: HTMLElement,
-    boundary: HTMLElement,
-    ignoreFirstChar = false
+    { ignoreFirstChar, getCodeElementFromTarget, getDiffCodePart, getLineNumberFromCodeElement }: LocateTargetOptions
 ): Line | HoveredToken | undefined {
-    const origTarget = target
-    while (target && target.tagName !== 'TD' && target.tagName !== 'BODY' && target !== boundary) {
-        // Find ancestor which wraps the whole line of code, not just the target token.
-        target = target.parentNode as HTMLElement
-    }
-    if (!target || target.tagName !== 'TD' || target === boundary) {
+    const targetContainer = getCodeElementFromTarget(target)
+
+    if (!targetContainer) {
         // Make sure we're looking at an element we've annotated line number for (otherwise we have no idea )
         return undefined
     }
 
-    let lineElement: HTMLElement
-    if (target.classList.contains('line')) {
-        lineElement = target
-    } else if (target.previousElementSibling && (target.previousElementSibling as HTMLElement).dataset.line) {
-        lineElement = target.previousElementSibling as HTMLTableDataCellElement
-    } else if (
-        target.previousElementSibling &&
-        target.previousElementSibling.previousElementSibling &&
-        (target.previousElementSibling.previousElementSibling as HTMLElement).dataset.line
-    ) {
-        lineElement = target.previousElementSibling.previousElementSibling as HTMLTableDataCellElement
-    } else {
-        lineElement = target.parentElement as HTMLTableRowElement
-    }
-    if (!lineElement || !lineElement.dataset.line) {
-        return undefined
-    }
-    const line = parseInt(lineElement.dataset.line!, 10)
-    const part = lineElement.dataset.part as 'old' | 'new' | undefined
+    const line = getLineNumberFromCodeElement(targetContainer)
+
+    const part = getDiffCodePart ? getDiffCodePart(targetContainer, getTextContent(targetContainer)) : undefined
 
     let character = 1
     // Iterate recursively over the current target's children until we find the original target;
     // count characters along the way. Return true if the original target is found.
     function findOrigTarget(root: HTMLElement): boolean {
+        if (root === target) {
+            return true
+        }
         // tslint:disable-next-line
         for (let i = 0; i < root.childNodes.length; ++i) {
             const child = root.childNodes[i] as HTMLElement
-            if (child === origTarget) {
+            if (child === target) {
                 return true
             }
             if (child.children === undefined) {
@@ -271,62 +274,55 @@ export function locateTarget(
         return false
     }
     // Start recursion.
-    if (findOrigTarget(target)) {
-        return { line, character, word: origTarget.innerText, part }
+    if (findOrigTarget(targetContainer)) {
+        return { line, character, word: target.innerText, part }
     }
     return { line }
 }
 
-/**
- * @param codeElement The `<code>` element
- * @param line 1-indexed line number
- * @return The `<tr>` element
- */
-export const getRowInCodeElement = (codeElement: HTMLElement, line: number): HTMLTableRowElement | undefined => {
-    const table = codeElement.firstElementChild as HTMLTableElement
-    return table.rows[line - 1]
+interface GetCodeElementsInRangeOptions extends DOMOptions {
+    position?: LineOrPositionOrRange
 }
 
-/**
- * Returns a list of `<tr>` elements that are contained in the given range
- *
- * @param position 1-indexed line, position or inclusive range
- */
-export const getRowsInRange = (
+export const getCodeElementsInRange = (
     codeElement: HTMLElement,
-    position?: LineOrPositionOrRange
+    { position, getCodeElementFromLineNumber }: GetCodeElementsInRangeOptions
 ): {
     /** 1-indexed line number */
     line: number
-    /** The `<tr>` element */
-    element: HTMLTableRowElement
+    /** The element containing the code */
+    element: HTMLElement
 }[] => {
     if (!position || position.line === undefined) {
         return []
     }
-    const tableElement = codeElement.firstElementChild as HTMLTableElement
-    const rows: { line: number; element: HTMLTableRowElement }[] = []
+
+    const elements: { line: number; element: HTMLElement }[] = []
     for (let line = position.line; line <= (position.endLine || position.line); line++) {
-        const element = tableElement.rows[line - 1]
+        const element = getCodeElementFromLineNumber(codeElement, position.line)
         if (!element) {
             break
         }
-        rows.push({ line, element })
+        elements.push({ line, element })
     }
-    return rows
+    return elements
 }
 
 /**
- * Returns the token `<span>` element in a `<code>` element for a given 1-indexed position.
+ * Returns the token `<span>` element in a code view for a given 1-indexed position.
  *
- * @param codeElement The `<code>` element
+ * @param codeView The code view
  * @param position 1-indexed position
  */
-export const getTokenAtPosition = (codeElement: HTMLElement, position: Position): HTMLElement | undefined => {
-    const row = getRowInCodeElement(codeElement, position.line)
-    if (!row) {
+export const getTokenAtPosition = (
+    codeElement: HTMLElement,
+    position: Position,
+    options: DOMOptions
+): HTMLElement | undefined => {
+    const codeCell = options.getCodeElementFromLineNumber(codeElement, position.line)
+    if (!codeCell) {
         return undefined
     }
-    const [, codeCell] = row.cells
+
     return findElementWithOffset(codeCell, position.character)
 }

@@ -23,9 +23,9 @@ import { PositionEvent, SupportedMouseEvent } from './positions'
 import { createObservableStateContainer } from './state'
 import {
     convertNode,
+    DOMOptions,
     findElementWithOffset,
-    getRowInCodeElement,
-    getRowsInRange,
+    getCodeElementsInRange,
     getTokenAtPosition,
     HoveredToken,
     locateTarget,
@@ -55,6 +55,8 @@ interface HoverifierOptions {
     closeButtonClicks: Observable<MouseEvent>
 
     hoverOverlayElements: Observable<HTMLElement | null>
+
+    dom: DOMOptions
 
     /**
      * Called for programmatic navigation (like `history.push()`)
@@ -209,6 +211,7 @@ export const createHoverifier = ({
     fetchHover,
     fetchJumpURL,
     logTelemetryEvent,
+    dom,
 }: HoverifierOptions): Hoverifier => {
     // Internal state that is not exposed to the caller
     // Shared between all hoverified code views
@@ -306,11 +309,10 @@ export const createHoverifier = ({
         // Ignore undefined or partial positions (e.g. line only)
         filter((jump): jump is typeof jump & { position: Position } => Position.is(jump.position)),
         map(({ position, codeElement, ...rest }) => {
-            const row = getRowInCodeElement(codeElement, position.line)
-            if (!row) {
+            const cell = dom.getCodeElementFromLineNumber(codeElement, position.line)
+            if (!cell) {
                 return undefined
             }
-            const cell = row.cells[1]!
             const target = findElementWithOffset(cell, position.character)
             if (!target) {
                 console.warn('Could not find target for position in file', position)
@@ -319,7 +321,7 @@ export const createHoverifier = ({
             // TODO locateTarget is purely needed here to get `hoveredToken.part` for diffs
             //      We should define a function that takes care of _only_ figuring out the `part`
             //      so we don't have to use locateTarget
-            const hoveredToken = locateTarget(target, codeElement, false)
+            const hoveredToken = locateTarget(target, { ignoreFirstChar: false, ...dom })
             if (!Position.is(hoveredToken)) {
                 console.warn('Could not find target for position in file', position)
                 return undefined
@@ -410,7 +412,7 @@ export const createHoverifier = ({
                 }
                 // LSP is 0-indexed, the code in the webapp currently is 1-indexed
                 const { line, character } = hoverOrError.range.start
-                const token = getTokenAtPosition(codeElement!, { line: line + 1, character: character + 1 })
+                const token = getTokenAtPosition(codeElement!, { line: line + 1, character: character + 1 }, dom)
                 if (!token) {
                     return
                 }
@@ -541,9 +543,9 @@ export const createHoverifier = ({
                 // Remember active position in state for blame and range expansion
                 selectedPosition: position,
             })
-            const rows = getRowsInRange(codeElement, position)
+            const rows = getCodeElementsInRange(codeElement, { position, ...dom })
             for (const { element } of rows) {
-                convertNode(element.cells[1]!)
+                convertNode(element)
             }
             // Scroll into view
             if (rows.length > 0) {

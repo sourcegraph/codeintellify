@@ -33,6 +33,7 @@ describe('Hoverifier', () => {
 
             scheduler.run(({ cold, expectObservable }) => {
                 const hoverifier = createHoverifier({
+                    dom: blob,
                     closeButtonClicks: new Observable<MouseEvent>(),
                     goToDefinitionClicks: new Observable<MouseEvent>(),
                     hoverOverlayElements: of(null),
@@ -52,7 +53,7 @@ describe('Hoverifier', () => {
                     scrollElement: HTMLElement
                 }>()
 
-                const positionEvents = of(blob.element).pipe(findPositionsFromEvents())
+                const positionEvents = of(blob.element).pipe(findPositionsFromEvents(blob))
 
                 const subscriptions = new Subscription()
 
@@ -101,7 +102,7 @@ describe('Hoverifier', () => {
                 // Click https://sourcegraph.sgdev.org/github.com/gorilla/mux@cb4698366aa625048f3b815af6a0dea8aef9280a/-/blob/mux.go#L24:6
                 cold(inputDiagram).subscribe(() =>
                     clickPositionImpure(blob, {
-                        line: 23,
+                        line: 24,
                         character: 6,
                     })
                 )
