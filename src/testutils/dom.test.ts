@@ -6,14 +6,14 @@ describe('can create dom elements from generated code tables', () => {
     const dom = new DOM()
     after(dom.cleanup)
 
-    it('can create the blob test cases and their helper function work', () => {
-        for (const blob of dom.createBlobs()) {
+    it('can create the code view test cases and their helper function work', () => {
+        for (const codeView of dom.createCodeViews()) {
             const {
                 element,
                 getCodeElementFromTarget,
                 getCodeElementFromLineNumber,
                 getLineNumberFromCodeElement,
-            } = blob
+            } = codeView
 
             for (let i = 1; i < 10; i++) {
                 const cellFromLine = getCodeElementFromLineNumber(element, i)

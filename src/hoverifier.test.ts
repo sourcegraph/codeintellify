@@ -9,7 +9,7 @@ import { propertyIsDefined } from './helpers'
 import { createHoverifier, LOADER_DELAY, TOOLTIP_DISPLAY_DELAY } from './hoverifier'
 import { HoverOverlayProps } from './HoverOverlay'
 import { findPositionsFromEvents } from './positions'
-import { BlobProps, DOM } from './testutils/dom'
+import { CodeViewProps, DOM } from './testutils/dom'
 import { createHoverMerged, createStubHoverFetcher, createStubJumpURLFetcher } from './testutils/lsp'
 import { clickPositionImpure } from './testutils/mouse'
 import { LOADING } from './types'
@@ -18,13 +18,13 @@ describe('Hoverifier', () => {
     const dom = new DOM()
     after(dom.cleanup)
 
-    let testcases: BlobProps[] = []
+    let testcases: CodeViewProps[] = []
     before(() => {
-        testcases = dom.createBlobs()
+        testcases = dom.createCodeViews()
     })
 
     it('emits loading and then state on click events', () => {
-        for (const blob of testcases) {
+        for (const codeView of testcases) {
             const scheduler = new TestScheduler((a, b) => chai.assert.deepEqual(a, b))
 
             const delayTime = LOADER_DELAY + 100
@@ -33,7 +33,7 @@ describe('Hoverifier', () => {
 
             scheduler.run(({ cold, expectObservable }) => {
                 const hoverifier = createHoverifier({
-                    dom: blob,
+                    dom: codeView,
                     closeButtonClicks: new Observable<MouseEvent>(),
                     goToDefinitionClicks: new Observable<MouseEvent>(),
                     hoverOverlayElements: of(null),
@@ -53,7 +53,7 @@ describe('Hoverifier', () => {
                     scrollElement: HTMLElement
                 }>()
 
-                const positionEvents = of(blob.element).pipe(findPositionsFromEvents(blob))
+                const positionEvents = of(codeView.element).pipe(findPositionsFromEvents(codeView))
 
                 const subscriptions = new Subscription()
 
@@ -62,7 +62,7 @@ describe('Hoverifier', () => {
                     hoverifier.hoverify({
                         positionEvents,
                         positionJumps,
-                        resolveContext: () => blob.revSpec,
+                        resolveContext: () => codeView.revSpec,
                     })
                 )
 
@@ -101,7 +101,7 @@ describe('Hoverifier', () => {
 
                 // Click https://sourcegraph.sgdev.org/github.com/gorilla/mux@cb4698366aa625048f3b815af6a0dea8aef9280a/-/blob/mux.go#L24:6
                 cold(inputDiagram).subscribe(() =>
-                    clickPositionImpure(blob, {
+                    clickPositionImpure(codeView, {
                         line: 24,
                         character: 6,
                     })
