@@ -35,19 +35,17 @@ describe('position_listener', () => {
                     a: {
                         line: 5,
                         character: 1,
-                        word: 'package',
                     },
                     b: {
                         line: 18,
                         character: 2,
-                        word: 'ErrMethodMismatch',
                     },
                 }
 
                 const clickedTokens = of(codeView.element).pipe(
                     findPositionsFromEvents(codeView),
                     filter(propertyIsDefined('position')),
-                    map(({ position: { line, character, word } }) => ({ line, character, word }))
+                    map(({ position: { line, character } }) => ({ line, character }))
                 )
 
                 cold<Position>(diagram, positions).subscribe(position => clickPositionImpure(codeView, position))
