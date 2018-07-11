@@ -7,16 +7,16 @@ describe('can create dom elements from generated code tables', () => {
     after(dom.cleanup)
 
     it('can create the code view test cases and their helper function work', () => {
-        for (const codeView of dom.createCodeViews()) {
+        for (const codeViewProps of dom.createCodeViews()) {
             const {
-                element,
+                codeView,
                 getCodeElementFromTarget,
                 getCodeElementFromLineNumber,
                 getLineNumberFromCodeElement,
-            } = codeView
+            } = codeViewProps
 
             for (let i = 1; i < 10; i++) {
-                const cellFromLine = getCodeElementFromLineNumber(element, i)
+                const cellFromLine = getCodeElementFromLineNumber(codeView, i)
                 expect(cellFromLine).to.not.equal(null)
                 const cellFromTarget = getCodeElementFromTarget(cellFromLine!)
                 expect(cellFromTarget).to.equal(cellFromLine)

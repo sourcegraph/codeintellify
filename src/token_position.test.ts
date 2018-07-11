@@ -1,5 +1,7 @@
+import { Position } from 'vscode-languageserver-types'
+
 import { CodeViewProps, DOM } from './testutils/dom'
-import { convertNode, findElementWithOffset, getTokenAtPosition, locateTarget } from './token_position'
+import { convertNode, findElementWithOffset, getTokenAtPosition, HoveredToken, locateTarget } from './token_position'
 
 const { expect } = chai
 
@@ -153,9 +155,9 @@ describe('token_positions', () => {
             },
         ]
 
-        for (const { element, ...domOptions } of testcases) {
+        for (const { codeView, ...domOptions } of testcases) {
             for (const { token, position } of tokens) {
-                const found = getTokenAtPosition(element, position, domOptions)
+                const found = getTokenAtPosition(codeView, position, domOptions)
 
                 expect(found).to.not.equal(undefined)
                 expect(found!.textContent).to.equal(token)
@@ -164,22 +166,32 @@ describe('token_positions', () => {
     })
 
     it('locateTarget finds the correct token for a target', () => {
-        const positions = [
-            { position: { line: 24, character: 6 }, token: 'NewRouter' },
-            { position: { line: 7, character: 3 }, token: 'import' },
-            { position: { line: 154, character: 2 }, token: 'if' },
-            { position: { line: 257, character: 5 }, token: '=' },
-            { position: { line: 121, character: 9 }, token: '*' },
-            { position: { line: 128, character: 8 }, token: ':' },
+        const positions: {
+            /** A position within the expected token. */
+            atPosition: Position
+            /** The position that locateTarget found. If it works correctly, it is the position of the first character in the token. */
+            foundPosition: Position
+        }[] = [
+            { atPosition: { line: 24, character: 8 }, foundPosition: { line: 24, character: 6 } }, // NewRouter
+            { atPosition: { line: 7, character: 3 }, foundPosition: { line: 7, character: 1 } }, // import
+            { atPosition: { line: 154, character: 3 }, foundPosition: { line: 154, character: 2 } }, // if
+            { atPosition: { line: 257, character: 5 }, foundPosition: { line: 257, character: 5 } }, // =
+            { atPosition: { line: 121, character: 9 }, foundPosition: { line: 121, character: 9 } }, // *
+            { atPosition: { line: 128, character: 8 }, foundPosition: { line: 128, character: 8 } }, // :
         ]
 
-        for (const { element, ...domOptions } of testcases) {
-            for (const { position } of positions) {
-                const target = getTokenAtPosition(element, position, domOptions)
+        for (const { codeView, ...domOptions } of testcases) {
+            for (const { atPosition, foundPosition } of positions) {
+                const target = getTokenAtPosition(codeView, atPosition, domOptions)
 
                 const found = locateTarget(target!, domOptions)
 
                 expect(found).to.not.equal(undefined)
+
+                const token = found as HoveredToken
+
+                expect(token.line).to.equal(foundPosition.line)
+                expect(token.character).to.equal(foundPosition.character)
             }
         }
     })
