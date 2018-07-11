@@ -17,7 +17,8 @@ export const isDefined = <T>(val: T): val is NonNullable<T> => val !== undefined
  */
 export const propertyIsDefined = <T extends object, K extends keyof T>(key: K) => (
     val: T
-): val is K extends any ? T & { [k in K]: NonNullable<T[k]> } : never => isDefined(val[key])
+): val is K extends any ? ({ [k in Exclude<keyof T, K>]: T[k] } & { [k in K]: NonNullable<T[k]> }) : never =>
+    isDefined(val[key])
 
 const isEmptyHover = (hover: HoverMerged | null): boolean =>
     !hover ||
@@ -29,7 +30,7 @@ const isEmptyHover = (hover: HoverMerged | null): boolean =>
  * Returns true if the HoverOverlay would have anything to show according to the given hover and definition states.
  */
 export const overlayUIHasContent = (state: Pick<HoverOverlayProps, 'hoverOrError' | 'definitionURLOrError'>): boolean =>
-    (state.hoverOrError && !(HoverMerged.is(state.hoverOrError) && isEmptyHover(state.hoverOrError))) ||
+    (!!state.hoverOrError && !(HoverMerged.is(state.hoverOrError) && isEmptyHover(state.hoverOrError))) ||
     isJumpURL(state.definitionURLOrError)
 
 /**

@@ -69,7 +69,7 @@ export interface HoverOverlayProps {
 
 /** Returns true if the input is successful jump URL result */
 export const isJumpURL = (val: any): val is { jumpURL: string } =>
-    val && typeof val === 'object' && typeof val.jumpURL === 'string'
+    val !== null && typeof val === 'object' && typeof val.jumpURL === 'string'
 
 export const HoverOverlay: React.StatelessComponent<HoverOverlayProps> = props => (
     <div
