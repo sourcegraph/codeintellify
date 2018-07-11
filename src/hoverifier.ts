@@ -15,11 +15,11 @@ import {
 import { Key } from 'ts-key-enum'
 import { Position } from 'vscode-languageserver-types'
 import { asError, ErrorLike } from './errors'
-import { propertyIsDefined } from './helpers'
+import { isDefined } from './helpers'
 import { overlayUIHasContent, scrollIntoCenterIfNeeded } from './helpers'
 import { HoverOverlayProps, isJumpURL } from './HoverOverlay'
 import { calculateOverlayPosition } from './overlay_position'
-import { PositionEvent } from './positions'
+import { PositionEvent, SupportedMouseEvent } from './positions'
 import { createObservableStateContainer } from './state'
 import {
     convertNode,
@@ -28,9 +28,12 @@ import {
     getRowsInRange,
     getTokenAtPosition,
     HoveredToken,
+    locateTarget,
 } from './token_position'
 import { EMODENOTFOUND, HoverMerged, LOADING } from './types'
 import { FileSpec, LineOrPositionOrRange, RepoSpec, ResolvedRevSpec, RevSpec } from './url'
+
+export { HoveredToken }
 
 interface HoverifierOptions {
     /**
@@ -227,9 +230,12 @@ export const createHoverifier = ({
     // These Subjects aggregate all events from all hoverified code views
     const allPositionsFromEvents = new Subject<MouseEventTrigger>()
 
-    const allCodeMouseMoves = allPositionsFromEvents.pipe(filter(({ eventType }) => eventType === 'mousemove'))
-    const allCodeMouseOvers = allPositionsFromEvents.pipe(filter(({ eventType }) => eventType === 'mouseover'))
-    const allCodeClicks = allPositionsFromEvents.pipe(filter(({ eventType }) => eventType === 'click'))
+    const isEventType = <T extends SupportedMouseEvent>(type: T) => (
+        event: MouseEventTrigger
+    ): event is MouseEventTrigger & { eventType: T } => event.eventType === type
+    const allCodeMouseMoves = allPositionsFromEvents.pipe(filter(isEventType('mousemove')))
+    const allCodeMouseOvers = allPositionsFromEvents.pipe(filter(isEventType('mouseover')))
+    const allCodeClicks = allPositionsFromEvents.pipe(filter(isEventType('click')))
 
     const allPositionJumps = new Subject<{
         position: LineOrPositionOrRange
@@ -290,11 +296,7 @@ export const createHoverifier = ({
     )
 
     /** Emits DOM elements at new positions found in the URL */
-    const jumpTargets: Observable<{
-        target: HTMLElement
-        codeElement: HTMLElement
-        resolveContext: ContextResolver
-    }> = allPositionJumps.pipe(
+    const jumpTargets = allPositionJumps.pipe(
         // Only use line and character for comparison
         map(({ position: { line, character }, ...rest }) => ({ position: { line, character }, ...rest })),
         // Ignore same values
@@ -306,16 +308,25 @@ export const createHoverifier = ({
         map(({ position, codeElement, ...rest }) => {
             const row = getRowInCodeElement(codeElement, position.line)
             if (!row) {
-                return { target: undefined, codeElement, ...rest }
+                return undefined
             }
             const cell = row.cells[1]!
             const target = findElementWithOffset(cell, position.character)
             if (!target) {
                 console.warn('Could not find target for position in file', position)
+                return undefined
             }
-            return { target, codeElement, ...rest }
+            // TODO locateTarget is purely needed here to get `hoveredToken.part` for diffs
+            //      We should define a function that takes care of _only_ figuring out the `part`
+            //      so we don't have to use locateTarget
+            const hoveredToken = locateTarget(target, codeElement, false)
+            if (!Position.is(hoveredToken)) {
+                console.warn('Could not find target for position in file', position)
+                return undefined
+            }
+            return { ...rest, eventType: 'jump' as 'jump', target, position: hoveredToken, codeElement }
         }),
-        filter(propertyIsDefined('target'))
+        filter(isDefined)
     )
 
     // REPOSITIONING
@@ -338,36 +349,20 @@ export const createHoverifier = ({
             })
     )
 
-    /** Emits new positions at which a tooltip needs to be shown from clicks, mouseovers and URL changes. */
-    const positions: Observable<{
-        /**
-         * The 1-indexed position at which a new tooltip is to be shown,
-         * or undefined when a target was hovered/clicked that does not correspond to a position (e.g. after the end of the line)
-         */
-        position?: HoveredToken & HoveredTokenContext
-        /**
-         * True if the tooltip should be pinned once the hover came back and is non-empty.
-         * This depends on what triggered the new position.
-         * We remember it because the pinning is deferred to when we have a result,
-         * so we don't pin empty (i.e. invisible) hovers.
-         */
-        pinIfNonEmpty: boolean
-        codeElement: HTMLElement
-    }> = merge(
-        // Should unpin the tooltip even if hover cames back non-empty
-        codeMouseOverTargets.pipe(map(data => ({ ...data, pinIfNonEmpty: false }))),
-        // When the location changes and includes a line/column pair, use that target
-        // Should pin the tooltip if hover cames back non-empty
-        jumpTargets.pipe(map(data => ({ ...data, pinIfNonEmpty: true }))),
-        // Should pin the tooltip if hover cames back non-empty
-        codeClickTargets.pipe(map(data => ({ ...data, pinIfNonEmpty: true })))
-    ).pipe(share())
+    /** Emits new positions including context at which a tooltip needs to be shown from clicks, mouseovers and URL changes. */
+    const resolvedPositions = merge(codeMouseOverTargets, jumpTargets, codeClickTargets).pipe(
+        map(({ position, resolveContext, ...rest }) => ({
+            ...rest,
+            position: Position.is(position) ? { ...position, ...resolveContext(position) } : undefined,
+        })),
+        share()
+    )
 
     /**
      * For every position, emits an Observable with new values for the `hoverOrError` state.
      * This is a higher-order Observable (Observable that emits Observables).
      */
-    const hoverObservables = positions.pipe(
+    const hoverObservables = resolvedPositions.pipe(
         map(({ position, codeElement }) => {
             if (!position) {
                 return of({ codeElement, hoverOrError: undefined })
@@ -424,7 +419,7 @@ export const createHoverifier = ({
     )
     // Telemetry for hovers
     subscription.add(
-        zip(positions, hoverObservables)
+        zip(resolvedPositions, hoverObservables)
             .pipe(
                 distinctUntilChanged(([positionA], [positionB]) => isEqual(positionA, positionB)),
                 switchMap(([position, hoverObservable]) => hoverObservable),
@@ -439,7 +434,7 @@ export const createHoverifier = ({
      * For every position, emits an Observable that emits new values for the `definitionURLOrError` state.
      * This is a higher-order Observable (Observable that emits Observables).
      */
-    const definitionObservables = positions.pipe(
+    const definitionObservables = resolvedPositions.pipe(
         // Fetch the definition location for that position
         map(({ position }) => {
             if (!position) {
@@ -485,11 +480,11 @@ export const createHoverifier = ({
     //
     // zip together a position and the hover and definition fetches it triggered
     subscription.add(
-        zip(positions, hoverObservables, definitionObservables)
+        zip(resolvedPositions, hoverObservables, definitionObservables)
             .pipe(
-                switchMap(([{ pinIfNonEmpty }, hoverObservable, definitionObservable]) => {
+                switchMap(([{ eventType }, hoverObservable, definitionObservable]) => {
                     // If the position was triggered by a mouseover, never pin
-                    if (!pinIfNonEmpty) {
+                    if (eventType !== 'click' && eventType !== 'jump') {
                         return [false]
                     }
                     // combine the latest values for them, so we have access to both values
@@ -500,8 +495,7 @@ export const createHoverifier = ({
                             overlayUIHasContent({ hoverOrError, definitionURLOrError })
                         )
                     )
-                }),
-                share()
+                })
             )
             .subscribe(hoverOverlayIsFixed => {
                 container.update({ hoverOverlayIsFixed })
@@ -558,7 +552,7 @@ export const createHoverifier = ({
         })
     )
     subscription.add(
-        positions.subscribe(({ position }) => {
+        resolvedPositions.subscribe(({ position }) => {
             container.update({
                 hoveredToken: position,
                 // On every new target (from mouseover or click) hide the j2d loader/error/not found UI again
