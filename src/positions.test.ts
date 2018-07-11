@@ -3,7 +3,7 @@ import { filter, map } from 'rxjs/operators'
 import { TestScheduler } from 'rxjs/testing'
 import { Position } from 'vscode-languageserver-types'
 
-import { BlobProps, DOM } from './testutils/dom'
+import { CodeViewProps, DOM } from './testutils/dom'
 import { clickPositionImpure } from './testutils/mouse'
 
 import { propertyIsDefined } from './helpers'
@@ -14,13 +14,13 @@ describe('position_listener', () => {
     const dom = new DOM()
     after(dom.cleanup)
 
-    let testcases: BlobProps[] = []
+    let testcases: CodeViewProps[] = []
     before(() => {
-        testcases = dom.createBlobs()
+        testcases = dom.createCodeViews()
     })
 
     it('can find the position from a mouse event', () => {
-        for (const blob of testcases) {
+        for (const codeView of testcases) {
             const scheduler = new TestScheduler((a, b) => chai.assert.deepEqual(a, b))
 
             scheduler.run(({ cold, expectObservable }) => {
@@ -44,13 +44,13 @@ describe('position_listener', () => {
                     },
                 }
 
-                const clickedTokens = of(blob.element).pipe(
-                    findPositionsFromEvents(blob),
+                const clickedTokens = of(codeView.element).pipe(
+                    findPositionsFromEvents(codeView),
                     filter(propertyIsDefined('position')),
                     map(({ position: { line, character, word } }) => ({ line, character, word }))
                 )
 
-                cold<Position>(diagram, positions).subscribe(position => clickPositionImpure(blob, position))
+                cold<Position>(diagram, positions).subscribe(position => clickPositionImpure(codeView, position))
 
                 expectObservable(clickedTokens).toBe(diagram, tokens)
             })

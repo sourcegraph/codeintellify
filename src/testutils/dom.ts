@@ -49,7 +49,7 @@ export const getWidthOfCharactersFromCell = (cell: HTMLElement): number =>
         .map((c, i) => getCharacterWidthInContainer(cell, c, i))
         .reduce((a, b) => a + b, 0)
 
-export interface BlobProps extends DOMOptions {
+export interface CodeViewProps extends DOMOptions {
     element: HTMLElement
     injectedElement: HTMLElement
     revSpec: typeof TEST_DATA_REVSPEC
@@ -73,11 +73,11 @@ const getDiffCodePart = (target: HTMLElement, content: string) => {
     }
 }
 
-const createGitHubBlob = (): BlobProps => {
-    const blob = document.createElement('div')
+const createGitHubCodeView = (): CodeViewProps => {
+    const codeView = document.createElement('div')
 
-    blob.innerHTML = githubCode
-    blob.style.clear = 'both'
+    codeView.innerHTML = githubCode
+    codeView.style.clear = 'both'
 
     const getCodeElementFromTarget = (target: HTMLElement): HTMLElement | null => {
         const row = target.closest('tr')
@@ -123,8 +123,8 @@ const createGitHubBlob = (): BlobProps => {
     }
 
     return {
-        injectedElement: blob,
-        element: blob,
+        injectedElement: codeView,
+        element: codeView,
 
         revSpec: TEST_DATA_REVSPEC,
         getCodeElementFromTarget,
@@ -133,7 +133,7 @@ const createGitHubBlob = (): BlobProps => {
         getDiffCodePart,
 
         insertRow: (text: string) => {
-            const lastRow = blob.querySelector('tbody tr:last-of-type')!
+            const lastRow = codeView.querySelector('tbody tr:last-of-type')!
 
             const node = lastRow.cloneNode(true) as HTMLElement
             const line = parseInt((lastRow.children.item(0) as HTMLElement).dataset.lineNumber as string, 10) + 1
@@ -146,18 +146,18 @@ const createGitHubBlob = (): BlobProps => {
             codeNode.id = `LC${line}`
             codeNode.innerHTML = wrapCharsInSpans(text)
 
-            blob.querySelector('tbody')!.appendChild(node)
+            codeView.querySelector('tbody')!.appendChild(node)
 
             return node
         },
     }
 }
 
-const createSourcegraphBlob = (): BlobProps => {
-    const blob = document.createElement('div')
+const createSourcegraphCodeView = (): CodeViewProps => {
+    const codeView = document.createElement('div')
 
-    blob.innerHTML = sourcegraphCode
-    blob.style.clear = 'both'
+    codeView.innerHTML = sourcegraphCode
+    codeView.style.clear = 'both'
 
     const getCodeElementFromTarget = (target: HTMLElement): HTMLElement | null => {
         const row = target.closest('tr')
@@ -204,16 +204,16 @@ const createSourcegraphBlob = (): BlobProps => {
     }
 
     return {
-        injectedElement: blob,
+        injectedElement: codeView,
 
-        element: blob.querySelector('code')!,
+        element: codeView.querySelector('code')!,
         revSpec: TEST_DATA_REVSPEC,
         getCodeElementFromTarget,
         getCodeElementFromLineNumber,
         getLineNumberFromCodeElement,
         getDiffCodePart,
         insertRow: (text: string) => {
-            const lastRow = blob.querySelector('tbody tr:last-of-type')!
+            const lastRow = codeView.querySelector('tbody tr:last-of-type')!
 
             const node = lastRow.cloneNode(true) as HTMLElement
             const line = parseInt((lastRow.children.item(0) as HTMLElement).dataset.line as string, 10) + 1
@@ -224,7 +224,7 @@ const createSourcegraphBlob = (): BlobProps => {
             const codeNode = node.children.item(1)! as HTMLElement
             codeNode.innerHTML = wrapCharsInSpans(text)
 
-            blob.querySelector('tbody')!.appendChild(node)
+            codeView.querySelector('tbody')!.appendChild(node)
 
             return node
         },
@@ -234,14 +234,14 @@ const createSourcegraphBlob = (): BlobProps => {
 export class DOM {
     private nodes = new Set<Element>()
 
-    public createBlobs(): BlobProps[] {
-        const blobs: BlobProps[] = [createSourcegraphBlob(), createGitHubBlob()]
+    public createCodeViews(): CodeViewProps[] {
+        const codeViews: CodeViewProps[] = [createSourcegraphCodeView(), createGitHubCodeView()]
 
-        for (const { injectedElement } of blobs) {
+        for (const { injectedElement } of codeViews) {
             this.insert(injectedElement)
         }
 
-        return blobs
+        return codeViews
     }
 
     public createElementFromString(html: string): HTMLElement {

@@ -42,13 +42,13 @@ export const overlayUIHasContent = (state: Pick<HoverOverlayProps, 'hoverOrError
  * @param target The element that should be scrolled into view
  */
 export const scrollIntoCenterIfNeeded = (container: HTMLElement, content: HTMLElement, target: HTMLElement): void => {
-    const blobRect = container.getBoundingClientRect()
+    const containerRect = container.getBoundingClientRect()
     const rowRect = target.getBoundingClientRect()
-    if (rowRect.top <= blobRect.top || rowRect.bottom >= blobRect.bottom) {
-        const blobRect = container.getBoundingClientRect()
+    if (rowRect.top <= containerRect.top || rowRect.bottom >= containerRect.bottom) {
+        const containerRect = container.getBoundingClientRect()
         const contentRect = content.getBoundingClientRect()
         const rowRect = target.getBoundingClientRect()
-        const scrollTop = rowRect.top - contentRect.top - blobRect.height / 2 + rowRect.height / 2
+        const scrollTop = rowRect.top - contentRect.top - containerRect.height / 2 + rowRect.height / 2
         container.scrollTop = scrollTop
     }
 }

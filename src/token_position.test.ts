@@ -1,4 +1,4 @@
-import { BlobProps, DOM } from './testutils/dom'
+import { CodeViewProps, DOM } from './testutils/dom'
 import {
     convertNode,
     findElementWithOffset,
@@ -16,9 +16,9 @@ describe('token_positions', () => {
     const dom = new DOM()
     after(dom.cleanup)
 
-    let testcases: BlobProps[] = []
+    let testcases: CodeViewProps[] = []
     before(() => {
-        testcases = dom.createBlobs()
+        testcases = dom.createCodeViews()
     })
 
     it('gets the correct text nodes', () => {
