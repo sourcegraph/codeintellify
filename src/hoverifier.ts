@@ -317,7 +317,7 @@ export const createHoverifier = ({
                 console.warn('Could not find target for position in file', position)
                 return undefined
             }
-            const part = dom.getDiffCodePart && dom.getDiffCodePart(target)
+            const part = dom.getDiffPart && dom.getDiffPart(target)
             return { ...rest, eventType: 'jump' as 'jump', target, position: { ...position, part }, codeView }
         }),
         filter(isDefined)

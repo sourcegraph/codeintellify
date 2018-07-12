@@ -1,6 +1,6 @@
 import githubCode from '../../testdata/generated/github.html'
 import sourcegraphCode from '../../testdata/generated/sourcegraph.html'
-import { DOMFunctions } from '../token_position'
+import { DiffPart, DOMFunctions } from '../token_position'
 import { TEST_DATA_REVSPEC } from './rev'
 
 const createElementFromString = (html: string): HTMLDivElement => {
@@ -46,12 +46,12 @@ export interface CodeViewProps extends DOMFunctions {
 
 // Abstract implemetation for GitHub and Sourcegraph. Could potentially be sufficient for any code host
 // but we may want to keep this as a configuration point.
-const getDiffCodePart = (codeElement: HTMLElement): 'new' | 'old' | undefined => {
+const getDiffPart = (codeElement: HTMLElement): DiffPart => {
     switch (codeElement.textContent!.charAt(0)) {
         case '+':
-            return 'new'
+            return 'head'
         case '-':
-            return 'old'
+            return 'base'
         default:
             return undefined
     }
@@ -114,7 +114,7 @@ const createGitHubCodeView = (): CodeViewProps => {
         getCodeElementFromTarget,
         getCodeElementFromLineNumber,
         getLineNumberFromCodeElement,
-        getDiffCodePart,
+        getDiffPart,
     }
 }
 
@@ -176,7 +176,7 @@ const createSourcegraphCodeView = (): CodeViewProps => {
         getCodeElementFromTarget,
         getCodeElementFromLineNumber,
         getLineNumberFromCodeElement,
-        getDiffCodePart,
+        getDiffPart,
     }
 }
 

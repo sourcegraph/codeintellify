@@ -2,10 +2,16 @@ import { Position } from 'vscode-languageserver-types'
 import { LineOrPositionOrRange } from './url'
 
 /**
+ * The part of the diff a line belongs to.
+ * - `'head'` is the green, new, added part
+ * - `'base'` is the red, old, deleted part
+ * - `undefined` is the unchanged part, i.e. the line appears both in `head` and `base`
+ */
+export type DiffPart = 'head' | 'base' | undefined
+
+/**
  * A collection of methods needed to tell codeintellify how to look at the DOM. These are required for
  * ensuring that we don't rely on any sort of specific DOM structure.
- *
- *
  */
 export interface DOMFunctions {
     /**
@@ -28,11 +34,11 @@ export interface DOMFunctions {
      */
     getLineNumberFromCodeElement: (codeElement: HTMLElement) => number
     /**
-     * Determine whether a code element is from the old or new part of a diff or not part of a diff.
+     * Determine whether a code element is from the old, new part of a diff or not part of a diff.
      * @param codeElement is the element containing a line of code.
-     * @returns whether the line is `'old'`, `'new'` or `undefined` if not part of a diff.
+     * @returns whether the line is `'base'`, `'head'` or `undefined` if both or not part of a diff.
      */
-    getDiffCodePart?: (codeElement: HTMLElement) => 'old' | 'new' | undefined
+    getDiffPart?: (codeElement: HTMLElement) => DiffPart
 }
 
 /**
@@ -213,7 +219,7 @@ export interface HoveredToken {
     line: number
     /** 1-indexed */
     character: number
-    part?: 'old' | 'new'
+    part: DiffPart
 }
 
 interface LocateTargetOptions extends DOMFunctions {
@@ -230,7 +236,7 @@ interface LocateTargetOptions extends DOMFunctions {
  */
 export function locateTarget(
     target: HTMLElement,
-    { ignoreFirstChar, getCodeElementFromTarget, getDiffCodePart, getLineNumberFromCodeElement }: LocateTargetOptions
+    { ignoreFirstChar, getCodeElementFromTarget, getDiffPart, getLineNumberFromCodeElement }: LocateTargetOptions
 ): Line | HoveredToken | undefined {
     const codeElement = getCodeElementFromTarget(target)
 
@@ -240,7 +246,7 @@ export function locateTarget(
     }
 
     const line = getLineNumberFromCodeElement(codeElement)
-    const part = getDiffCodePart && getDiffCodePart(codeElement)
+    const part = getDiffPart && getDiffPart(codeElement)
 
     let character = 1
     // Iterate recursively over the current target's children until we find the original target;
