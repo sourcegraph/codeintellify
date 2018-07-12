@@ -40,14 +40,7 @@ export interface CodeViewProps extends DOMFunctions {
     container: HTMLElement
     /** The revision and repository information for the file used in the generated test cases. */
     revSpec: typeof TEST_DATA_REVSPEC
-    /** A helper method for adding rows to the test case. */
-    insertRow: (text: string) => HTMLElement
 }
-
-export const wrapCharsInSpans = (line: string) =>
-    Array.from(line)
-        .map((c, j) => `<span data-char="${j}">${c}</span>`)
-        .join('')
 
 // BEGIN setup test cases
 
@@ -120,25 +113,6 @@ const createGitHubCodeView = (): CodeViewProps => {
         getCodeElementFromLineNumber,
         getLineNumberFromCodeElement,
         getDiffCodePart,
-
-        insertRow: (text: string) => {
-            const lastRow = codeView.querySelector('tbody tr:last-of-type')!
-
-            const node = lastRow.cloneNode(true) as HTMLElement
-            const line = parseInt((lastRow.children.item(0) as HTMLElement).dataset.lineNumber as string, 10) + 1
-
-            const lineNode = node.children.item(0)! as HTMLElement
-            lineNode.id = `L${line}`
-            lineNode.dataset.lineNumber = line.toString()
-
-            const codeNode = node.children.item(1)! as HTMLElement
-            codeNode.id = `LC${line}`
-            codeNode.innerHTML = wrapCharsInSpans(text)
-
-            codeView.querySelector('tbody')!.appendChild(node)
-
-            return node
-        },
     }
 }
 
@@ -201,22 +175,6 @@ const createSourcegraphCodeView = (): CodeViewProps => {
         getCodeElementFromLineNumber,
         getLineNumberFromCodeElement,
         getDiffCodePart,
-        insertRow: (text: string) => {
-            const lastRow = codeView.querySelector('tbody tr:last-of-type')!
-
-            const node = lastRow.cloneNode(true) as HTMLElement
-            const line = parseInt((lastRow.children.item(0) as HTMLElement).dataset.line as string, 10) + 1
-
-            const lineNode = node.children.item(0)! as HTMLElement
-            lineNode.dataset.line = line.toString()
-
-            const codeNode = node.children.item(1)! as HTMLElement
-            codeNode.innerHTML = wrapCharsInSpans(text)
-
-            codeView.querySelector('tbody')!.appendChild(node)
-
-            return node
-        },
     }
 }
 
