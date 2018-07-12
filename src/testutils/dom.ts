@@ -44,6 +44,8 @@ export interface CodeViewProps extends DOMFunctions {
 
 // BEGIN setup test cases
 
+// Abstract implemetation for GitHub and Sourcegraph. Could potentially be sufficient for any code host
+// but we may want to keep this as a configuration point.
 const getDiffCodePart = (codeElement: HTMLElement): 'new' | 'old' | undefined => {
     switch (codeElement.textContent!.charAt(0)) {
         case '+':
