@@ -69,6 +69,8 @@ interface HoverifierOptions {
 
     fetchHover: HoverFetcher
     fetchJumpURL: JumpURLFetcher
+
+    containerIsScrollable: boolean
 }
 
 /**
@@ -211,6 +213,7 @@ export const createHoverifier = ({
     fetchJumpURL,
     logTelemetryEvent,
     dom,
+    containerIsScrollable,
 }: HoverifierOptions): Hoverifier => {
     // Internal state that is not exposed to the caller
     // Shared between all hoverified code views
@@ -335,7 +338,7 @@ export const createHoverifier = ({
                 // with the latest target that came from either a mouseover, click or location change (whatever was the most recent)
                 withLatestFrom(merge(codeMouseOverTargets, codeClickTargets, jumpTargets)),
                 map(([{ hoverOverlayElement, scrollElement }, { target }]) =>
-                    calculateOverlayPosition(scrollElement, target, hoverOverlayElement)
+                    calculateOverlayPosition(scrollElement, target, hoverOverlayElement, containerIsScrollable)
                 )
             )
             .subscribe(hoverOverlayPosition => {
