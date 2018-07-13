@@ -35,10 +35,12 @@ describe('position_listener', () => {
                     a: {
                         line: 5,
                         character: 1,
+                        part: undefined,
                     },
                     b: {
                         line: 18,
                         character: 2,
+                        part: undefined,
                     },
                 }
 
