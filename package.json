@@ -3,6 +3,7 @@
   "version": "0.0.0-DEVELOPMENT",
   "description": "Adds code intelligence to code views on the web",
   "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "files": [
     "lib"
   ],

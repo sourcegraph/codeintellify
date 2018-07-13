@@ -1,5 +1,6 @@
 import { highlight, highlightAuto } from 'highlight.js/lib/highlight'
 import marked from 'marked'
+import * as React from 'react'
 import sanitize from 'sanitize-html'
 import { MarkupContent } from 'vscode-languageserver-types'
 import { HoverOverlayProps, isJumpURL } from './HoverOverlay'
@@ -87,3 +88,13 @@ export const renderMarkdown = (markdown: string): string =>
             highlight: (code, language) => '<code>' + highlightCodeSafe(code, language) + '</code>',
         })
     )
+
+/**
+ * Converts a synthetic React event to a persisted, native Event object.
+ *
+ * @param event The synthetic React event object
+ */
+export const toNativeEvent = <E extends React.SyntheticEvent<T>, T>(event: E): E['nativeEvent'] => {
+    event.persist()
+    return event.nativeEvent
+}

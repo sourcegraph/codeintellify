@@ -6,7 +6,7 @@ import InformationOutlineIcon from 'mdi-react/InformationOutlineIcon'
 import * as React from 'react'
 import { MarkedString, MarkupContent, MarkupKind } from 'vscode-languageserver-types'
 import { asError, ErrorLike, isErrorLike } from './errors'
-import { highlightCodeSafe, renderMarkdown } from './helpers'
+import { highlightCodeSafe, renderMarkdown, toNativeEvent } from './helpers'
 import { HoveredTokenContext } from './hoverifier'
 import { HoveredToken } from './token_position'
 import { HoverMerged, LOADING } from './types'
@@ -59,10 +59,10 @@ export interface HoverOverlayProps {
     linkComponent: React.ComponentType<{ to: string }>
 
     /** Called when the Go-to-definition button was clicked */
-    onGoToDefinitionClick?: (event: React.MouseEvent<HTMLElement>) => void
+    onGoToDefinitionClick?: (event: MouseEvent) => void
 
     /** Called when the close button is clicked */
-    onCloseButtonClick?: (event: React.MouseEvent<HTMLElement>) => void
+    onCloseButtonClick?: (event: MouseEvent) => void
 
     logTelemetryEvent: (event: string, data?: any) => void
 }
@@ -70,6 +70,9 @@ export interface HoverOverlayProps {
 /** Returns true if the input is successful jump URL result */
 export const isJumpURL = (val: any): val is { jumpURL: string } =>
     val !== null && typeof val === 'object' && typeof val.jumpURL === 'string'
+
+const transformMouseEvent = (handler: (event: MouseEvent) => void) => (event: React.MouseEvent<HTMLElement>) =>
+    handler(toNativeEvent(event))
 
 export const HoverOverlay: React.StatelessComponent<HoverOverlayProps> = props => (
     <div
@@ -91,10 +94,14 @@ export const HoverOverlay: React.StatelessComponent<HoverOverlayProps> = props =
         }
     >
         {props.showCloseButton && (
-            <button className="hover-overlay__close-button btn btn-icon" onClick={props.onCloseButtonClick}>
+            <button
+                className="hover-overlay__close-button btn btn-icon"
+                onClick={props.onCloseButtonClick ? transformMouseEvent(props.onCloseButtonClick) : undefined}
+            >
                 <CloseIcon className="icon-inline" />
             </button>
         )}
+
         {props.hoverOrError && (
             <div className="hover-overlay__contents">
                 {props.hoverOrError === LOADING ? (
@@ -157,7 +164,7 @@ export const HoverOverlay: React.StatelessComponent<HoverOverlayProps> = props =
                 linkComponent={props.linkComponent}
                 to={isJumpURL(props.definitionURLOrError) ? props.definitionURLOrError.jumpURL : undefined}
                 className="btn btn-secondary hover-overlay__action e2e-tooltip-j2d"
-                onClick={props.onGoToDefinitionClick}
+                onClick={props.onGoToDefinitionClick ? transformMouseEvent(props.onGoToDefinitionClick) : undefined}
             >
                 Go to definition {props.definitionURLOrError === LOADING && <Loader className="icon-inline" />}
             </ButtonOrLink>
