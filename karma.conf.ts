@@ -47,7 +47,10 @@ export default (config: Config): void => {
             },
         },
 
-        reporters: ['progress', 'coverage-istanbul'],
+        reporters: ['progress', 'mocha', 'coverage-istanbul'],
+        mochaReporter: {
+            showDiff: true,
+        },
         coverageIstanbulReporter: {
             reports: ['json'],
             fixWebpackSourcePaths: true,
