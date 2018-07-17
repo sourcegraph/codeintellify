@@ -39,8 +39,15 @@ interface HoverifierOptions {
      * Emit the HoverOverlay element on this after it was rerendered when its content changed and it needs to be repositioned.
      */
     hoverOverlayRerenders: Observable<{
+        /**
+         * The HoverOverlay element
+         */
         hoverOverlayElement: HTMLElement
-        scrollElement: HTMLElement
+
+        /**
+         * The closest parent element that is `position: relative`
+         */
+        relativeElement: HTMLElement
     }>
 
     /**
@@ -334,8 +341,8 @@ export const createHoverifier = ({
             .pipe(
                 // with the latest target that came from either a mouseover, click or location change (whatever was the most recent)
                 withLatestFrom(merge(codeMouseOverTargets, codeClickTargets, jumpTargets)),
-                map(([{ hoverOverlayElement, scrollElement }, { target }]) =>
-                    calculateOverlayPosition(scrollElement, target, hoverOverlayElement)
+                map(([{ hoverOverlayElement, relativeElement }, { target }]) =>
+                    calculateOverlayPosition({ relativeElement, target, hoverOverlayElement })
                 )
             )
             .subscribe(hoverOverlayPosition => {
