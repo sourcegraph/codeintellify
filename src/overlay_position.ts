@@ -1,9 +1,3 @@
-/**
- * `padding-top` of the blob element in px.
- * TODO find a way to remove the need for this.
- */
-const BLOB_PADDING_TOP = 8
-
 interface CalculateOverlayPositionOptions {
     /** The closest parent element that is `position: relative` */
     relativeElement: HTMLElement
@@ -29,26 +23,26 @@ export const calculateOverlayPosition = ({
     target,
     hoverOverlayElement,
 }: CalculateOverlayPositionOptions): CSSOffsets => {
-    // The scrollable element is the one with scrollbars. The scrolling element is the one with the content.
     const relativeElementBounds = relativeElement.getBoundingClientRect()
-    const targetBound = target.getBoundingClientRect() // our target elements bounds
+    const targetBounds = target.getBoundingClientRect()
+    const hoverOverlayBounds = hoverOverlayElement.getBoundingClientRect()
 
-    // Anchor it horizontally, prior to rendering to account for wrapping
-    // changes to vertical height if the tooltip is at the edge of the viewport.
-    const relLeft = targetBound.left - relativeElementBounds.left
+    // If the relativeElement is scrolled horizontally, we need to account for the offset (if not scrollLeft will be 0)
+    const relativeHoverOverlayLeft = targetBounds.left + relativeElement.scrollLeft - relativeElementBounds.left
 
-    // Anchor the tooltip vertically.
-    const tooltipBound = hoverOverlayElement.getBoundingClientRect()
-    const relTop = targetBound.top + relativeElement.scrollTop - relativeElementBounds.top
-    // This is the padding-top of the blob element
-    let tooltipTop = relTop - (tooltipBound.height - BLOB_PADDING_TOP)
-    if (tooltipTop - relativeElement.scrollTop < 0) {
-        // Tooltip wouldn't be visible from the top, so display it at the
-        // bottom.
-        const relBottom = targetBound.bottom + relativeElement.scrollTop - relativeElementBounds.top
-        tooltipTop = relBottom
+    let relativeHoverOverlayTop: number
+    // If the top of the hover overlay would be outside of the viewport (top negative)
+    if (targetBounds.top - hoverOverlayBounds.height < 0) {
+        // Position it below the target
+        // If the relativeElement is scrolled, we need to account for the offset (if not scrollTop will be 0)
+        relativeHoverOverlayTop = targetBounds.bottom - relativeElementBounds.top + relativeElement.scrollTop
     } else {
-        tooltipTop -= BLOB_PADDING_TOP
+        // Else position it above the target
+        // Caculate the offset from the top of the relativeElement content to the top of the target
+        // If the relativeElement is scrolled, we need to account for the offset (if not scrollTop will be 0)
+        const relativeTargetTop = targetBounds.top - relativeElementBounds.top + relativeElement.scrollTop
+        relativeHoverOverlayTop = relativeTargetTop - hoverOverlayBounds.height
     }
-    return { left: relLeft, top: tooltipTop }
+
+    return { left: relativeHoverOverlayLeft, top: relativeHoverOverlayTop }
 }
