@@ -13,6 +13,13 @@ interface CalculateOverlayPositionOptions {
     hoverOverlayElement: HTMLElement
 }
 
+export interface CSSOffsets {
+    /** Offset from the left in pixel */
+    left: number
+    /** Offset from the top in pixel */
+    top: number
+}
+
 /**
  * Calculates the desired position of the hover overlay depending on the container,
  * the hover target and the size of the hover overlay
@@ -21,7 +28,7 @@ export const calculateOverlayPosition = ({
     relativeElement,
     target,
     hoverOverlayElement,
-}: CalculateOverlayPositionOptions): { left: number; top: number } => {
+}: CalculateOverlayPositionOptions): CSSOffsets => {
     // The scrollable element is the one with scrollbars. The scrolling element is the one with the content.
     const relativeElementBounds = relativeElement.getBoundingClientRect()
     const targetBound = target.getBoundingClientRect() // our target elements bounds

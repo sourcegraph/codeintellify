@@ -1,10 +1,27 @@
 import * as assert from 'assert'
-import { calculateOverlayPosition } from './overlay_position'
+import { calculateOverlayPosition, CSSOffsets } from './overlay_position'
 
 describe('overlay_position', () => {
     describe('calculateOverlayPosition()', () => {
         let relativeElement: HTMLElement
         let hoverOverlayElement: HTMLElement
+
+        /** Puts a target `div` into the relativeElement at the given px offsets */
+        const createTarget = (position: CSSOffsets): HTMLElement => {
+            const target = document.createElement('div')
+            target.className = 'target'
+            target.textContent = 'target'
+            applyOffsets(target, position)
+            relativeElement.appendChild(target)
+            return target
+        }
+
+        /** Positions an element at the given px offsets */
+        const applyOffsets = (element: HTMLElement, { left, top }: CSSOffsets): void => {
+            element.style.left = left + 'px'
+            element.style.top = top + 'px'
+        }
+
         beforeEach(() => {
             const style = document.createElement('style')
             style.innerHTML = `
@@ -46,16 +63,18 @@ describe('overlay_position', () => {
         afterEach(() => {
             relativeElement.remove()
         })
-        it('should return a position below the a given target in the middle of the page', () => {
-            const target = document.createElement('div')
-            target.className = 'target'
-            target.style.left = '100px'
-            target.style.top = '100px'
-            target.textContent = 'target'
-            relativeElement.appendChild(target)
+
+        it('should return a position above the given target if the overlay fits above', () => {
+            const target = createTarget({ left: 100, top: 200 })
             const position = calculateOverlayPosition({ relativeElement, target, hoverOverlayElement })
-            hoverOverlayElement.style.left = position.left + 'px'
-            hoverOverlayElement.style.top = position.top + 'px'
+            applyOffsets(hoverOverlayElement, position)
+            assert.deepStrictEqual(position, { left: 100, top: 50 })
+        })
+
+        it('should return a position below the a given target if the overlay does not fit above', () => {
+            const target = createTarget({ left: 100, top: 100 })
+            const position = calculateOverlayPosition({ relativeElement, target, hoverOverlayElement })
+            applyOffsets(hoverOverlayElement, position)
             assert.deepStrictEqual(position, { left: 100, top: 116 })
         })
     })
