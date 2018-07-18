@@ -281,14 +281,16 @@ export function locateTarget(
     return { line }
 }
 
-interface GetCodeElementsInRangeOptions extends DOMFunctions {
+interface GetCodeElementsInRangeOptions extends Pick<DOMFunctions, 'getCodeElementFromLineNumber'> {
+    codeView: HTMLElement
     position?: LineOrPositionOrRange
 }
 
-export const getCodeElementsInRange = (
-    codeElement: HTMLElement,
-    { position, getCodeElementFromLineNumber }: GetCodeElementsInRangeOptions
-): {
+export const getCodeElementsInRange = ({
+    codeView,
+    position,
+    getCodeElementFromLineNumber,
+}: GetCodeElementsInRangeOptions): {
     /** 1-indexed line number */
     line: number
     /** The element containing the code */
@@ -300,7 +302,7 @@ export const getCodeElementsInRange = (
 
     const elements: { line: number; element: HTMLElement }[] = []
     for (let line = position.line; line <= (position.endLine || position.line); line++) {
-        const element = getCodeElementFromLineNumber(codeElement, position.line)
+        const element = getCodeElementFromLineNumber(codeView, position.line)
         if (!element) {
             break
         }
