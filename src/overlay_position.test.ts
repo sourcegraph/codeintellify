@@ -3,6 +3,12 @@ import { calculateOverlayPosition, CSSOffsets } from './overlay_position'
 
 describe('overlay_position', () => {
     describe('calculateOverlayPosition()', () => {
+        /** Positions an element at the given px offsets */
+        const applyOffsets = (element: HTMLElement, { left, top }: CSSOffsets): void => {
+            element.style.left = left + 'px'
+            element.style.top = top + 'px'
+        }
+
         let relativeElement: HTMLElement
         let hoverOverlayElement: HTMLElement
 
@@ -14,12 +20,6 @@ describe('overlay_position', () => {
             applyOffsets(target, position)
             relativeElement.appendChild(target)
             return target
-        }
-
-        /** Positions an element at the given px offsets */
-        const applyOffsets = (element: HTMLElement, { left, top }: CSSOffsets): void => {
-            element.style.left = left + 'px'
-            element.style.top = top + 'px'
         }
 
         beforeEach(() => {
