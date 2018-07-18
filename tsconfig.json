@@ -4,14 +4,12 @@
     "target": "es2018",
     "module": "es2015",
     "moduleResolution": "node",
-    "inlineSourceMap": true,
-    "inlineSources": true,
+    "noEmit": true,
     "declaration": true,
     "outDir": "lib",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "jsx": "react",
-    "lib": ["es2017", "dom", "dom.iterable"],
-    "sourceRoot": "src"
+    "lib": ["es2017", "dom", "dom.iterable"]
   }
 }
