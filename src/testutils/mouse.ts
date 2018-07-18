@@ -1,4 +1,4 @@
-import { CharacterPositions } from 'event-positions'
+import { CharacterPositions } from '@sourcegraph/event-positions'
 import { Position } from 'vscode-languageserver-types'
 import { convertNode } from '../token_position'
 import { BlobProps } from './dom'
