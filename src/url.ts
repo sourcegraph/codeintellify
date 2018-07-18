@@ -135,7 +135,7 @@ export function escapeRevspecForURL(rev: string): string {
 }
 
 export function toViewStateHashComponent(viewState: string | undefined): string {
-    return viewState ? `$${viewState}` : ''
+    return viewState ? `&tab=${viewState}` : ''
 }
 
 export function toPrettyBlobURL(
