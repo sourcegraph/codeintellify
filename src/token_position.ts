@@ -28,11 +28,11 @@ export interface DOMFunctions {
      */
     getLineNumberFromCodeElement: (codeElement: HTMLElement) => number
     /**
-     * Determine whether a code element is from the old or new part of a diff or not part of a diff.
+     * Determine whether a code element is from the base or head part of a diff or not part of a diff.
      * @param codeElement is the element containing a line of code.
-     * @returns whether the line is `'old'`, `'new'` or `undefined` if not part of a diff.
+     * @returns whether the line is `'base'`, `'head'` or `undefined` if not part of a diff.
      */
-    getDiffCodePart?: (codeElement: HTMLElement) => 'old' | 'new' | undefined
+    getDiffCodePart?: (codeElement: HTMLElement) => 'base' | 'head' | undefined
 }
 
 /**
@@ -213,7 +213,7 @@ export interface HoveredToken {
     line: number
     /** 1-indexed */
     character: number
-    part?: 'old' | 'new'
+    part?: 'base' | 'head'
 }
 
 interface LocateTargetOptions extends DOMFunctions {

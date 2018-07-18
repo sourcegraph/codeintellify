@@ -46,12 +46,12 @@ export interface CodeViewProps extends DOMFunctions {
 
 // Abstract implemetation for GitHub and Sourcegraph. Could potentially be sufficient for any code host
 // but we may want to keep this as a configuration point.
-const getDiffCodePart = (codeElement: HTMLElement): 'new' | 'old' | undefined => {
+const getDiffCodePart = (codeElement: HTMLElement): 'head' | 'base' | undefined => {
     switch (codeElement.textContent!.charAt(0)) {
         case '+':
-            return 'new'
+            return 'head'
         case '-':
-            return 'old'
+            return 'base'
         default:
             return undefined
     }
