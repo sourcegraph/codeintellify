@@ -1,5 +1,5 @@
 import { isEqual } from 'lodash'
-import { Observable, of, Subject, Subscription } from 'rxjs'
+import { EMPTY, Observable, of, Subject, Subscription } from 'rxjs'
 import { distinctUntilChanged, filter, map } from 'rxjs/operators'
 import { TestScheduler } from 'rxjs/testing'
 import { Position } from 'vscode-languageserver-types'
@@ -33,14 +33,10 @@ describe('Hoverifier', () => {
 
             scheduler.run(({ cold, expectObservable }) => {
                 const hoverifier = createHoverifier({
-                    dom: codeView,
                     closeButtonClicks: new Observable<MouseEvent>(),
                     goToDefinitionClicks: new Observable<MouseEvent>(),
                     hoverOverlayElements: of(null),
-                    hoverOverlayRerenders: new Observable<{
-                        hoverOverlayElement: HTMLElement
-                        scrollElement: HTMLElement
-                    }>(),
+                    hoverOverlayRerenders: EMPTY,
                     fetchHover: createStubHoverFetcher(hover, delayTime),
                     fetchJumpURL: createStubJumpURLFetcher(defURL, delayTime),
                     pushHistory: noop,
@@ -60,6 +56,7 @@ describe('Hoverifier', () => {
                 subscriptions.add(hoverifier)
                 subscriptions.add(
                     hoverifier.hoverify({
+                        dom: codeView,
                         positionEvents,
                         positionJumps,
                         resolveContext: () => codeView.revSpec,
