@@ -1,5 +1,4 @@
 {
-  "$schema": "http://json.schemastore.org/renovate",
   "extends": ["config:base"],
   "timezone": "America/Los_Angeles",
   "schedule": ["on the 1st through 7th day of the month"],
