@@ -55,6 +55,15 @@ export const scrollIntoCenterIfNeeded = (container: HTMLElement, content: HTMLEl
 }
 
 /**
+ * Escapes HTML by replacing characters like `<` with their HTML escape sequences like `&lt;`
+ */
+const escapeHTML = (html: string): string => {
+    const span = document.createElement('span')
+    span.textContent = html
+    return span.innerHTML
+}
+
+/**
  * Attempts to syntax-highlight the given code.
  * If the language is not given, it is auto-detected.
  * If an error occurs, the code is returned as plain text with escaped HTML entities
@@ -65,13 +74,16 @@ export const scrollIntoCenterIfNeeded = (container: HTMLElement, content: HTMLEl
  */
 export const highlightCodeSafe = (code: string, language?: string): string => {
     try {
+        if (language === 'plaintext' || language === 'text') {
+            return escapeHTML(code)
+        }
         if (language) {
             return highlight(language, code, true).value
         }
         return highlightAuto(code).value
     } catch (err) {
         console.warn('Error syntax-highlighting hover markdown code block', err)
-        return escape(code)
+        return escapeHTML(code)
     }
 }
 
