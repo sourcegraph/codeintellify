@@ -23,12 +23,11 @@ import { PositionEvent, SupportedMouseEvent } from './positions'
 import { createObservableStateContainer } from './state'
 import {
     convertNode,
+    DOMFunctions,
     findElementWithOffset,
-    getRowInCodeElement,
-    getRowsInRange,
+    getCodeElementsInRange,
     getTokenAtPosition,
     HoveredToken,
-    locateTarget,
 } from './token_position'
 import { EMODENOTFOUND, HoverMerged, LOADING } from './types'
 import { FileSpec, LineOrPositionOrRange, RepoSpec, ResolvedRevSpec, RevSpec } from './url'
@@ -55,6 +54,8 @@ interface HoverifierOptions {
     closeButtonClicks: Observable<MouseEvent>
 
     hoverOverlayElements: Observable<HTMLElement | null>
+
+    dom: DOMFunctions
 
     /**
      * Called for programmatic navigation (like `history.push()`)
@@ -109,7 +110,7 @@ export interface HoverifyOptions {
         /**
          * The code view
          */
-        codeElement: HTMLElement
+        codeView: HTMLElement
         /**
          * The element to scroll if the position is out of view
          */
@@ -209,6 +210,7 @@ export const createHoverifier = ({
     fetchHover,
     fetchJumpURL,
     logTelemetryEvent,
+    dom,
 }: HoverifierOptions): Hoverifier => {
     // Internal state that is not exposed to the caller
     // Shared between all hoverified code views
@@ -239,7 +241,7 @@ export const createHoverifier = ({
 
     const allPositionJumps = new Subject<{
         position: LineOrPositionOrRange
-        codeElement: HTMLElement
+        codeView: HTMLElement
         scrollElement: HTMLElement
         resolveContext: ContextResolver
     }>()
@@ -305,26 +307,18 @@ export const createHoverifier = ({
         distinctUntilChanged((a, b) => isEqual(a, b)),
         // Ignore undefined or partial positions (e.g. line only)
         filter((jump): jump is typeof jump & { position: Position } => Position.is(jump.position)),
-        map(({ position, codeElement, ...rest }) => {
-            const row = getRowInCodeElement(codeElement, position.line)
-            if (!row) {
+        map(({ position, codeView, ...rest }) => {
+            const cell = dom.getCodeElementFromLineNumber(codeView, position.line)
+            if (!cell) {
                 return undefined
             }
-            const cell = row.cells[1]!
             const target = findElementWithOffset(cell, position.character)
             if (!target) {
                 console.warn('Could not find target for position in file', position)
                 return undefined
             }
-            // TODO locateTarget is purely needed here to get `hoveredToken.part` for diffs
-            //      We should define a function that takes care of _only_ figuring out the `part`
-            //      so we don't have to use locateTarget
-            const hoveredToken = locateTarget(target, codeElement, false)
-            if (!Position.is(hoveredToken)) {
-                console.warn('Could not find target for position in file', position)
-                return undefined
-            }
-            return { ...rest, eventType: 'jump' as 'jump', target, position: hoveredToken, codeElement }
+            const part = dom.getDiffPart && dom.getDiffPart(target)
+            return { ...rest, eventType: 'jump' as 'jump', target, position: { ...position, part }, codeView }
         }),
         filter(isDefined)
     )
@@ -363,9 +357,9 @@ export const createHoverifier = ({
      * This is a higher-order Observable (Observable that emits Observables).
      */
     const hoverObservables = resolvedPositions.pipe(
-        map(({ position, codeElement }) => {
+        map(({ position, codeView }) => {
             if (!position) {
-                return of({ codeElement, hoverOrError: undefined })
+                return of({ codeView, hoverOrError: undefined })
             }
             // Fetch the hover for that position
             const hoverFetch = fetchHover(position).pipe(
@@ -387,35 +381,33 @@ export const createHoverifier = ({
                     takeUntil(hoverFetch)
                 ),
                 hoverFetch
-            ).pipe(map(hoverOrError => ({ hoverOrError, codeElement })))
+            ).pipe(map(hoverOrError => ({ hoverOrError, codeView })))
         }),
         share()
     )
     // Highlight the hover range returned by the language server
     subscription.add(
-        hoverObservables
-            .pipe(switchMap(hoverObservable => hoverObservable))
-            .subscribe(({ hoverOrError, codeElement }) => {
-                container.update({
-                    hoverOrError,
-                    // Reset the hover position, it's gonna be repositioned after the hover was rendered
-                    hoverOverlayPosition: undefined,
-                })
-                const currentHighlighted = codeElement!.querySelector('.selection-highlight')
-                if (currentHighlighted) {
-                    currentHighlighted.classList.remove('selection-highlight')
-                }
-                if (!HoverMerged.is(hoverOrError) || !hoverOrError.range) {
-                    return
-                }
-                // LSP is 0-indexed, the code in the webapp currently is 1-indexed
-                const { line, character } = hoverOrError.range.start
-                const token = getTokenAtPosition(codeElement!, { line: line + 1, character: character + 1 })
-                if (!token) {
-                    return
-                }
-                token.classList.add('selection-highlight')
+        hoverObservables.pipe(switchMap(hoverObservable => hoverObservable)).subscribe(({ hoverOrError, codeView }) => {
+            container.update({
+                hoverOrError,
+                // Reset the hover position, it's gonna be repositioned after the hover was rendered
+                hoverOverlayPosition: undefined,
             })
+            const currentHighlighted = codeView!.querySelector('.selection-highlight')
+            if (currentHighlighted) {
+                currentHighlighted.classList.remove('selection-highlight')
+            }
+            if (!HoverMerged.is(hoverOrError) || !hoverOrError.range) {
+                return
+            }
+            // LSP is 0-indexed, the code in the webapp currently is 1-indexed
+            const { line, character } = hoverOrError.range.start
+            const token = getTokenAtPosition(codeView!, { line: line + 1, character: character + 1 }, dom)
+            if (!token) {
+                return
+            }
+            token.classList.add('selection-highlight')
+        })
     )
     // Telemetry for hovers
     subscription.add(
@@ -536,18 +528,18 @@ export const createHoverifier = ({
 
     // LOCATION CHANGES
     subscription.add(
-        allPositionJumps.subscribe(({ position, scrollElement, codeElement }) => {
+        allPositionJumps.subscribe(({ position, scrollElement, codeView }) => {
             container.update({
                 // Remember active position in state for blame and range expansion
                 selectedPosition: position,
             })
-            const rows = getRowsInRange(codeElement, position)
+            const rows = getCodeElementsInRange(codeView, { position, ...dom })
             for (const { element } of rows) {
-                convertNode(element.cells[1]!)
+                convertNode(element)
             }
             // Scroll into view
             if (rows.length > 0) {
-                scrollIntoCenterIfNeeded(scrollElement, codeElement, rows[0].element)
+                scrollIntoCenterIfNeeded(scrollElement, codeView, rows[0].element)
             }
         })
     )

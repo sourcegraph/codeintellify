@@ -3,7 +3,7 @@ import { filter, map } from 'rxjs/operators'
 import { TestScheduler } from 'rxjs/testing'
 import { Position } from 'vscode-languageserver-types'
 
-import { BlobProps, DOM } from './testutils/dom'
+import { CodeViewProps, DOM } from './testutils/dom'
 import { clickPositionImpure } from './testutils/mouse'
 
 import { propertyIsDefined } from './helpers'
@@ -14,43 +14,43 @@ describe('position_listener', () => {
     const dom = new DOM()
     after(dom.cleanup)
 
-    let testcases: BlobProps[] = []
+    let testcases: CodeViewProps[] = []
     before(() => {
-        testcases = dom.createBlobs()
+        testcases = dom.createCodeViews()
     })
 
     it('can find the position from a mouse event', () => {
-        for (const blob of testcases) {
+        for (const codeView of testcases) {
             const scheduler = new TestScheduler((a, b) => chai.assert.deepEqual(a, b))
 
             scheduler.run(({ cold, expectObservable }) => {
                 const diagram = '-ab'
 
                 const positions: { [key: string]: Position } = {
-                    a: { line: 4, character: 3 },
-                    b: { line: 17, character: 4 },
+                    a: { line: 5, character: 3 },
+                    b: { line: 18, character: 4 },
                 }
 
                 const tokens: { [key: string]: HoveredToken } = {
                     a: {
                         line: 5,
                         character: 1,
-                        word: 'package',
+                        part: undefined,
                     },
                     b: {
                         line: 18,
                         character: 2,
-                        word: 'ErrMethodMismatch',
+                        part: undefined,
                     },
                 }
 
-                const clickedTokens = of(blob.element).pipe(
-                    findPositionsFromEvents(),
+                const clickedTokens = of(codeView.codeView).pipe(
+                    findPositionsFromEvents(codeView),
                     filter(propertyIsDefined('position')),
-                    map(({ position: { line, character, word } }) => ({ line, character, word }))
+                    map(({ position: { line, character } }) => ({ line, character }))
                 )
 
-                cold<Position>(diagram, positions).subscribe(position => clickPositionImpure(blob, position))
+                cold<Position>(diagram, positions).subscribe(position => clickPositionImpure(codeView, position))
 
                 expectObservable(clickedTokens).toBe(diagram, tokens)
             })
