@@ -47,7 +47,7 @@ export default (config: Config): void => {
             },
         },
 
-        reporters: ['progress', 'mocha', 'coverage-istanbul'],
+        reporters: ['mocha', 'coverage-istanbul'],
         mochaReporter: {
             showDiff: true,
         },
