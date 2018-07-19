@@ -212,6 +212,11 @@ export const TOOLTIP_DISPLAY_DELAY = 100
 
 export type HoverFetcher = (position: HoveredToken & HoveredTokenContext) => Observable<HoverMerged | null>
 export type JumpURLFetcher = (position: HoveredToken & HoveredTokenContext) => Observable<string | null>
+
+/**
+ * Function responsible for resolving the position of a hovered token
+ * and its diff part to a full context including repository, commit ID and file path.
+ */
 export type ContextResolver = (hoveredToken: HoveredToken) => HoveredTokenContext
 
 export interface HoveredTokenContext extends RepoSpec, RevSpec, FileSpec, ResolvedRevSpec {}
