@@ -44,18 +44,19 @@ export interface CodeViewProps extends DOMFunctions {
 
 // BEGIN setup test cases
 
-// Abstract implemetation for GitHub and Sourcegraph. Could potentially be sufficient for any code host
+// Abstract implementation for GitHub and Sourcegraph. Could potentially be sufficient for any code host
 // but we may want to keep this as a configuration point.
-const getDiffCodePart = (codeElement: HTMLElement): 'head' | 'base' | undefined => {
-    switch (codeElement.textContent!.charAt(0)) {
-        case '+':
-            return 'head'
-        case '-':
-            return 'base'
-        default:
-            return undefined
-    }
-}
+// Commented out cause we only have tests for non-diff code views so far
+// const getDiffCodePart = (codeElement: HTMLElement): DiffPart => {
+//     switch (codeElement.textContent!.charAt(0)) {
+//         case '+':
+//             return 'head'
+//         case '-':
+//             return 'base'
+//         default:
+//             return null
+//     }
+// }
 
 const createGitHubCodeView = (): CodeViewProps => {
     const codeView = document.createElement('div')
@@ -114,7 +115,6 @@ const createGitHubCodeView = (): CodeViewProps => {
         getCodeElementFromTarget,
         getCodeElementFromLineNumber,
         getLineNumberFromCodeElement,
-        getDiffCodePart,
     }
 }
 
@@ -176,7 +176,6 @@ const createSourcegraphCodeView = (): CodeViewProps => {
         getCodeElementFromTarget,
         getCodeElementFromLineNumber,
         getLineNumberFromCodeElement,
-        getDiffCodePart,
     }
 }
 

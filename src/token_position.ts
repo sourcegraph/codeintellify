@@ -14,25 +14,33 @@ export interface DOMFunctions {
      * @returns the element containing the code for a line or null if it can't be found. For example, the second <td> inside a <tr> on Sourcegraph and Github.
      */
     getCodeElementFromTarget: (target: HTMLElement) => HTMLElement | null
+
     /**
      * Get the element containing the code for a line from a code view given a line number.
+     *
      * @param codeView is the code view itself. For example, the <code> element on Sourcegraph or a <table> on GitHub.
+     * @param part If the code view is a diff view, the part of the diff that the line number refers to.
      * @returns the element containing the code for the given line number or null if it can't be found.
      */
-    getCodeElementFromLineNumber: (codeView: HTMLElement, line: number) => HTMLElement | null
+    getCodeElementFromLineNumber: (codeView: HTMLElement, line: number, part?: DiffPart) => HTMLElement | null
+
     /**
      * Gets the line number for a given element containing code for a line.
-     * @param codeElement is the element containing code for a line. When this function is called,
-     * it will be passed the result of either `getCodeElementFromTarget` or `getCodeElementFromLineNumber`.
-     * @returns the line number.
+     * When this function is called, it will be passed the result of either `getCodeElementFromTarget` or `getCodeElementFromLineNumber`.
+     * @param codeElement The element containing code for a line.
+     * @returns The line number.
      */
     getLineNumberFromCodeElement: (codeElement: HTMLElement) => number
+
     /**
-     * Determine whether a code element is from the base or head part of a diff or not part of a diff.
+     * If the code view is a diff view, must be provided to determine whether
+     * a code element is from the base, head or unchanged part of the diff.
+     * Must be `undefined` if the code view is not a diff view.
+     *
      * @param codeElement is the element containing a line of code.
-     * @returns whether the line is `'base'`, `'head'` or `undefined` if not part of a diff.
+     * @returns The part of the diff `codeElement` belongs to
      */
-    getDiffCodePart?: (codeElement: HTMLElement) => 'base' | 'head' | undefined
+    getDiffCodePart?: (codeElement: HTMLElement) => DiffPart
 }
 
 /**
@@ -200,6 +208,11 @@ export function findElementWithOffset(codeElement: HTMLElement, offset: number):
 }
 
 /**
+ * Whether a line belongs to the base rev of the diff (removed), the head (added) or `null` if either (not changed).
+ */
+export type DiffPart = 'base' | 'head' | null
+
+/**
  * Returned when only the line is known.
  *
  * 1-indexed
@@ -213,7 +226,7 @@ export interface HoveredToken {
     line: number
     /** 1-indexed */
     character: number
-    part?: 'base' | 'head'
+    part?: DiffPart
 }
 
 interface LocateTargetOptions extends DOMFunctions {
@@ -284,11 +297,13 @@ export function locateTarget(
 interface GetCodeElementsInRangeOptions extends Pick<DOMFunctions, 'getCodeElementFromLineNumber'> {
     codeView: HTMLElement
     position?: LineOrPositionOrRange
+    part?: DiffPart
 }
 
 export const getCodeElementsInRange = ({
     codeView,
     position,
+    part,
     getCodeElementFromLineNumber,
 }: GetCodeElementsInRangeOptions): {
     /** 1-indexed line number */
@@ -302,7 +317,7 @@ export const getCodeElementsInRange = ({
 
     const elements: { line: number; element: HTMLElement }[] = []
     for (let line = position.line; line <= (position.endLine || position.line); line++) {
-        const element = getCodeElementFromLineNumber(codeView, position.line)
+        const element = getCodeElementFromLineNumber(codeView, position.line, part)
         if (!element) {
             break
         }
@@ -316,13 +331,16 @@ export const getCodeElementsInRange = ({
  *
  * @param codeView The code view
  * @param position 1-indexed position
+ * @param options Code-host specific implementations of DOM retrieval functions
+ * @param part If the code view is a diff view, the part of the diff that the position refers to
  */
 export const getTokenAtPosition = (
     codeView: HTMLElement,
     position: Position,
-    options: DOMFunctions
+    options: DOMFunctions,
+    part?: DiffPart
 ): HTMLElement | undefined => {
-    const codeCell = options.getCodeElementFromLineNumber(codeView, position.line)
+    const codeCell = options.getCodeElementFromLineNumber(codeView, position.line, part)
     if (!codeCell) {
         return undefined
     }
