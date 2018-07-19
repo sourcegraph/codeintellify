@@ -19,7 +19,7 @@ import { isDefined } from './helpers'
 import { overlayUIHasContent, scrollIntoCenterIfNeeded } from './helpers'
 import { HoverOverlayProps, isJumpURL } from './HoverOverlay'
 import { calculateOverlayPosition } from './overlay_position'
-import { PositionEvent, SupportedMouseEvent } from './positions'
+import { DiffPart, PositionEvent, SupportedMouseEvent } from './positions'
 import { createObservableStateContainer } from './state'
 import {
     convertNode,
@@ -104,7 +104,7 @@ export interface PositionJump {
     /**
      * The position within the code view to jump to
      */
-    position: LineOrPositionOrRange
+    position: LineOrPositionOrRange & { part?: DiffPart }
     /**
      * The code view
      */
@@ -306,7 +306,7 @@ export const createHoverifier = ({
     /** Emits DOM elements at new positions found in the URL */
     const jumpTargets = allPositionJumps.pipe(
         // Only use line and character for comparison
-        map(({ position: { line, character }, ...rest }) => ({ position: { line, character }, ...rest })),
+        map(({ position: { line, character, part }, ...rest }) => ({ position: { line, character, part }, ...rest })),
         // Ignore same values
         // It's important to do this before filtering otherwise navigating from
         // a position, to a line-only position, back to the first position would get ignored
@@ -314,7 +314,7 @@ export const createHoverifier = ({
         // Ignore undefined or partial positions (e.g. line only)
         filter((jump): jump is typeof jump & { position: Position } => Position.is(jump.position)),
         map(({ position, codeView, dom, ...rest }) => {
-            const cell = dom.getCodeElementFromLineNumber(codeView, position.line)
+            const cell = dom.getCodeElementFromLineNumber(codeView, position.line, position.part)
             if (!cell) {
                 return undefined
             }
@@ -365,7 +365,7 @@ export const createHoverifier = ({
     const hoverObservables = resolvedPositions.pipe(
         map(({ position, ...rest }) => {
             if (!position) {
-                return of({ ...rest, hoverOrError: undefined })
+                return of({ ...rest, hoverOrError: undefined, part: undefined })
             }
             // Fetch the hover for that position
             const hoverFetch = fetchHover(position).pipe(
@@ -387,7 +387,7 @@ export const createHoverifier = ({
                     takeUntil(hoverFetch)
                 ),
                 hoverFetch
-            ).pipe(map(hoverOrError => ({ ...rest, hoverOrError })))
+            ).pipe(map(hoverOrError => ({ ...rest, hoverOrError, part: position.part })))
         }),
         share()
     )
@@ -395,7 +395,7 @@ export const createHoverifier = ({
     subscription.add(
         hoverObservables
             .pipe(switchMap(hoverObservable => hoverObservable))
-            .subscribe(({ hoverOrError, codeView, dom }) => {
+            .subscribe(({ hoverOrError, codeView, dom, part }) => {
                 container.update({
                     hoverOrError,
                     // Reset the hover position, it's gonna be repositioned after the hover was rendered
@@ -410,7 +410,7 @@ export const createHoverifier = ({
                 }
                 // LSP is 0-indexed, the code in the webapp currently is 1-indexed
                 const { line, character } = hoverOrError.range.start
-                const token = getTokenAtPosition(codeView, { line: line + 1, character: character + 1 }, dom)
+                const token = getTokenAtPosition(codeView, { line: line + 1, character: character + 1 }, dom, part)
                 if (!token) {
                     return
                 }

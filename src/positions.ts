@@ -1,7 +1,7 @@
 import { fromEvent, merge, Observable } from 'rxjs'
 import { filter, map, switchMap, tap } from 'rxjs/operators'
 import { Position } from 'vscode-languageserver-types'
-import { convertCodeElementIdempotent, DOMFunctions, HoveredToken, locateTarget } from './token_position'
+import { convertCodeElementIdempotent, DiffPart, DOMFunctions, HoveredToken, locateTarget } from './token_position'
 
 export type SupportedMouseEvent = 'click' | 'mousemove' | 'mouseover'
 
@@ -25,7 +25,7 @@ export interface PositionEvent {
     codeView: HTMLElement
 }
 
-export { DOMFunctions }
+export { DOMFunctions, DiffPart }
 export const findPositionsFromEvents = (options: DOMFunctions) => (
     elements: Observable<HTMLElement>
 ): Observable<PositionEvent> =>
@@ -67,7 +67,10 @@ export const findPositionsFromEvents = (options: DOMFunctions) => (
     ).pipe(
         // Find out the position that was hovered over
         map(({ target, codeView, ...rest }) => {
-            const hoveredToken = locateTarget(target, options)
+            const hoveredToken = locateTarget(target, {
+                ignoreFirstChar: !!options.getDiffCodePart,
+                ...options,
+            })
             const position = Position.is(hoveredToken) ? hoveredToken : undefined
             return { position, codeView, ...rest }
         })

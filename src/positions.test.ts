@@ -10,7 +10,7 @@ import { propertyIsDefined } from './helpers'
 import { findPositionsFromEvents } from './positions'
 import { HoveredToken } from './token_position'
 
-describe('position_listener', () => {
+describe('positions', () => {
     const dom = new DOM()
     after(dom.cleanup)
 
