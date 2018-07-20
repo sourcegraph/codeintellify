@@ -1,5 +1,5 @@
 import Loader from '@sourcegraph/icons/lib/Loader'
-import { castArray, upperFirst } from 'lodash'
+import { castArray, noop, upperFirst } from 'lodash'
 import AlertCircleOutlineIcon from 'mdi-react/AlertCircleOutlineIcon'
 import CloseIcon from 'mdi-react/CloseIcon'
 import InformationOutlineIcon from 'mdi-react/InformationOutlineIcon'
@@ -78,18 +78,29 @@ export const isJumpURL = (val: any): val is { jumpURL: string } =>
 const transformMouseEvent = (handler: (event: MouseEvent) => void) => (event: React.MouseEvent<HTMLElement>) =>
     handler(toNativeEvent(event))
 
-export const HoverOverlay: React.StatelessComponent<HoverOverlayProps> = props => (
+export const HoverOverlay: React.StatelessComponent<HoverOverlayProps> = ({
+    definitionURLOrError,
+    hoveredToken,
+    hoverOrError,
+    hoverRef,
+    linkComponent,
+    onCloseButtonClick,
+    onGoToDefinitionClick,
+    overlayPosition,
+    showCloseButton,
+    logTelemetryEvent = noop,
+}) => (
     <div
         className="hover-overlay card"
-        ref={props.hoverRef}
+        ref={hoverRef}
         // tslint:disable-next-line:jsx-ban-props needed for dynamic styling
         style={
-            props.overlayPosition
+            overlayPosition
                 ? {
                       opacity: 1,
                       visibility: 'visible',
-                      left: props.overlayPosition.left + 'px',
-                      top: props.overlayPosition.top + 'px',
+                      left: overlayPosition.left + 'px',
+                      top: overlayPosition.top + 'px',
                   }
                 : {
                       opacity: 0,
@@ -97,32 +108,32 @@ export const HoverOverlay: React.StatelessComponent<HoverOverlayProps> = props =
                   }
         }
     >
-        {props.showCloseButton && (
+        {showCloseButton && (
             <button
                 className="hover-overlay__close-button btn btn-icon"
-                onClick={props.onCloseButtonClick ? transformMouseEvent(props.onCloseButtonClick) : undefined}
+                onClick={onCloseButtonClick ? transformMouseEvent(onCloseButtonClick) : undefined}
             >
                 <CloseIcon className="icon-inline" />
             </button>
         )}
 
-        {props.hoverOrError && (
+        {hoverOrError && (
             <div className="hover-overlay__contents">
-                {props.hoverOrError === LOADING ? (
+                {hoverOrError === LOADING ? (
                     <div className="hover-overlay__row hover-overlay__loader-row">
                         <Loader className="icon-inline" />
                     </div>
-                ) : isErrorLike(props.hoverOrError) ? (
+                ) : isErrorLike(hoverOrError) ? (
                     <div className="hover-overlay__row hover-overlay__hover-error lert alert-danger">
                         <h4>
                             <AlertCircleOutlineIcon className="icon-inline" /> Error fetching hover from language
                             server:
                         </h4>
-                        {upperFirst(props.hoverOrError.message)}
+                        {upperFirst(hoverOrError.message)}
                     </div>
                 ) : (
                     // tslint:disable-next-line deprecation We want to handle the deprecated MarkedString
-                    castArray<MarkedString | MarkupContent>(props.hoverOrError.contents)
+                    castArray<MarkedString | MarkupContent>(hoverOrError.contents)
                         .map(value => (typeof value === 'string' ? { kind: MarkupKind.Markdown, value } : value))
                         .map((content, i) => {
                             if (MarkupContent.is(content)) {
@@ -165,24 +176,24 @@ export const HoverOverlay: React.StatelessComponent<HoverOverlayProps> = props =
 
         <div className="hover-overlay__actions hover-overlay__row">
             <ButtonOrLink
-                linkComponent={props.linkComponent}
-                to={isJumpURL(props.definitionURLOrError) ? props.definitionURLOrError.jumpURL : undefined}
+                linkComponent={linkComponent}
+                to={isJumpURL(definitionURLOrError) ? definitionURLOrError.jumpURL : undefined}
                 className="btn btn-secondary hover-overlay__action e2e-tooltip-j2d"
-                onClick={props.onGoToDefinitionClick ? transformMouseEvent(props.onGoToDefinitionClick) : undefined}
+                onClick={onGoToDefinitionClick ? transformMouseEvent(onGoToDefinitionClick) : undefined}
             >
-                Go to definition {props.definitionURLOrError === LOADING && <Loader className="icon-inline" />}
+                Go to definition {definitionURLOrError === LOADING && <Loader className="icon-inline" />}
             </ButtonOrLink>
             <ButtonOrLink
-                linkComponent={props.linkComponent}
+                linkComponent={linkComponent}
                 // tslint:disable-next-line:jsx-no-lambda
-                onClick={() => props.logTelemetryEvent('FindRefsClicked')}
+                onClick={() => logTelemetryEvent('FindRefsClicked')}
                 to={
-                    props.hoveredToken &&
+                    hoveredToken &&
                     toPrettyBlobURL({
-                        repoPath: props.hoveredToken.repoPath,
-                        rev: props.hoveredToken.rev,
-                        filePath: props.hoveredToken.filePath,
-                        position: props.hoveredToken,
+                        repoPath: hoveredToken.repoPath,
+                        rev: hoveredToken.rev,
+                        filePath: hoveredToken.filePath,
+                        position: hoveredToken,
                         viewState: 'references',
                     })
                 }
@@ -191,16 +202,16 @@ export const HoverOverlay: React.StatelessComponent<HoverOverlayProps> = props =
                 Find references
             </ButtonOrLink>
             <ButtonOrLink
-                linkComponent={props.linkComponent}
+                linkComponent={linkComponent}
                 // tslint:disable-next-line:jsx-no-lambda
-                onClick={() => props.logTelemetryEvent('FindImplementationsClicked')}
+                onClick={() => logTelemetryEvent('FindImplementationsClicked')}
                 to={
-                    props.hoveredToken &&
+                    hoveredToken &&
                     toPrettyBlobURL({
-                        repoPath: props.hoveredToken.repoPath,
-                        rev: props.hoveredToken.rev,
-                        filePath: props.hoveredToken.filePath,
-                        position: props.hoveredToken,
+                        repoPath: hoveredToken.repoPath,
+                        rev: hoveredToken.rev,
+                        filePath: hoveredToken.filePath,
+                        position: hoveredToken,
                         viewState: 'impl',
                     })
                 }
@@ -209,17 +220,17 @@ export const HoverOverlay: React.StatelessComponent<HoverOverlayProps> = props =
                 Find implementations
             </ButtonOrLink>
         </div>
-        {props.definitionURLOrError === null ? (
+        {definitionURLOrError === null ? (
             <div className="alert alert-info hover-overlay__alert-below">
                 <InformationOutlineIcon className="icon-inline" /> No definition found
             </div>
         ) : (
-            isErrorLike(props.definitionURLOrError) && (
+            isErrorLike(definitionURLOrError) && (
                 <div className="alert alert-danger hover-overlay__alert-below">
                     <strong>
                         <AlertCircleOutlineIcon className="icon-inline" /> Error finding definition:
                     </strong>{' '}
-                    {upperFirst(props.definitionURLOrError.message)}
+                    {upperFirst(definitionURLOrError.message)}
                 </div>
             )
         )}

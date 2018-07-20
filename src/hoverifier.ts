@@ -1,5 +1,5 @@
-import { isEqual } from 'lodash'
-import { combineLatest, concat, fromEvent, merge, Observable, of, Subject, Subscription, zip } from 'rxjs'
+import { isEqual, noop } from 'lodash'
+import { combineLatest, concat, EMPTY, fromEvent, merge, Observable, of, Subject, Subscription, zip } from 'rxjs'
 import {
     catchError,
     debounceTime,
@@ -70,7 +70,7 @@ export interface HoverifierOptions {
     /**
      * Called to log telemetry events
      */
-    logTelemetryEvent: (event: string, data?: any) => void
+    logTelemetryEvent?: (event: string, data?: any) => void
 
     fetchHover: HoverFetcher
     fetchJumpURL: JumpURLFetcher
@@ -130,7 +130,7 @@ export interface HoverifyOptions extends EventOptions {
      * Emit on this Observable to trigger the overlay on a position in this code view.
      * This Observable is intended to be used to trigger a Hover after a URL change with a position.
      */
-    positionJumps: Observable<PositionJump>
+    positionJumps?: Observable<PositionJump>
 }
 
 /**
@@ -228,7 +228,7 @@ export const createHoverifier = ({
     pushHistory,
     fetchHover,
     fetchJumpURL,
-    logTelemetryEvent,
+    logTelemetryEvent = noop,
 }: HoverifierOptions): Hoverifier => {
     // Internal state that is not exposed to the caller
     // Shared between all hoverified code views
@@ -579,7 +579,7 @@ export const createHoverifier = ({
             map(internalToExternalState),
             distinctUntilChanged((a, b) => isEqual(a, b))
         ),
-        hoverify({ positionEvents, positionJumps, ...eventOptions }: HoverifyOptions): Subscription {
+        hoverify({ positionEvents, positionJumps = EMPTY, ...eventOptions }: HoverifyOptions): Subscription {
             const subscription = new Subscription()
             const eventWithOptions = map((event: PositionEvent) => ({ ...event, ...eventOptions }))
             // Broadcast all events from this code view
