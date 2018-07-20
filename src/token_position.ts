@@ -217,7 +217,7 @@ export type DiffPart = 'base' | 'head' | null
  *
  * 1-indexed
  */
-interface Line {
+export interface Line {
     line: number
 }
 
@@ -229,7 +229,7 @@ export interface HoveredToken {
     part?: DiffPart
 }
 
-interface LocateTargetOptions extends DOMFunctions {
+export interface LocateTargetOptions extends DOMFunctions {
     ignoreFirstChar?: boolean
 }
 
@@ -294,7 +294,7 @@ export function locateTarget(
     return { line }
 }
 
-interface GetCodeElementsInRangeOptions extends Pick<DOMFunctions, 'getCodeElementFromLineNumber'> {
+export interface GetCodeElementsInRangeOptions extends Pick<DOMFunctions, 'getCodeElementFromLineNumber'> {
     codeView: HTMLElement
     position?: LineOrPositionOrRange
     part?: DiffPart

@@ -34,7 +34,7 @@ import { FileSpec, LineOrPositionOrRange, RepoSpec, ResolvedRevSpec, RevSpec } f
 
 export { HoveredToken }
 
-interface HoverifierOptions {
+export interface HoverifierOptions {
     /**
      * Emit the HoverOverlay element on this after it was rerendered when its content changed and it needs to be repositioned.
      */
@@ -118,7 +118,7 @@ export interface PositionJump {
 /**
  * HoverifyOptions that need to be included internally with every event
  */
-interface EventOptions {
+export interface EventOptions {
     resolveContext: ContextResolver
     dom: DOMFunctions
 }
