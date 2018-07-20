@@ -331,19 +331,22 @@ export const getCodeElementsInRange = ({
  *
  * @param codeView The code view
  * @param position 1-indexed position
- * @param options Code-host specific implementations of DOM retrieval functions
+ * @param domOptions Code-host specific implementations of DOM retrieval functions
  * @param part If the code view is a diff view, the part of the diff that the position refers to
  */
 export const getTokenAtPosition = (
     codeView: HTMLElement,
-    position: Position,
-    options: DOMFunctions,
+    { line, character }: Position,
+    { getCodeElementFromLineNumber, getDiffCodePart }: DOMFunctions,
     part?: DiffPart
 ): HTMLElement | undefined => {
-    const codeCell = options.getCodeElementFromLineNumber(codeView, position.line, part)
-    if (!codeCell) {
+    const codeElement = getCodeElementFromLineNumber(codeView, line, part)
+    if (!codeElement) {
         return undefined
     }
-
-    return findElementWithOffset(codeCell, position.character)
+    // On diff pages, account for the +/- indicator
+    if (getDiffCodePart) {
+        character++
+    }
+    return findElementWithOffset(codeElement, character)
 }
