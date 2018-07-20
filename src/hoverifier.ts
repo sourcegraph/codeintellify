@@ -546,13 +546,13 @@ export const createHoverifier = ({
                 // Remember active position in state for blame and range expansion
                 selectedPosition: position,
             })
-            const rows = getCodeElementsInRange({ codeView, position, getCodeElementFromLineNumber })
-            for (const { element } of rows) {
+            const codeElements = getCodeElementsInRange({ codeView, position, getCodeElementFromLineNumber })
+            for (const { element } of codeElements) {
                 convertNode(element)
             }
             // Scroll into view
-            if (rows.length > 0) {
-                scrollIntoCenterIfNeeded(scrollElement, codeView, rows[0].element)
+            if (codeElements.length > 0) {
+                scrollIntoCenterIfNeeded(scrollElement, codeView, codeElements[0].element)
             }
         })
     )
