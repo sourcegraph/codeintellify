@@ -68,7 +68,7 @@ export interface HoverOverlayProps {
     /** Called when the close button is clicked */
     onCloseButtonClick?: (event: MouseEvent) => void
 
-    logTelemetryEvent: (event: string, data?: any) => void
+    logTelemetryEvent?: (event: string, data?: any) => void
 }
 
 /** Returns true if the input is successful jump URL result */
