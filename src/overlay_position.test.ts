@@ -110,28 +110,53 @@ describe('overlay_position', () => {
             beforeEach(() => {
                 relativeElement.style.height = '600px'
                 relativeElement.style.overflow = 'auto'
-
-                const content = document.createElement('div')
-                content.style.height = '3000px'
-                content.style.width = '3000px'
-                relativeElement.appendChild(content)
-
-                relativeElement.scrollTop = 400
-                relativeElement.scrollLeft = 200
             })
+            describe('not scrolled', () => {
+                beforeEach(() => {
+                    const content = document.createElement('div')
+                    content.style.height = '500px'
+                    content.style.width = '700px'
+                    relativeElement.appendChild(content)
+                })
 
-            it('should return a position above the given target if the overlay fits above', () => {
-                const target = createTarget({ left: 300, top: 600 })
-                const position = calculateOverlayPosition({ relativeElement, target, hoverOverlayElement })
-                applyOffsets(hoverOverlayElement, position)
-                assert.deepStrictEqual(position, { left: 300, top: 450 })
+                it('should return a position above the given target if the overlay fits above', () => {
+                    const target = createTarget({ left: 100, top: 200 })
+                    const position = calculateOverlayPosition({ relativeElement, target, hoverOverlayElement })
+                    applyOffsets(hoverOverlayElement, position)
+                    assert.deepStrictEqual(position, { left: 100, top: 50 })
+                })
+
+                it('should return a position below the a given target if the overlay does not fit above', () => {
+                    const target = createTarget({ left: 100, top: 140 })
+                    const position = calculateOverlayPosition({ relativeElement, target, hoverOverlayElement })
+                    applyOffsets(hoverOverlayElement, position)
+                    assert.deepStrictEqual(position, { left: 100, top: 156 })
+                })
             })
+            describe('scrolled', () => {
+                beforeEach(() => {
+                    const content = document.createElement('div')
+                    content.style.height = '3000px'
+                    content.style.width = '3000px'
+                    relativeElement.appendChild(content)
 
-            it('should return a position below the a given target if the overlay does not fit above', () => {
-                const target = createTarget({ left: 300, top: 450 })
-                const position = calculateOverlayPosition({ relativeElement, target, hoverOverlayElement })
-                applyOffsets(hoverOverlayElement, position)
-                assert.deepStrictEqual(position, { left: 300, top: 466 })
+                    relativeElement.scrollTop = 400
+                    relativeElement.scrollLeft = 200
+                })
+
+                it('should return a position above the given target if the overlay fits above', () => {
+                    const target = createTarget({ left: 300, top: 600 })
+                    const position = calculateOverlayPosition({ relativeElement, target, hoverOverlayElement })
+                    applyOffsets(hoverOverlayElement, position)
+                    assert.deepStrictEqual(position, { left: 300, top: 450 })
+                })
+
+                it('should return a position below the a given target if the overlay does not fit above', () => {
+                    const target = createTarget({ left: 300, top: 450 })
+                    const position = calculateOverlayPosition({ relativeElement, target, hoverOverlayElement })
+                    applyOffsets(hoverOverlayElement, position)
+                    assert.deepStrictEqual(position, { left: 300, top: 466 })
+                })
             })
         })
     })

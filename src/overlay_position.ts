@@ -1,4 +1,4 @@
-interface CalculateOverlayPositionOptions {
+export interface CalculateOverlayPositionOptions {
     /** The closest parent element that is `position: relative` */
     relativeElement: HTMLElement
     /** The DOM Node that was hovered */
@@ -31,8 +31,8 @@ export const calculateOverlayPosition = ({
     const relativeHoverOverlayLeft = targetBounds.left + relativeElement.scrollLeft - relativeElementBounds.left
 
     let relativeHoverOverlayTop: number
-    // If the top of the hover overlay would be outside of the viewport (top negative)
-    if (targetBounds.top - hoverOverlayBounds.height < 0) {
+    // Check if the top of the hover overlay would be outside of the relative element or the viewport
+    if (targetBounds.top - hoverOverlayBounds.height < Math.max(relativeElementBounds.top, 0)) {
         // Position it below the target
         // If the relativeElement is scrolled, we need to account for the offset (if not scrollTop will be 0)
         relativeHoverOverlayTop = targetBounds.bottom - relativeElementBounds.top + relativeElement.scrollTop
