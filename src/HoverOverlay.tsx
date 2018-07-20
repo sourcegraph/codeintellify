@@ -12,11 +12,14 @@ import { HoveredToken } from './token_position'
 import { HoverMerged, LOADING } from './types'
 import { toPrettyBlobURL } from './url'
 
+/** The component used to render a link */
+export type LinkComponent = React.ComponentType<{ to: string } & React.HTMLAttributes<HTMLElement>>
+
 /**
  * Uses a placeholder `<button>` or a React Router `<Link>` depending on whether `to` is set.
  */
 const ButtonOrLink: React.StatelessComponent<
-    { linkComponent: React.ComponentType<{ to: string }>; to?: string } & React.HTMLAttributes<HTMLElement>
+    { linkComponent: LinkComponent; to?: string } & React.HTMLAttributes<HTMLElement>
 > = ({ linkComponent, to, children, ...rest }) => {
     const Link = linkComponent
     return to ? (
@@ -56,7 +59,8 @@ export interface HoverOverlayProps {
     /** Whether to show the close button for the hover overlay */
     showCloseButton: boolean
 
-    linkComponent: React.ComponentType<{ to: string }>
+    /** The component used to render links */
+    linkComponent: LinkComponent
 
     /** Called when the Go-to-definition button was clicked */
     onGoToDefinitionClick?: (event: MouseEvent) => void
