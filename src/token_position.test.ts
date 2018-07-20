@@ -1,7 +1,14 @@
+import * as assert from 'assert'
 import { Position } from 'vscode-languageserver-types'
-
 import { CodeViewProps, DOM } from './testutils/dom'
-import { convertNode, findElementWithOffset, getTokenAtPosition, HoveredToken, locateTarget } from './token_position'
+import {
+    convertNode,
+    findElementWithOffset,
+    getCodeElementsInRange,
+    getTokenAtPosition,
+    HoveredToken,
+    locateTarget,
+} from './token_position'
 
 const { expect } = chai
 
@@ -202,5 +209,30 @@ describe('token_positions', () => {
                 }
             }
         })
+    })
+
+    describe('getCodeElementsInRange()', () => {
+        it('returns all code elements within a given range on a non-diff code view', () => {
+            const codeView = document.createElement('div')
+            codeView.innerHTML = `
+                <div>Line 1</div>
+                <div>Line 2</div>
+                <div>Line 3</div>
+                <div>Line 4</div>
+                <div>Line 5</div>
+            `
+            const codeElements = getCodeElementsInRange({
+                codeView,
+                position: { line: 2, endLine: 4 },
+                getCodeElementFromLineNumber: (codeView, line) => codeView.children[line - 1] as HTMLElement,
+            })
+            assert.deepStrictEqual(codeElements.map(({ line, element }) => ({ line, content: element.textContent })), [
+                { line: 2, content: 'Line 2' },
+                { line: 3, content: 'Line 3' },
+                { line: 4, content: 'Line 4' },
+            ])
+        })
+
+        it('returns all code elements within a given range on a diff code view')
     })
 })
