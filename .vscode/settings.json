@@ -1,3 +1,9 @@
 {
-  "editor.formatOnSave": true
+  "editor.formatOnSave": true,
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "lib/": true,
+    "coverage/": true
+  }
 }
