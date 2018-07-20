@@ -317,7 +317,7 @@ export const getCodeElementsInRange = ({
 
     const elements: { line: number; element: HTMLElement }[] = []
     for (let line = position.line; line <= (position.endLine || position.line); line++) {
-        const element = getCodeElementFromLineNumber(codeView, position.line, part)
+        const element = getCodeElementFromLineNumber(codeView, line, part)
         if (!element) {
             break
         }
