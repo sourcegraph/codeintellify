@@ -406,14 +406,14 @@ export const createHoverifier = ({
                     // Reset the hover position, it's gonna be repositioned after the hover was rendered
                     hoverOverlayPosition: undefined,
                 })
-                const currentHighlighted = codeView!.querySelector('.selection-highlight')
+                const currentHighlighted = codeView.querySelector('.selection-highlight')
                 if (currentHighlighted) {
                     currentHighlighted.classList.remove('selection-highlight')
                 }
                 if (!HoverMerged.is(hoverOrError) || !hoverOrError.range) {
                     return
                 }
-                // LSP is 0-indexed, the code in the webapp currently is 1-indexed
+                // LSP is 0-indexed, the code here is currently 1-indexed
                 const { line, character } = hoverOrError.range.start
                 const token = getTokenAtPosition(codeView, { line: line + 1, character: character + 1 }, dom, part)
                 if (!token) {
