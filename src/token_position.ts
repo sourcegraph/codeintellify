@@ -256,7 +256,7 @@ export function locateTarget(
 
     // If the hovered target was the code element itself or a parent,
     // make sure to not return the last character
-    if (target === codeElement || target.contains(codeElement)) {
+    if (target === codeElement) {
         return { line }
     }
 
