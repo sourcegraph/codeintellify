@@ -5,6 +5,7 @@
     display: flex;
     flex-direction: column;
     align-items: stretch;
+    z-index: 20;
 
     transition: opacity 200ms ease-in-out;
 
