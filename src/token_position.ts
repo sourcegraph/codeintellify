@@ -253,6 +253,13 @@ export function locateTarget(
     }
 
     const line = getLineNumberFromCodeElement(codeElement)
+
+    // If the hovered target was the code element itself or a parent,
+    // make sure to not return the last character
+    if (target === codeElement || target.contains(codeElement)) {
+        return { line }
+    }
+
     const part = getDiffCodePart && getDiffCodePart(codeElement)
 
     let character = 1

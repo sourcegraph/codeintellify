@@ -209,6 +209,22 @@ describe('token_positions', () => {
                 }
             }
         })
+
+        it('returns only the line number when the code element itself is hovered', () => {
+            for (const { codeView, ...domOptions } of testcases) {
+                const target = domOptions.getCodeElementFromLineNumber(codeView, 1)!
+                const result = locateTarget(target, domOptions)
+                assert.deepStrictEqual(result, { line: 1 })
+            }
+        })
+
+        it('returns undefined when the code view itself is hovered', () => {
+            for (const { codeView, ...domOptions } of testcases) {
+                const target = codeView
+                const result = locateTarget(target, domOptions)
+                assert.strictEqual(result, undefined)
+            }
+        })
     })
 
     describe('getCodeElementsInRange()', () => {
