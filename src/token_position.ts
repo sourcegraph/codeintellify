@@ -41,6 +41,14 @@ export interface DOMFunctions {
      * @returns The part of the diff `codeElement` belongs to
      */
     getDiffCodePart?: (codeElement: HTMLElement) => DiffPart
+
+    /**
+     * Must return `true` if the first character in the code element is always
+     * the diff indicator (`+`, `-` or space), `false` otherwise.
+     *
+     * @param codeElement is the element containing a line of code.
+     */
+    isFirstCharacterDiffIndicator?(codeElement: HTMLElement): boolean
 }
 
 /**
@@ -229,10 +237,6 @@ export interface HoveredToken {
     part?: DiffPart
 }
 
-export interface LocateTargetOptions extends DOMFunctions {
-    ignoreFirstChar?: boolean
-}
-
 /**
  * Determines the line and character offset for some source code, identified by its HTMLElement wrapper.
  * It works by traversing the DOM until the HTMLElement's TD ancestor. Once the ancestor is found, we traverse the DOM again
@@ -243,7 +247,12 @@ export interface LocateTargetOptions extends DOMFunctions {
  */
 export function locateTarget(
     target: HTMLElement,
-    { ignoreFirstChar, getCodeElementFromTarget, getDiffCodePart, getLineNumberFromCodeElement }: LocateTargetOptions
+    {
+        getCodeElementFromTarget,
+        getLineNumberFromCodeElement,
+        getDiffCodePart,
+        isFirstCharacterDiffIndicator,
+    }: DOMFunctions
 ): Line | HoveredToken | undefined {
     const codeElement = getCodeElementFromTarget(target)
 
@@ -261,6 +270,7 @@ export function locateTarget(
     }
 
     const part = getDiffCodePart && getDiffCodePart(codeElement)
+    let ignoreFirstCharacter = !!isFirstCharacterDiffIndicator && isFirstCharacterDiffIndicator(codeElement)
 
     let character = 1
     // Iterate recursively over the current target's children until we find the original target;
@@ -286,9 +296,9 @@ export function locateTarget(
             if (child.children.length === 0) {
                 // Child is not the original target, but has no chidren to recurse on. Add to character offset.
                 character += (child.textContent as string).length // TODO(john): I think this needs to be escaped before we add its length...
-                if (ignoreFirstChar) {
-                    character -= 1 // make sure not to count weird diff prefix
-                    ignoreFirstChar = false
+                if (ignoreFirstCharacter) {
+                    character -= 1
+                    ignoreFirstCharacter = false
                 }
             }
         }
@@ -344,7 +354,7 @@ export const getCodeElementsInRange = ({
 export const getTokenAtPosition = (
     codeView: HTMLElement,
     { line, character }: Position,
-    { getCodeElementFromLineNumber, getDiffCodePart }: DOMFunctions,
+    { getCodeElementFromLineNumber, isFirstCharacterDiffIndicator }: DOMFunctions,
     part?: DiffPart
 ): HTMLElement | undefined => {
     const codeElement = getCodeElementFromLineNumber(codeView, line, part)
@@ -352,7 +362,7 @@ export const getTokenAtPosition = (
         return undefined
     }
     // On diff pages, account for the +/- indicator
-    if (getDiffCodePart) {
+    if (isFirstCharacterDiffIndicator && isFirstCharacterDiffIndicator(codeElement)) {
         character++
     }
     return findElementWithOffset(codeElement, character)

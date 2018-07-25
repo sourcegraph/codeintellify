@@ -67,10 +67,7 @@ export const findPositionsFromEvents = (options: DOMFunctions) => (
     ).pipe(
         // Find out the position that was hovered over
         map(({ target, codeView, ...rest }) => {
-            const hoveredToken = locateTarget(target, {
-                ignoreFirstChar: !!options.getDiffCodePart,
-                ...options,
-            })
+            const hoveredToken = locateTarget(target, options)
             const position = Position.is(hoveredToken) ? hoveredToken : undefined
             return { position, codeView, ...rest }
         })
