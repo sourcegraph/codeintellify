@@ -371,13 +371,13 @@ export const createHoverifier = ({
     const hoverObservables = resolvedPositions.pipe(
         map(({ position, ...rest }) => {
             if (!position) {
-                return of({ ...rest, hoverOrError: undefined, part: undefined })
+                return of({ ...rest, hoverOrError: null, part: undefined })
             }
             // Fetch the hover for that position
             const hoverFetch = fetchHover(position).pipe(
                 catchError(error => {
                     if (error && error.code === EMODENOTFOUND) {
-                        return [undefined]
+                        return [null]
                     }
                     return [asError(error)]
                 }),
@@ -444,7 +444,7 @@ export const createHoverifier = ({
         // Fetch the definition location for that position
         map(({ position }) => {
             if (!position) {
-                return of(undefined)
+                return of(null)
             }
             return concat(
                 [LOADING],
@@ -497,8 +497,13 @@ export const createHoverifier = ({
                     // and can reevaluate our pinning decision whenever one of the two updates,
                     // independent of the order in which they emit
                     return combineLatest(hoverObservable, definitionObservable).pipe(
-                        map(([{ hoverOrError }, definitionURLOrError]) =>
-                            overlayUIHasContent({ hoverOrError, definitionURLOrError })
+                        map(
+                            ([{ hoverOrError }, definitionURLOrError]) =>
+                                // In the time between the click/jump and the loader being displayed,
+                                // pin the hover overlay so mouseover events get ignored
+                                // If the hover comes back empty (and the definition) it will get unpinned again
+                                hoverOrError === undefined ||
+                                overlayUIHasContent({ hoverOrError, definitionURLOrError })
                         )
                     )
                 })
