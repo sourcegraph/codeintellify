@@ -10,7 +10,6 @@ import {
     share,
     switchMap,
     takeUntil,
-    tap,
     withLatestFrom,
 } from 'rxjs/operators'
 import { Key } from 'ts-key-enum'
@@ -254,17 +253,17 @@ export const createHoverifier = ({
     ): event is MouseEventTrigger & { eventType: T } => event.eventType === type
     const allCodeMouseMoves = allPositionsFromEvents.pipe(filter(isEventType('mousemove')))
     const allCodeMouseOvers = allPositionsFromEvents.pipe(filter(isEventType('mouseover')))
-    const allCodeClicks = allPositionsFromEvents.pipe(
-        filter(isEventType('click')),
-        // Stop propagation of the click events we handle,
-        // so that our window click listener can safely close the overlay
-        // and not worry about bubbling events
-        tap(({ event }) => event.stopPropagation())
-    )
+    const allCodeClicks = allPositionsFromEvents.pipe(filter(isEventType('click')))
 
     const allPositionJumps = new Subject<PositionJump & EventOptions>()
 
     const subscription = new Subscription()
+
+    /**
+     * click events on the code element, ignoring click events caused by the user selecting text.
+     * Selecting text should not mess with the hover, hover pinning nor the URL.
+     */
+    const codeClicksWithoutSelections = allCodeClicks.pipe(filter(() => window.getSelection().toString() === ''))
 
     // Mouse is moving, don't show the tooltip
     subscription.add(
@@ -300,7 +299,7 @@ export const createHoverifier = ({
         share()
     )
 
-    const codeClickTargets = allCodeClicks.pipe(
+    const codeClickTargets = codeClicksWithoutSelections.pipe(
         filter(({ event }) => event.currentTarget !== null),
         map(({ event, ...rest }) => ({
             target: event.target as HTMLElement,
@@ -527,13 +526,13 @@ export const createHoverifier = ({
         })
     )
 
-    // When the close button is clicked, ESC is pressed or outside a code view is clicked unpin, hide and reset the hover
+    // When the close button is clicked, unpin, hide and reset the hover
     subscription.add(
         merge(
             closeButtonClicks,
-            fromEvent<KeyboardEvent>(window, 'keydown').pipe(filter(event => event.key === Key.Escape)),
-            fromEvent<MouseEvent>(window, 'click')
-        ).subscribe(() => {
+            fromEvent<KeyboardEvent>(window, 'keydown').pipe(filter(event => event.key === Key.Escape))
+        ).subscribe(event => {
+            event.preventDefault()
             container.update({
                 hoverOverlayIsFixed: false,
                 hoverOverlayPosition: undefined,
