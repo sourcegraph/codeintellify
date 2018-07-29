@@ -217,7 +217,7 @@ export type JumpURLFetcher = (position: HoveredToken & HoveredTokenContext) => O
  * Function responsible for resolving the position of a hovered token
  * and its diff part to a full context including repository, commit ID and file path.
  */
-export type ContextResolver = (hoveredToken: HoveredToken) => HoveredTokenContext
+export type ContextResolver = (hoveredToken: HoveredToken) => Observable<HoveredTokenContext> | HoveredTokenContext
 
 export interface HoveredTokenContext extends RepoSpec, RevSpec, FileSpec, ResolvedRevSpec {}
 
@@ -355,11 +355,19 @@ export const createHoverifier = ({
     )
 
     /** Emits new positions including context at which a tooltip needs to be shown from clicks, mouseovers and URL changes. */
+
     const resolvedPositions = merge(codeMouseOverTargets, jumpTargets, codeClickTargets).pipe(
-        map(({ position, resolveContext, ...rest }) => ({
-            ...rest,
-            position: Position.is(position) ? { ...position, ...resolveContext(position) } : undefined,
-        })),
+        switchMap(({ position, resolveContext, ...rest }) => {
+            if (Position.is(position)) {
+                const resolvingContext = resolveContext(position)
+                if (resolvingContext instanceof Observable) {
+                    return resolvingContext.pipe(map(context => ({ position: { ...context, ...position }, ...rest })))
+                }
+                return of({ position: { ...context, ...position }, ...rest })
+            }
+
+            return of({ position: undefined, ...rest })
+        }),
         share()
     )
 
