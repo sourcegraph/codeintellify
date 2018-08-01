@@ -1,4 +1,3 @@
-import Loader from '@sourcegraph/icons/lib/Loader'
 import { castArray, noop, upperFirst } from 'lodash'
 import AlertCircleOutlineIcon from 'mdi-react/AlertCircleOutlineIcon'
 import CloseIcon from 'mdi-react/CloseIcon'
@@ -8,6 +7,7 @@ import { MarkedString, MarkupContent, MarkupKind } from 'vscode-languageserver-t
 import { asError, ErrorLike, isErrorLike } from './errors'
 import { highlightCodeSafe, renderMarkdown, toNativeEvent } from './helpers'
 import { HoveredTokenContext } from './hoverifier'
+import { Loader } from './Loader'
 import { HoveredToken } from './token_position'
 import { HoverMerged, LOADING } from './types'
 import { toPrettyBlobURL } from './url'
