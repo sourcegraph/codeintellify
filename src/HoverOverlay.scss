@@ -1,3 +1,5 @@
+@import '../node_modules/@sourcegraph/react-loading-spinner/lib/LoadingSpinner.css';
+
 .hover-overlay {
     position: absolute;
     width: 32rem;
@@ -83,5 +85,3 @@
         white-space: pre;
     }
 }
-
-@import 'node_modules/@sourcegraph/react-loading-spinner/lib/LoadingSpinner.css';
