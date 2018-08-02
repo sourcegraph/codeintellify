@@ -1,4 +1,4 @@
-import Loader from '@sourcegraph/icons/lib/Loader'
+import { LoadingSpinner } from '@sourcegraph/react-loading-spinner'
 import { castArray, noop, upperFirst } from 'lodash'
 import AlertCircleOutlineIcon from 'mdi-react/AlertCircleOutlineIcon'
 import CloseIcon from 'mdi-react/CloseIcon'
@@ -121,7 +121,7 @@ export const HoverOverlay: React.StatelessComponent<HoverOverlayProps> = ({
             <div className="hover-overlay__contents">
                 {hoverOrError === LOADING ? (
                     <div className="hover-overlay__row hover-overlay__loader-row">
-                        <Loader className="icon-inline" />
+                        <LoadingSpinner className="icon-inline" />
                     </div>
                 ) : isErrorLike(hoverOrError) ? (
                     <div className="hover-overlay__row hover-overlay__hover-error alert alert-danger">
@@ -181,7 +181,7 @@ export const HoverOverlay: React.StatelessComponent<HoverOverlayProps> = ({
                 className="btn btn-secondary hover-overlay__action e2e-tooltip-j2d"
                 onClick={onGoToDefinitionClick ? transformMouseEvent(onGoToDefinitionClick) : undefined}
             >
-                Go to definition {definitionURLOrError === LOADING && <Loader className="icon-inline" />}
+                Go to definition {definitionURLOrError === LOADING && <LoadingSpinner className="icon-inline" />}
             </ButtonOrLink>
             <ButtonOrLink
                 linkComponent={linkComponent}
