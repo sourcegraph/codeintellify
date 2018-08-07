@@ -428,7 +428,7 @@ export const createHoverifier = ({
             .pipe(
                 distinctUntilChanged(([positionA], [positionB]) => isEqual(positionA, positionB)),
                 switchMap(([position, hoverObservable]) => hoverObservable),
-                filter(HoverMerged.is)
+                filter(({ hoverOrError }) => HoverMerged.is(hoverOrError))
             )
             .subscribe(() => {
                 logTelemetryEvent('SymbolHovered')
