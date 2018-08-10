@@ -44,6 +44,11 @@ export interface HoverOverlayProps {
      */
     definitionURLOrError?: typeof LOADING | { jumpURL: string } | null | ErrorLike
 
+    /**
+     * The URL to jump to on token text search
+     */
+    searchURL?: string | null
+
     /** The position of the tooltip (assigned to `style`) */
     overlayPosition?: { left: number; top: number }
 
@@ -79,6 +84,7 @@ const transformMouseEvent = (handler: (event: MouseEvent) => void) => (event: Re
     handler(toNativeEvent(event))
 
 export const HoverOverlay: React.StatelessComponent<HoverOverlayProps> = ({
+    searchURL,
     definitionURLOrError,
     hoveredToken,
     hoverOrError,
@@ -124,13 +130,17 @@ export const HoverOverlay: React.StatelessComponent<HoverOverlayProps> = ({
                         <LoadingSpinner className="icon-inline" />
                     </div>
                 ) : isErrorLike(hoverOrError) ? (
-                    <div className="hover-overlay__row hover-overlay__hover-error alert alert-danger">
-                        <h4>
-                            <AlertCircleOutlineIcon className="icon-inline" /> Error fetching hover from language
-                            server:
-                        </h4>
-                        {upperFirst(hoverOrError.message)}
-                    </div>
+                    hoverOrError.code && hoverOrError.code === -32000 ? (
+                        ''
+                    ) : (
+                        <div className="hover-overlay__row hover-overlay__hover-error alert alert-danger">
+                            <h4>
+                                <AlertCircleOutlineIcon className="icon-inline" /> Error fetching hover from language
+                                server:
+                            </h4>
+                            {upperFirst(hoverOrError.message)}
+                        </div>
+                    )
                 ) : (
                     // tslint:disable-next-line deprecation We want to handle the deprecated MarkedString
                     castArray<MarkedString | MarkupContent>(hoverOrError.contents)
@@ -174,52 +184,73 @@ export const HoverOverlay: React.StatelessComponent<HoverOverlayProps> = ({
             </div>
         )}
 
-        <div className="hover-overlay__actions hover-overlay__row">
-            <ButtonOrLink
-                linkComponent={linkComponent}
-                to={isJumpURL(definitionURLOrError) ? definitionURLOrError.jumpURL : undefined}
-                className="btn btn-secondary hover-overlay__action e2e-tooltip-j2d"
-                onClick={onGoToDefinitionClick ? transformMouseEvent(onGoToDefinitionClick) : undefined}
-            >
-                Go to definition {definitionURLOrError === LOADING && <LoadingSpinner className="icon-inline" />}
-            </ButtonOrLink>
-            <ButtonOrLink
-                linkComponent={linkComponent}
-                // tslint:disable-next-line:jsx-no-lambda
-                onClick={() => logTelemetryEvent('FindRefsClicked')}
-                to={
-                    hoveredToken &&
-                    toPrettyBlobURL({
-                        repoPath: hoveredToken.repoPath,
-                        rev: hoveredToken.rev,
-                        filePath: hoveredToken.filePath,
-                        position: hoveredToken,
-                        viewState: 'references',
-                    })
-                }
-                className="btn btn-secondary hover-overlay__action e2e-tooltip-find-refs"
-            >
-                Find references
-            </ButtonOrLink>
-            <ButtonOrLink
-                linkComponent={linkComponent}
-                // tslint:disable-next-line:jsx-no-lambda
-                onClick={() => logTelemetryEvent('FindImplementationsClicked')}
-                to={
-                    hoveredToken &&
-                    toPrettyBlobURL({
-                        repoPath: hoveredToken.repoPath,
-                        rev: hoveredToken.rev,
-                        filePath: hoveredToken.filePath,
-                        position: hoveredToken,
-                        viewState: 'impl',
-                    })
-                }
-                className="btn btn-secondary hover-overlay__action e2e-tooltip-find-impl"
-            >
-                Find implementations
-            </ButtonOrLink>
-        </div>
+        {hoverOrError && isErrorLike(hoverOrError) && hoverOrError.code && hoverOrError.code === -32000 ? (
+            <div className="hover-overlay__actions hover-overlay__row">
+                <ButtonOrLink
+                    linkComponent={linkComponent}
+                    to={searchURL ? searchURL : undefined}
+                    className="btn btn-secondary hover-overlay__action e2e-tooltip-j2d"
+                >
+                    Search
+                </ButtonOrLink>
+                <ButtonOrLink
+                    linkComponent={linkComponent}
+                    to={isJumpURL(definitionURLOrError) ? definitionURLOrError.jumpURL : undefined}
+                    className="btn btn-secondary hover-overlay__action e2e-tooltip-j2d"
+                    onClick={onGoToDefinitionClick ? transformMouseEvent(onGoToDefinitionClick) : undefined}
+                >
+                    Symbols
+                </ButtonOrLink>
+            </div>
+        ) : (
+            <div className="hover-overlay__actions hover-overlay__row">
+                <ButtonOrLink
+                    linkComponent={linkComponent}
+                    to={isJumpURL(definitionURLOrError) ? definitionURLOrError.jumpURL : undefined}
+                    className="btn btn-secondary hover-overlay__action e2e-tooltip-j2d"
+                    onClick={onGoToDefinitionClick ? transformMouseEvent(onGoToDefinitionClick) : undefined}
+                >
+                    Go to definition {definitionURLOrError === LOADING && <LoadingSpinner className="icon-inline" />}
+                </ButtonOrLink>
+                <ButtonOrLink
+                    linkComponent={linkComponent}
+                    // tslint:disable-next-line:jsx-no-lambda
+                    onClick={() => logTelemetryEvent('FindRefsClicked')}
+                    to={
+                        hoveredToken &&
+                        toPrettyBlobURL({
+                            repoPath: hoveredToken.repoPath,
+                            rev: hoveredToken.rev,
+                            filePath: hoveredToken.filePath,
+                            position: hoveredToken,
+                            viewState: 'references',
+                        })
+                    }
+                    className="btn btn-secondary hover-overlay__action e2e-tooltip-find-refs"
+                >
+                    Find references 1
+                </ButtonOrLink>
+                <ButtonOrLink
+                    linkComponent={linkComponent}
+                    // tslint:disable-next-line:jsx-no-lambda
+                    onClick={() => logTelemetryEvent('FindImplementationsClicked')}
+                    to={
+                        hoveredToken &&
+                        toPrettyBlobURL({
+                            repoPath: hoveredToken.repoPath,
+                            rev: hoveredToken.rev,
+                            filePath: hoveredToken.filePath,
+                            position: hoveredToken,
+                            viewState: 'impl',
+                        })
+                    }
+                    className="btn btn-secondary hover-overlay__action e2e-tooltip-find-impl"
+                >
+                    Find implementations
+                </ButtonOrLink>
+            </div>
+        )}
+
         {definitionURLOrError === null ? (
             <div className="alert alert-info hover-overlay__alert-below">
                 <InformationOutlineIcon className="icon-inline" /> No definition found

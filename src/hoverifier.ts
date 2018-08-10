@@ -284,6 +284,7 @@ export const createHoverifier = ({
                 map(() => false)
             )
         ).subscribe(mouseIsMoving => {
+            // console.log('container.update: mouseIsMoving', mouseIsMoving)
             container.update({ mouseIsMoving })
         })
     )
@@ -350,6 +351,7 @@ export const createHoverifier = ({
                 )
             )
             .subscribe(hoverOverlayPosition => {
+                // console.log('container.update: hoverOverlayPosition', hoverOverlayPosition)
                 container.update({ hoverOverlayPosition })
             })
     )
@@ -363,20 +365,32 @@ export const createHoverifier = ({
         share()
     )
 
+    // const altHoverObservables = resolvedPositions.pipe(
+
     /**
      * For every position, emits an Observable with new values for the `hoverOrError` state.
      * This is a higher-order Observable (Observable that emits Observables).
      */
     const hoverObservables = resolvedPositions.pipe(
         map(({ position, ...rest }) => {
+            // MARK
+            console.log('position', { position, ...rest })
             if (!position) {
                 return of({ ...rest, hoverOrError: null, part: undefined })
             }
             // Fetch the hover for that position
             const hoverFetch = fetchHover(position).pipe(
                 catchError(error => {
+                    console.log('error.code', error.code)
                     if (error && error.code === EMODENOTFOUND) {
-                        return [null]
+                        // return [
+                        //     {
+                        //         range: { start: position, end: position },
+                        //         contents: ['foobar'],
+                        //     },
+                        // ]
+                        // return [null]
+                        return [asError(error)] // handle this downstream
                     }
                     return [asError(error)]
                 }),
@@ -401,6 +415,7 @@ export const createHoverifier = ({
         hoverObservables
             .pipe(switchMap(hoverObservable => hoverObservable))
             .subscribe(({ hoverOrError, codeView, dom, part }) => {
+                console.log('container.update: hoverOrError', hoverOrError)
                 container.update({
                     hoverOrError,
                     // Reset the hover position, it's gonna be repositioned after the hover was rendered
@@ -462,6 +477,7 @@ export const createHoverifier = ({
             // flatten inner Observables
             .pipe(switchMap(definitionObservable => definitionObservable))
             .subscribe(definitionURLOrError => {
+                // console.log('container.update: definitionURLOrError', definitionURLOrError)
                 container.update({ definitionURLOrError })
                 // If the j2d button was already clicked and we now have the result, jump to it
                 // TODO move this logic into HoverOverlay
@@ -508,6 +524,7 @@ export const createHoverifier = ({
                 })
             )
             .subscribe(hoverOverlayIsFixed => {
+                // console.log('container.update: hoverOverlayIsFixed', hoverOverlayIsFixed)
                 container.update({ hoverOverlayIsFixed })
             })
     )
@@ -533,6 +550,7 @@ export const createHoverifier = ({
             fromEvent<KeyboardEvent>(window, 'keydown').pipe(filter(event => event.key === Key.Escape))
         ).subscribe(event => {
             event.preventDefault()
+            // console.log('container.update: closeButtonClics', event)
             container.update({
                 hoverOverlayIsFixed: false,
                 hoverOverlayPosition: undefined,
@@ -547,6 +565,7 @@ export const createHoverifier = ({
     // LOCATION CHANGES
     subscription.add(
         allPositionJumps.subscribe(({ position, scrollElement, codeView, dom: { getCodeElementFromLineNumber } }) => {
+            // console.log('container.update: position', position)
             container.update({
                 // Remember active position in state for blame and range expansion
                 selectedPosition: position,
@@ -563,6 +582,7 @@ export const createHoverifier = ({
     )
     subscription.add(
         resolvedPositions.subscribe(({ position }) => {
+            // console.log('container.update: resolvedPositions', position)
             container.update({
                 hoveredToken: position,
                 // On every new target (from mouseover or click) hide the j2d loader/error/not found UI again
@@ -572,6 +592,7 @@ export const createHoverifier = ({
     )
     subscription.add(
         goToDefinitionClicks.subscribe(event => {
+            // console.log('container.update: goToDefinitionClicks', event)
             container.update({ clickedGoToDefinition: event.ctrlKey || event.metaKey ? 'new-tab' : 'same-tab' })
         })
     )

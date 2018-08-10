@@ -1,6 +1,6 @@
 export interface ErrorLike {
     message: string
-    code?: string
+    code?: any
 }
 
 export const isErrorLike = (val: any): val is ErrorLike =>
