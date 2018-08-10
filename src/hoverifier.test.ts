@@ -6,7 +6,15 @@ import { Position } from 'vscode-languageserver-types'
 
 import { noop } from 'lodash'
 import { propertyIsDefined } from './helpers'
-import { createHoverifier, LOADER_DELAY, TOOLTIP_DISPLAY_DELAY } from './hoverifier'
+import {
+    AdjustmentDirection,
+    createHoverifier,
+    HoverFetcher,
+    JumpURLFetcher,
+    LOADER_DELAY,
+    PositionAdjuster,
+    TOOLTIP_DISPLAY_DELAY,
+} from './hoverifier'
 import { HoverOverlayProps } from './HoverOverlay'
 import { findPositionsFromEvents } from './positions'
 import { CodeViewProps, DOM } from './testutils/dom'
@@ -105,6 +113,89 @@ describe('Hoverifier', () => {
                 )
 
                 expectObservable(hoverAndDefinitionUpdates).toBe(outputDiagram, outputValues)
+            })
+        }
+    })
+
+    it('PositionAdjuster properly adjusts positions', () => {
+        for (const codeView of testcases) {
+            const scheduler = new TestScheduler((a, b) => chai.assert.deepEqual(a, b))
+
+            scheduler.run(({ cold, expectObservable }) => {
+                const adjustedPositions = new Subject<Position>()
+
+                const fetchHover = createStubHoverFetcher({})
+                const wrappedHoverFetcher: HoverFetcher = position => {
+                    adjustedPositions.next(position)
+
+                    return fetchHover(position)
+                }
+
+                const fetchJumpURL = createStubJumpURLFetcher('def')
+                const wrappedJumpURLFetcher: JumpURLFetcher = position => {
+                    adjustedPositions.next(position)
+
+                    return fetchJumpURL(position)
+                }
+
+                const adjustPosition: PositionAdjuster = ({ codeView, position, direction }) =>
+                    direction === AdjustmentDirection.CodeViewToActual
+                        ? { line: 1, character: 1 }
+                        : { line: -1, character: -1 }
+
+                const hoverifier = createHoverifier({
+                    closeButtonClicks: new Observable<MouseEvent>(),
+                    goToDefinitionClicks: new Observable<MouseEvent>(),
+                    hoverOverlayElements: of(null),
+                    hoverOverlayRerenders: EMPTY,
+                    fetchHover: wrappedHoverFetcher,
+                    fetchJumpURL: wrappedJumpURLFetcher,
+                    pushHistory: noop,
+                    adjustPosition,
+                    logTelemetryEvent: noop,
+                })
+
+                const positionJumps = new Subject<{
+                    position: Position
+                    codeView: HTMLElement
+                    scrollElement: HTMLElement
+                }>()
+
+                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
+
+                const subscriptions = new Subscription()
+
+                subscriptions.add(hoverifier)
+                subscriptions.add(
+                    hoverifier.hoverify({
+                        dom: codeView,
+                        positionEvents,
+                        positionJumps,
+                        resolveContext: () => codeView.revSpec,
+                    })
+                )
+
+                const inputDiagram = 'ab'
+                const outputDiagram = '-(abb)'
+
+                const outputValues: {
+                    [key: string]: Position
+                } = {
+                    a: { line: -1, character: -1 },
+                    b: { line: 1, character: 1 },
+                }
+
+                cold(inputDiagram).subscribe(() =>
+                    clickPositionImpure(codeView, {
+                        line: 1,
+                        character: 1,
+                    })
+                )
+
+                expectObservable(adjustedPositions.pipe(map(({ line, character }) => ({ line, character })))).toBe(
+                    outputDiagram,
+                    outputValues
+                )
             })
         }
     })
