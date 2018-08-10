@@ -116,10 +116,36 @@ export interface PositionJump {
 }
 
 /**
+ * The possible directions to adjust a position in.
+ */
+export enum AdjustmentDirection {
+    /** Adjusting the position from what is found on the page to what it would be in the actual file. */
+    CodeViewToActual,
+    /** Adjusting the position from what is in the actual file to what would be found on the page. */
+    ActualToCodeView,
+}
+
+export interface AdjustPositionProps {
+    /** The code view the token is in. */
+    codeView: HTMLElement
+    /** The position the token is at. */
+    position: HoveredToken & HoveredTokenContext
+    /** The direction the adjustment should go. */
+    direction: AdjustmentDirection
+}
+
+/**
+ * Function to adjust positions coming into and out of hoverifier. It can be used to correct the position used in HoverFetcher and
+ * JumpURLFetcher requests and the position of th etoken to highlight in the code view. This is useful for code hosts that convert whitespace.
+ */
+export type PositionAdjuster = (props: AdjustPositionProps) => Observable<Position>
+
+/**
  * HoverifyOptions that need to be included internally with every event
  */
 export interface EventOptions {
     resolveContext: ContextResolver
+    adjustPosition?: PositionAdjuster
     dom: DOMFunctions
 }
 
@@ -296,6 +322,23 @@ export const createHoverifier = ({
         debounceTime(50),
         // Do not consider mouseovers while overlay is pinned
         filter(() => !container.values.hoverOverlayIsFixed),
+        switchMap(
+            ({ adjustPosition, codeView, resolveContext, position, ...rest }) =>
+                adjustPosition && position
+                    ? adjustPosition({
+                          codeView,
+                          position: { ...position, ...resolveContext(position) },
+                          direction: AdjustmentDirection.CodeViewToActual,
+                      }).pipe(
+                          map(({ line, character }) => ({
+                              codeView,
+                              resolveContext,
+                              position: { ...position, line, character },
+                              ...rest,
+                          }))
+                      )
+                    : of({ adjustPosition, codeView, resolveContext, position, ...rest })
+        ),
         share()
     )
 
@@ -305,6 +348,23 @@ export const createHoverifier = ({
             target: event.target as HTMLElement,
             ...rest,
         })),
+        switchMap(
+            ({ adjustPosition, codeView, resolveContext, position, ...rest }) =>
+                adjustPosition && position
+                    ? adjustPosition({
+                          codeView,
+                          position: { ...position, ...resolveContext(position) },
+                          direction: AdjustmentDirection.CodeViewToActual,
+                      }).pipe(
+                          map(({ line, character }) => ({
+                              codeView,
+                              resolveContext,
+                              position: { ...position, line, character },
+                              ...rest,
+                          }))
+                      )
+                    : of({ adjustPosition, codeView, resolveContext, position, ...rest })
+        ),
         share()
     )
 
