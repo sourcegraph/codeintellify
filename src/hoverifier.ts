@@ -74,6 +74,7 @@ export interface HoverifierOptions {
 
     fetchHover: HoverFetcher
     fetchJumpURL: JumpURLFetcher
+    fetchSearchURL: JumpURLFetcher
 }
 
 /**
@@ -200,6 +201,7 @@ const internalToExternalState = (internalState: InternalHoverifierState): HoverS
                       : undefined,
               hoveredToken: internalState.hoveredToken,
               showCloseButton: internalState.hoverOverlayIsFixed,
+              //   searchURL: '/search?' + buildSearchURLQuery({ query: 'test' }),
           }
         : undefined,
 })
@@ -228,6 +230,7 @@ export const createHoverifier = ({
     pushHistory,
     fetchHover,
     fetchJumpURL,
+    fetchSearchURL,
     logTelemetryEvent = noop,
 }: HoverifierOptions): Hoverifier => {
     // Internal state that is not exposed to the caller
@@ -383,6 +386,11 @@ export const createHoverifier = ({
                 catchError(error => {
                     console.log('error.code', error.code)
                     if (error && error.code === EMODENOTFOUND) {
+                        // LSP mode not supported
+
+                        // NEXT:
+                        // TODO: fetchSearchURL here; catchError wrong function?
+
                         // return [
                         //     {
                         //         range: { start: position, end: position },
@@ -416,6 +424,9 @@ export const createHoverifier = ({
             .pipe(switchMap(hoverObservable => hoverObservable))
             .subscribe(({ hoverOrError, codeView, dom, part }) => {
                 console.log('container.update: hoverOrError', hoverOrError)
+                // const { line, character } = hoverOrError.range.start
+                // const token0 = getTokenAtPosition(codeView, { line: line + 1, character: character + 1 }, dom, part)
+
                 container.update({
                     hoverOrError,
                     // Reset the hover position, it's gonna be repositioned after the hover was rendered
