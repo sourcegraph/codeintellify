@@ -34,6 +34,31 @@ import { FileSpec, LineOrPositionOrRange, RepoSpec, ResolvedRevSpec, RevSpec } f
 
 export { HoveredToken }
 
+/**
+ * The possible directions to adjust a position in.
+ */
+export enum AdjustmentDirection {
+    /** Adjusting the position from what is found on the page to what it would be in the actual file. */
+    CodeViewToActual,
+    /** Adjusting the position from what is in the actual file to what would be found on the page. */
+    ActualToCodeView,
+}
+
+export interface AdjustPositionProps {
+    /** The code view the token is in. */
+    codeView: HTMLElement
+    /** The position the token is at. */
+    position: HoveredToken
+    /** The direction the adjustment should go. */
+    direction: AdjustmentDirection
+}
+
+/**
+ * Function to adjust positions coming into and out of hoverifier. It can be used to correct the position used in HoverFetcher and
+ * JumpURLFetcher requests and the position of th etoken to highlight in the code view. This is useful for code hosts that convert whitespace.
+ */
+export type PositionAdjuster = (props: AdjustPositionProps) => Position
+
 export interface HoverifierOptions {
     /**
      * Emit the HoverOverlay element on this after it was rerendered when its content changed and it needs to be repositioned.
@@ -74,6 +99,8 @@ export interface HoverifierOptions {
 
     fetchHover: HoverFetcher
     fetchJumpURL: JumpURLFetcher
+
+    adjustPosition?: PositionAdjuster
 }
 
 /**
@@ -228,6 +255,7 @@ export const createHoverifier = ({
     pushHistory,
     fetchHover,
     fetchJumpURL,
+    adjustPosition,
     logTelemetryEvent = noop,
 }: HoverifierOptions): Hoverifier => {
     // Internal state that is not exposed to the caller
@@ -372,8 +400,28 @@ export const createHoverifier = ({
             if (!position) {
                 return of({ ...rest, hoverOrError: null, part: undefined })
             }
+
+            let adjustedPosition = { line: position.line + 1, character: position.character + 1 }
+
+            if (adjustPosition) {
+                const codeElement = rest.dom.getCodeElementFromLineNumber(rest.codeView, position.line, position.part)
+                if (codeElement) {
+                    adjustedPosition = adjustPosition({
+                        position: {
+                            ...adjustedPosition,
+                            part: position.part,
+                        },
+                        codeView: rest.codeView,
+                        direction: AdjustmentDirection.ActualToCodeView,
+                    })
+                }
+            }
+
             // Fetch the hover for that position
-            const hoverFetch = fetchHover(position).pipe(
+            const hoverFetch = fetchHover({
+                ...position,
+                ...adjustedPosition,
+            }).pipe(
                 catchError(error => {
                     if (error && error.code === EMODENOTFOUND) {
                         return [null]
@@ -413,9 +461,23 @@ export const createHoverifier = ({
                 if (!HoverMerged.is(hoverOrError) || !hoverOrError.range) {
                     return
                 }
+
                 // LSP is 0-indexed, the code here is currently 1-indexed
                 const { line, character } = hoverOrError.range.start
-                const token = getTokenAtPosition(codeView, { line: line + 1, character: character + 1 }, dom, part)
+                let position = { line: line + 1, character: character + 1 }
+
+                if (adjustPosition) {
+                    position = adjustPosition({
+                        position: {
+                            ...position,
+                            part,
+                        },
+                        codeView,
+                        direction: AdjustmentDirection.ActualToCodeView,
+                    })
+                }
+
+                const token = getTokenAtPosition(codeView, position, dom, part)
                 if (!token) {
                     return
                 }
@@ -441,13 +503,28 @@ export const createHoverifier = ({
      */
     const definitionObservables = resolvedPositions.pipe(
         // Fetch the definition location for that position
-        map(({ position }) => {
+        map(({ position, codeView }) => {
             if (!position) {
                 return of(null)
             }
+            let adjustedPosition = { line: position.line, character: position.character }
+            if (adjustPosition) {
+                adjustedPosition = adjustPosition({
+                    position: {
+                        ...adjustedPosition,
+                        part: position.part,
+                    },
+                    codeView,
+                    direction: AdjustmentDirection.CodeViewToActual,
+                })
+            }
+
             return concat(
                 [LOADING],
-                fetchJumpURL(position).pipe(
+                fetchJumpURL({
+                    ...position,
+                    ...adjustedPosition,
+                }).pipe(
                     map(url => (url !== null ? { jumpURL: url } : null)),
                     catchError(error => [asError(error)])
                 )
