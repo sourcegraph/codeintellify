@@ -334,6 +334,7 @@ export const createHoverifier = ({
                               codeView,
                               resolveContext,
                               position: { ...position, line, character },
+                              adjustPosition,
                               ...rest,
                           }))
                       )
@@ -360,6 +361,7 @@ export const createHoverifier = ({
                               codeView,
                               resolveContext,
                               position: { ...position, line, character },
+                              adjustPosition,
                               ...rest,
                           }))
                       )
@@ -429,11 +431,11 @@ export const createHoverifier = ({
      */
     const hoverObservables = resolvedPositions.pipe(
         map(({ position, ...rest }) => {
-            if (!position) {
-                return of({ ...rest, hoverOrError: null, part: undefined })
+            if (!Position.is(position)) {
+                return of({ ...rest, hoverOrError: null, position, part: undefined })
             }
             // Fetch the hover for that position
-            const hoverFetch = fetchHover(position).pipe(
+            const hoverFetch = fetchHover(position!).pipe(
                 catchError(error => {
                     if (error && error.code === EMODENOTFOUND) {
                         return [null]
@@ -452,15 +454,46 @@ export const createHoverifier = ({
                     takeUntil(hoverFetch)
                 ),
                 hoverFetch
-            ).pipe(map(hoverOrError => ({ ...rest, hoverOrError, part: position.part })))
+            ).pipe(
+                map(hoverOrError => ({
+                    ...rest,
+                    position,
+                    hoverOrError,
+                    part: position!.part,
+                }))
+            )
         }),
         share()
     )
     // Highlight the hover range returned by the language server
     subscription.add(
         hoverObservables
-            .pipe(switchMap(hoverObservable => hoverObservable))
-            .subscribe(({ hoverOrError, codeView, dom, part }) => {
+            .pipe(
+                switchMap(hoverObservable => hoverObservable),
+                switchMap(({ hoverOrError, ...rest }) => {
+                    if (!HoverMerged.is(hoverOrError) || !hoverOrError.range) {
+                        return of({ hoverOrError, position: undefined as Position | undefined, ...rest })
+                    }
+
+                    // LSP is 0-indexed, the code here is currently 1-indexed
+                    const { line, character } = hoverOrError.range.start
+                    const position = { line: line + 1, character: character + 1 }
+
+                    if (!adjustPosition) {
+                        return of({ hoverOrError, position, ...rest })
+                    }
+
+                    return adjustPosition({
+                        codeView: rest.codeView,
+                        direction: AdjustmentDirection.ActualToCodeView,
+                        position: {
+                            ...position,
+                            part: rest.part,
+                        },
+                    }).pipe(map(position => ({ position, hoverOrError, ...rest })))
+                })
+            )
+            .subscribe(({ hoverOrError, position, codeView, dom, part }) => {
                 container.update({
                     hoverOrError,
                     // Reset the hover position, it's gonna be repositioned after the hover was rendered
@@ -470,12 +503,11 @@ export const createHoverifier = ({
                 if (currentHighlighted) {
                     currentHighlighted.classList.remove('selection-highlight')
                 }
-                if (!HoverMerged.is(hoverOrError) || !hoverOrError.range) {
+                if (!position) {
                     return
                 }
-                // LSP is 0-indexed, the code here is currently 1-indexed
-                const { line, character } = hoverOrError.range.start
-                const token = getTokenAtPosition(codeView, { line: line + 1, character: character + 1 }, dom, part)
+
+                const token = getTokenAtPosition(codeView, position, dom, part)
                 if (!token) {
                     return
                 }
