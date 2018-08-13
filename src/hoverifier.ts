@@ -470,17 +470,17 @@ export const createHoverifier = ({
         hoverObservables
             .pipe(
                 switchMap(hoverObservable => hoverObservable),
-                switchMap(({ hoverOrError, ...rest }) => {
-                    if (!HoverMerged.is(hoverOrError) || !hoverOrError.range) {
+                switchMap(({ hoverOrError, position, adjustPosition, ...rest }) => {
+                    if (!HoverMerged.is(hoverOrError) || !hoverOrError.range || !position) {
                         return of({ hoverOrError, position: undefined as Position | undefined, ...rest })
                     }
 
                     // LSP is 0-indexed, the code here is currently 1-indexed
                     const { line, character } = hoverOrError.range.start
-                    const position = { line: line + 1, character: character + 1 }
+                    const pos = { line: line + 1, character: character + 1, ...position }
 
                     if (!adjustPosition) {
-                        return of({ hoverOrError, position, ...rest })
+                        return of({ hoverOrError, position: pos, ...rest })
                     }
 
                     return adjustPosition({
