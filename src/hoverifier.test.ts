@@ -6,7 +6,13 @@ import { Position } from 'vscode-languageserver-types'
 
 import { noop } from 'lodash'
 import { propertyIsDefined } from './helpers'
-import { createHoverifier, LOADER_DELAY, TOOLTIP_DISPLAY_DELAY } from './hoverifier'
+import {
+    AdjustmentDirection,
+    createHoverifier,
+    LOADER_DELAY,
+    PositionAdjuster,
+    TOOLTIP_DISPLAY_DELAY,
+} from './hoverifier'
 import { HoverOverlayProps } from './HoverOverlay'
 import { findPositionsFromEvents } from './positions'
 import { CodeViewProps, DOM } from './testutils/dom'
@@ -105,6 +111,83 @@ describe('Hoverifier', () => {
                 )
 
                 expectObservable(hoverAndDefinitionUpdates).toBe(outputDiagram, outputValues)
+            })
+        }
+    })
+
+    /**
+     * This test ensures that the adjustPosition options is being called in the ways we expect. This test is actually not the best way to ensure the feature
+     * works as expected. This is a good example of a bad side effect of how the main `hoverifier.ts` file is too tightly integrated with itself. Ideally, I'd be able to assert
+     * that the effected positions have actually been adjusted as intended but this is impossible with the current implementation. We can assert that the `HoverFetcher` and `JumpURLFetcher`s
+     * have the adjusted positions (AdjustmentDirection.CodeViewToActual). However, we cannot reliably assert that the code "highlighting" the token has the position adjusted (AdjustmentDirection.ActualToCodeView).
+     */
+    it('PositionAdjuster gets called when expecteds', () => {
+        for (const codeView of testcases) {
+            const scheduler = new TestScheduler((a, b) => chai.assert.deepEqual(a, b))
+
+            scheduler.run(({ cold, expectObservable }) => {
+                const adjustmentDirections = new Subject<AdjustmentDirection>()
+
+                const fetchHover = createStubHoverFetcher({})
+                const fetchJumpURL = createStubJumpURLFetcher('def')
+
+                const adjustPosition: PositionAdjuster = ({ direction, position }) => {
+                    adjustmentDirections.next(direction)
+
+                    return of(position)
+                }
+
+                const hoverifier = createHoverifier({
+                    closeButtonClicks: new Observable<MouseEvent>(),
+                    goToDefinitionClicks: new Observable<MouseEvent>(),
+                    hoverOverlayElements: of(null),
+                    hoverOverlayRerenders: EMPTY,
+                    fetchHover,
+                    fetchJumpURL,
+                    pushHistory: noop,
+                    logTelemetryEvent: noop,
+                })
+
+                const positionJumps = new Subject<{
+                    position: Position
+                    codeView: HTMLElement
+                    scrollElement: HTMLElement
+                }>()
+
+                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
+
+                const subscriptions = new Subscription()
+
+                subscriptions.add(hoverifier)
+                subscriptions.add(
+                    hoverifier.hoverify({
+                        dom: codeView,
+                        positionEvents,
+                        positionJumps,
+                        adjustPosition,
+                        resolveContext: () => codeView.revSpec,
+                    })
+                )
+
+                const inputDiagram = 'ab'
+                // There is probably a bug in code that is unrelated to this feature that is causing the PositionAdjuster to be called an extra time.
+                const outputDiagram = 'a(ba)'
+
+                const outputValues: {
+                    [key: string]: AdjustmentDirection
+                } = {
+                    a: AdjustmentDirection.ActualToCodeView,
+                    b: AdjustmentDirection.CodeViewToActual,
+                }
+
+                cold(inputDiagram).subscribe(() =>
+                    clickPositionImpure(codeView, {
+                        line: 1,
+                        character: 1,
+                    })
+                )
+
+                expectObservable(adjustmentDirections).toBe(outputDiagram, outputValues)
             })
         }
     })

@@ -431,11 +431,17 @@ export const createHoverifier = ({
      */
     const hoverObservables = resolvedPositions.pipe(
         map(({ position, ...rest }) => {
-            if (!Position.is(position)) {
-                return of({ ...rest, hoverOrError: null, position, part: undefined })
+            if (!position) {
+                return of({
+                    // Typescript seems to give up on type inference if we don't explicitely declare the types here.
+                    hoverOrError: null as 'loading' | HoverMerged | Error | null | undefined,
+                    position: undefined as (HoveredToken & HoveredTokenContext) | undefined,
+                    part: undefined,
+                    ...rest,
+                })
             }
             // Fetch the hover for that position
-            const hoverFetch = fetchHover(position!).pipe(
+            const hoverFetch = fetchHover(position).pipe(
                 catchError(error => {
                     if (error && error.code === EMODENOTFOUND) {
                         return [null]
@@ -459,7 +465,7 @@ export const createHoverifier = ({
                     ...rest,
                     position,
                     hoverOrError,
-                    part: position!.part,
+                    part: position.part,
                 }))
             )
         }),
