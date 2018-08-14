@@ -121,7 +121,7 @@ describe('Hoverifier', () => {
      * that the effected positions have actually been adjusted as intended but this is impossible with the current implementation. We can assert that the `HoverFetcher` and `JumpURLFetcher`s
      * have the adjusted positions (AdjustmentDirection.CodeViewToActual). However, we cannot reliably assert that the code "highlighting" the token has the position adjusted (AdjustmentDirection.ActualToCodeView).
      */
-    it('PositionAdjuster gets called when expecteds', () => {
+    it('PositionAdjuster gets called when expected', () => {
         for (const codeView of testcases) {
             const scheduler = new TestScheduler((a, b) => chai.assert.deepEqual(a, b))
 
@@ -171,6 +171,8 @@ describe('Hoverifier', () => {
 
                 const inputDiagram = 'ab'
                 // There is probably a bug in code that is unrelated to this feature that is causing the PositionAdjuster to be called an extra time.
+                // It should look like '-(ba)'. That is, we adjust the position from CodeViewToActual for the LSP fetches and then back from CodeViewToActual
+                // for highlighting the token in the DOM.
                 const outputDiagram = 'a(ba)'
 
                 const outputValues: {
