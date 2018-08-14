@@ -116,10 +116,36 @@ export interface PositionJump {
 }
 
 /**
+ * The possible directions to adjust a position in.
+ */
+export enum AdjustmentDirection {
+    /** Adjusting the position from what is found on the page to what it would be in the actual file. */
+    CodeViewToActual,
+    /** Adjusting the position from what is in the actual file to what would be found on the page. */
+    ActualToCodeView,
+}
+
+export interface AdjustPositionProps {
+    /** The code view the token is in. */
+    codeView: HTMLElement
+    /** The position the token is at. */
+    position: HoveredToken & HoveredTokenContext
+    /** The direction the adjustment should go. */
+    direction: AdjustmentDirection
+}
+
+/**
+ * Function to adjust positions coming into and out of hoverifier. It can be used to correct the position used in HoverFetcher and
+ * JumpURLFetcher requests and the position of th etoken to highlight in the code view. This is useful for code hosts that convert whitespace.
+ */
+export type PositionAdjuster = (props: AdjustPositionProps) => Observable<Position>
+
+/**
  * HoverifyOptions that need to be included internally with every event
  */
 export interface EventOptions {
     resolveContext: ContextResolver
+    adjustPosition?: PositionAdjuster
     dom: DOMFunctions
 }
 
@@ -296,6 +322,24 @@ export const createHoverifier = ({
         debounceTime(50),
         // Do not consider mouseovers while overlay is pinned
         filter(() => !container.values.hoverOverlayIsFixed),
+        switchMap(
+            ({ adjustPosition, codeView, resolveContext, position, ...rest }) =>
+                adjustPosition && position
+                    ? adjustPosition({
+                          codeView,
+                          position: { ...position, ...resolveContext(position) },
+                          direction: AdjustmentDirection.CodeViewToActual,
+                      }).pipe(
+                          map(({ line, character }) => ({
+                              codeView,
+                              resolveContext,
+                              position: { ...position, line, character },
+                              adjustPosition,
+                              ...rest,
+                          }))
+                      )
+                    : of({ adjustPosition, codeView, resolveContext, position, ...rest })
+        ),
         share()
     )
 
@@ -305,6 +349,24 @@ export const createHoverifier = ({
             target: event.target as HTMLElement,
             ...rest,
         })),
+        switchMap(
+            ({ adjustPosition, codeView, resolveContext, position, ...rest }) =>
+                adjustPosition && position
+                    ? adjustPosition({
+                          codeView,
+                          position: { ...position, ...resolveContext(position) },
+                          direction: AdjustmentDirection.CodeViewToActual,
+                      }).pipe(
+                          map(({ line, character }) => ({
+                              codeView,
+                              resolveContext,
+                              position: { ...position, line, character },
+                              adjustPosition,
+                              ...rest,
+                          }))
+                      )
+                    : of({ adjustPosition, codeView, resolveContext, position, ...rest })
+        ),
         share()
     )
 
@@ -370,7 +432,13 @@ export const createHoverifier = ({
     const hoverObservables = resolvedPositions.pipe(
         map(({ position, ...rest }) => {
             if (!position) {
-                return of({ ...rest, hoverOrError: null, part: undefined })
+                return of({
+                    // Typescript seems to give up on type inference if we don't explicitely declare the types here.
+                    hoverOrError: null as 'loading' | HoverMerged | Error | null | undefined,
+                    position: undefined as (HoveredToken & HoveredTokenContext) | undefined,
+                    part: undefined,
+                    ...rest,
+                })
             }
             // Fetch the hover for that position
             const hoverFetch = fetchHover(position).pipe(
@@ -392,15 +460,46 @@ export const createHoverifier = ({
                     takeUntil(hoverFetch)
                 ),
                 hoverFetch
-            ).pipe(map(hoverOrError => ({ ...rest, hoverOrError, part: position.part })))
+            ).pipe(
+                map(hoverOrError => ({
+                    ...rest,
+                    position,
+                    hoverOrError,
+                    part: position.part,
+                }))
+            )
         }),
         share()
     )
     // Highlight the hover range returned by the language server
     subscription.add(
         hoverObservables
-            .pipe(switchMap(hoverObservable => hoverObservable))
-            .subscribe(({ hoverOrError, codeView, dom, part }) => {
+            .pipe(
+                switchMap(hoverObservable => hoverObservable),
+                switchMap(({ hoverOrError, position, adjustPosition, ...rest }) => {
+                    if (!HoverMerged.is(hoverOrError) || !hoverOrError.range || !position) {
+                        return of({ hoverOrError, position: undefined as Position | undefined, ...rest })
+                    }
+
+                    // LSP is 0-indexed, the code here is currently 1-indexed
+                    const { line, character } = hoverOrError.range.start
+                    const pos = { line: line + 1, character: character + 1, ...position }
+
+                    if (!adjustPosition) {
+                        return of({ hoverOrError, position: pos, ...rest })
+                    }
+
+                    return adjustPosition({
+                        codeView: rest.codeView,
+                        direction: AdjustmentDirection.ActualToCodeView,
+                        position: {
+                            ...position,
+                            part: rest.part,
+                        },
+                    }).pipe(map(position => ({ position, hoverOrError, ...rest })))
+                })
+            )
+            .subscribe(({ hoverOrError, position, codeView, dom, part }) => {
                 container.update({
                     hoverOrError,
                     // Reset the hover position, it's gonna be repositioned after the hover was rendered
@@ -410,12 +509,11 @@ export const createHoverifier = ({
                 if (currentHighlighted) {
                     currentHighlighted.classList.remove('selection-highlight')
                 }
-                if (!HoverMerged.is(hoverOrError) || !hoverOrError.range) {
+                if (!position) {
                     return
                 }
-                // LSP is 0-indexed, the code here is currently 1-indexed
-                const { line, character } = hoverOrError.range.start
-                const token = getTokenAtPosition(codeView, { line: line + 1, character: character + 1 }, dom, part)
+
+                const token = getTokenAtPosition(codeView, position, dom, part)
                 if (!token) {
                     return
                 }
