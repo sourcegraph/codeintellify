@@ -162,7 +162,13 @@ describe('token_positions', () => {
         it('gets the full token, even when it crosses multiple elements', () => {
             const codeView = dom.createElementFromString('<div>To<span>ken</span></div>')
 
-            const positions = [{ line: 1, character: 1 }, { line: 1, character: 3 }]
+            const positions = [
+                // Test walking to the right
+                { line: 1, character: 1 },
+                // Test walking to the left
+                { line: 1, character: 3 },
+            ]
+
             for (const position of positions) {
                 const token = getTokenAtPosition(codeView, position, {
                     getCodeElementFromLineNumber: code => code.children.item(0) as HTMLElement,

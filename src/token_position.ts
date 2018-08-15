@@ -146,12 +146,12 @@ const ASCII_CHARACTER_TOKENIZER = /(^[\x21-\x2F|\x3A-\x40|\x5B-\x60|\x7B-\x7E])/
 const NONVARIABLE_TOKENIZER = /(^[^\x21-\x7E]+)/
 
 const enum TokenType {
-    /** Tokens that are identities, i.e. variable names */
-    Identity,
+    /** Tokens that are alphanumeric, i.e. variable names, keywords */
+    Alphanumeric,
     /** Tokens that are ascii characters but aren't in identies (i.e. {, }, [, ], |, ;,  etc) */
     ASCII,
     /** Every token we encounter that doesn't fall into the other two TokenTypes */
-    NonVariable,
+    Other,
 }
 
 /**
@@ -162,17 +162,17 @@ const enum TokenType {
 function getTokenType(node: Node): TokenType {
     const text = unescape(node.textContent || '')
     if (text.length === 0) {
-        return TokenType.NonVariable
+        return TokenType.Other
     }
     const variableMatch = text.match(VARIABLE_TOKENIZER)
     if (variableMatch) {
-        return TokenType.Identity
+        return TokenType.Alphanumeric
     }
     const asciiMatch = text.match(ASCII_CHARACTER_TOKENIZER)
     if (asciiMatch) {
         return TokenType.ASCII
     }
-    return TokenType.NonVariable
+    return TokenType.Other
 }
 
 /**
@@ -181,7 +181,7 @@ function getTokenType(node: Node): TokenType {
  * When tokenizing the DOM, alphanumeric characters are grouped because they are identities.
  *
  * We also group whitespace just in case. See `consumeNextToken` comments for more information.
- * This funciton is a helper function for making sure the node is the same type of a token and if we care
+ * This is a helper function for making sure the node is the same type of a token and if we care
  * about grouping the type of token together.
  */
 function isSameTokenType(tokenType: TokenType, node: Node): boolean {
@@ -237,7 +237,7 @@ export const getTextNodes = (node: Node): Node[] => {
 
     const nodes: Node[] = []
 
-    for (const child of Array.from(node.childNodes)) {
+    for (const child of node.childNodes) {
         nodes.push(...getTextNodes(child))
     }
 
@@ -263,11 +263,11 @@ export function findElementWithOffset(codeElement: HTMLElement, offset: number):
     let nodeIndex = 0
 
     // Find the text node that is at the given offset.
-    let startNode: Node | undefined
+    let targetNode: Node | undefined
     for (const [i, node] of textNodes.entries()) {
         const text = node.textContent || ''
         if (offsetStep <= offset && offsetStep + text.length > offset) {
-            startNode = node
+            targetNode = node
             nodeIndex = i
             break
         }
@@ -275,11 +275,11 @@ export function findElementWithOffset(codeElement: HTMLElement, offset: number):
         offsetStep += text.length
     }
 
-    if (!startNode) {
+    if (!targetNode) {
         return undefined
     }
 
-    const tokenType = getTokenType(startNode)
+    const tokenType = getTokenType(targetNode)
 
     /**
      * Walk forwards or backwards to find the edge of the actual token, not the DOM element.
@@ -302,8 +302,8 @@ export function findElementWithOffset(codeElement: HTMLElement, offset: number):
         return at
     }
 
+    const startNode = textNodes[findTokenEdgeIndex(nodeIndex, -1)]
     const endNode = textNodes[findTokenEdgeIndex(nodeIndex, 1)]
-    startNode = textNodes[findTokenEdgeIndex(nodeIndex, -1)]
 
     // Create a range spanning from the beginning of the token and the end.
     const tokenRange = document.createRange()
