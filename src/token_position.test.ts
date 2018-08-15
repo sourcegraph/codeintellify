@@ -5,6 +5,7 @@ import {
     convertNode,
     findElementWithOffset,
     getCodeElementsInRange,
+    getTextNodes,
     getTokenAtPosition,
     HoveredToken,
     locateTarget,
@@ -13,25 +14,6 @@ import {
 const { expect } = chai
 
 const tabChar = String.fromCharCode(9)
-
-/**
- * Get the all of the text nodes under a given node in the DOM tree.
- *
- * @param node is the node in which you want to get all of the text nodes from it's children
- */
-export const getTextNodes = (node: Node): Node[] => {
-    if (node.childNodes.length === 0 && node.TEXT_NODE === node.nodeType && node.nodeValue) {
-        return [node]
-    }
-
-    const nodes: Node[] = []
-
-    for (const child of Array.from(node.childNodes)) {
-        nodes.push(...getTextNodes(child))
-    }
-
-    return nodes
-}
 
 describe('token_positions', () => {
     const dom = new DOM()
@@ -176,6 +158,25 @@ describe('token_positions', () => {
                 }
             }
         })
+
+        it('gets the full token, even when it crosses multiple elements', () => {
+            const codeView = dom.createElementFromString('<div>To<span>ken</span></div>')
+
+            const positions = [
+                // Test walking to the right
+                { line: 1, character: 1 },
+                // Test walking to the left
+                { line: 1, character: 3 },
+            ]
+
+            for (const position of positions) {
+                const token = getTokenAtPosition(codeView, position, {
+                    getCodeElementFromLineNumber: code => code.children.item(0) as HTMLElement,
+                })
+
+                chai.expect(token!.textContent).to.equal('Token')
+            }
+        })
     })
 
     describe('locateTarget()', () => {
@@ -204,8 +205,14 @@ describe('token_positions', () => {
 
                     const token = found as HoveredToken
 
-                    expect(token.line).to.equal(foundPosition.line)
-                    expect(token.character).to.equal(foundPosition.character)
+                    expect(token.line).to.equal(
+                        foundPosition.line,
+                        `expected line to be ${token.line} but got ${foundPosition.line}`
+                    )
+                    expect(token.character).to.equal(
+                        foundPosition.character,
+                        `expected character to be ${token.character} but got ${foundPosition.character}`
+                    )
                 }
             }
         })
@@ -229,14 +236,12 @@ describe('token_positions', () => {
 
     describe('getCodeElementsInRange()', () => {
         it('returns all code elements within a given range on a non-diff code view', () => {
-            const codeView = document.createElement('div')
-            codeView.innerHTML = `
+            const codeView = dom.createElementFromString(`
                 <div>Line 1</div>
                 <div>Line 2</div>
                 <div>Line 3</div>
                 <div>Line 4</div>
-                <div>Line 5</div>
-            `
+            `)
             const codeElements = getCodeElementsInRange({
                 codeView,
                 position: { line: 2, endLine: 4 },

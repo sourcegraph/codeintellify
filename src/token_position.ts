@@ -145,6 +145,54 @@ const VARIABLE_TOKENIZER = /(^\w+)/
 const ASCII_CHARACTER_TOKENIZER = /(^[\x21-\x2F|\x3A-\x40|\x5B-\x60|\x7B-\x7E])/
 const NONVARIABLE_TOKENIZER = /(^[^\x21-\x7E]+)/
 
+const enum TokenType {
+    /** Tokens that are alphanumeric, i.e. variable names, keywords */
+    Alphanumeric,
+    /** Tokens that are ascii characters but aren't in identies (i.e. {, }, [, ], |, ;,  etc) */
+    ASCII,
+    /** Every token we encounter that doesn't fall into the other two TokenTypes */
+    Other,
+}
+
+/**
+ * Get the type of token we are looking at.
+ *
+ * @param node The node containing the token.
+ */
+function getTokenType(node: Node): TokenType {
+    const text = unescape(node.textContent || '')
+    if (text.length === 0) {
+        return TokenType.Other
+    }
+    const variableMatch = text.match(VARIABLE_TOKENIZER)
+    if (variableMatch) {
+        return TokenType.Alphanumeric
+    }
+    const asciiMatch = text.match(ASCII_CHARACTER_TOKENIZER)
+    if (asciiMatch) {
+        return TokenType.ASCII
+    }
+    return TokenType.Other
+}
+
+/**
+ * Checks to see if the TokenType of node is the same as the provided token type.
+ *
+ * When tokenizing the DOM, alphanumeric characters are grouped because they are identities.
+ *
+ * We also group whitespace just in case. See `consumeNextToken` comments for more information.
+ * This is a helper function for making sure the node is the same type of a token and if we care
+ * about grouping the type of token together.
+ */
+function isSameTokenType(tokenType: TokenType, node: Node): boolean {
+    // We don't care about grouping things like :=, ===, etc
+    if (tokenType === TokenType.ASCII) {
+        return false
+    }
+
+    return tokenType === getTokenType(node)
+}
+
 /**
  * consumeNextToken parses the text content of a text node and returns the next "distinct"
  * code token. It handles edge case #1 from convertNode(). The tokenization scheme is
@@ -178,6 +226,25 @@ function consumeNextToken(txt: string): string {
 }
 
 /**
+ * Get the all of the text nodes under a given node in the DOM tree.
+ *
+ * @param node is the node in which you want to get all of the text nodes from it's children
+ */
+export const getTextNodes = (node: Node): Node[] => {
+    if (node.childNodes.length === 0 && node.TEXT_NODE === node.nodeType && node.nodeValue) {
+        return [node]
+    }
+
+    const nodes: Node[] = []
+
+    for (const child of node.childNodes) {
+        nodes.push(...getTextNodes(child))
+    }
+
+    return nodes
+}
+
+/**
  * Returns the <span> (descendent of a <td> containing code) which contains text beginning
  * at the specified character offset (1-indexed).
  * Will convert tokens in the code cell if needed.
@@ -189,30 +256,62 @@ export function findElementWithOffset(codeElement: HTMLElement, offset: number):
     // Without being converted first, finding the position is inaccurate
     convertCodeElementIdempotent(codeElement)
 
-    let currOffset = 0
-    const walkNode = (currNode: HTMLElement): HTMLElement | undefined => {
-        const numChildNodes = currNode.childNodes.length
-        for (let i = 0; i < numChildNodes; ++i) {
-            const child = currNode.childNodes[i]
-            switch (child.nodeType) {
-                case Node.TEXT_NODE:
-                    if (currOffset < offset && currOffset + child.textContent!.length >= offset) {
-                        return currNode
-                    }
-                    currOffset += child.textContent!.length
-                    continue
+    const textNodes = getTextNodes(codeElement)
 
-                case Node.ELEMENT_NODE:
-                    const found = walkNode(child as HTMLElement)
-                    if (found) {
-                        return found
-                    }
-                    continue
-            }
+    // How far forward we have looked so far. Starting at one because codeintellify treats positions as being 1-indexed.
+    let offsetStep = 1
+    let nodeIndex = 0
+
+    // Find the text node that is at the given offset.
+    let targetNode: Node | undefined
+    for (const [i, node] of textNodes.entries()) {
+        const text = node.textContent || ''
+        if (offsetStep <= offset && offsetStep + text.length > offset) {
+            targetNode = node
+            nodeIndex = i
+            break
         }
+
+        offsetStep += text.length
+    }
+
+    if (!targetNode) {
         return undefined
     }
-    return walkNode(codeElement)
+
+    const tokenType = getTokenType(targetNode)
+
+    /**
+     * Walk forwards or backwards to find the edge of the actual token, not the DOM element.
+     * This is needed because tokens can span different elements. In diffs, tokens can be colored
+     * differently based if just part of the token changed.
+     *
+     * In other words, its not unexpexted to find a token that looks like: My<span>Token</span>.
+     * Without doing this, just "My" or "Token" will be highlighted depending on where you hover.
+     *
+     * @param idx the index to start at
+     * @param delta the direction we are walking
+     */
+    const findTokenEdgeIndex = (idx: number, delta: -1 | 1): number => {
+        let at = idx
+
+        while (textNodes[at + delta] && isSameTokenType(tokenType, textNodes[at + delta])) {
+            at += delta
+        }
+
+        return at
+    }
+
+    const startNode = textNodes[findTokenEdgeIndex(nodeIndex, -1)]
+    const endNode = textNodes[findTokenEdgeIndex(nodeIndex, 1)]
+
+    // Create a range spanning from the beginning of the token and the end.
+    const tokenRange = document.createRange()
+    tokenRange.setStartBefore(startNode)
+    tokenRange.setEndAfter(endNode)
+
+    // Return the common ancestor as the full token.
+    return tokenRange.commonAncestorContainer as HTMLElement
 }
 
 /**
@@ -354,7 +453,10 @@ export const getCodeElementsInRange = ({
 export const getTokenAtPosition = (
     codeView: HTMLElement,
     { line, character }: Position,
-    { getCodeElementFromLineNumber, isFirstCharacterDiffIndicator }: DOMFunctions,
+    {
+        getCodeElementFromLineNumber,
+        isFirstCharacterDiffIndicator,
+    }: Pick<DOMFunctions, 'getCodeElementFromLineNumber' | 'isFirstCharacterDiffIndicator'>,
     part?: DiffPart
 ): HTMLElement | undefined => {
     const codeElement = getCodeElementFromLineNumber(codeView, line, part)
@@ -365,5 +467,6 @@ export const getTokenAtPosition = (
     if (isFirstCharacterDiffIndicator && isFirstCharacterDiffIndicator(codeElement)) {
         character++
     }
+
     return findElementWithOffset(codeElement, character)
 }
