@@ -19,7 +19,7 @@ import { isDefined } from './helpers'
 import { overlayUIHasContent, scrollIntoCenterIfNeeded } from './helpers'
 import { HoverOverlayProps, isJumpURL } from './HoverOverlay'
 import { calculateOverlayPosition } from './overlay_position'
-import { DiffPart, PositionEvent, SupportedMouseEvent } from './positions'
+import { DiffPart, PositionEvent, SupportedEvent } from './positions'
 import { createObservableStateContainer } from './state'
 import {
     convertNode,
@@ -53,7 +53,7 @@ export interface HoverifierOptions {
     /**
      * Emit on this Observable when the Go-To-Definition button in the HoverOverlay was clicked
      */
-    goToDefinitionClicks: Observable<MouseEvent>
+    goToDefinitionClicks: Subject<MouseEvent>
 
     /**
      * Emit on this Observable when the close button in the HoverOverlay was clicked
@@ -269,27 +269,41 @@ export const createHoverifier = ({
         selectedPosition: undefined,
     })
 
-    interface MouseEventTrigger extends PositionEvent, EventOptions {}
+    interface EventTrigger extends PositionEvent, EventOptions {}
 
     // These Subjects aggregate all events from all hoverified code views
-    const allPositionsFromEvents = new Subject<MouseEventTrigger>()
+    const allPositionsFromEvents = new Subject<EventTrigger>()
 
-    const isEventType = <T extends SupportedMouseEvent>(type: T) => (
-        event: MouseEventTrigger
-    ): event is MouseEventTrigger & { eventType: T } => event.eventType === type
+    const isEventType = <T extends SupportedEvent>(type: T) => (
+        event: EventTrigger
+    ): event is EventTrigger & { eventType: T } => event.eventType === type
+    const isGoToDefClick = (event: MouseEvent | KeyboardEvent): boolean => event.ctrlKey || event.metaKey
     const allCodeMouseMoves = allPositionsFromEvents.pipe(filter(isEventType('mousemove')))
     const allCodeMouseOvers = allPositionsFromEvents.pipe(filter(isEventType('mouseover')))
     const allCodeClicks = allPositionsFromEvents.pipe(filter(isEventType('click')))
+
+    // keydown and keyup events only cause allPositionsFromEvents to emit when it's a control/command/meta key
+    const allCodeKeyDowns = allPositionsFromEvents.pipe(filter(isEventType('keydown')))
+    const allCodeKeyUps = allPositionsFromEvents.pipe(filter(isEventType('keyup')))
 
     const allPositionJumps = new Subject<PositionJump & EventOptions>()
 
     const subscription = new Subscription()
 
     /**
-     * click events on the code element, ignoring click events caused by the user selecting text.
+     * click events on the code element, ignoring click events caused by the user selecting text and
+     * click events when the ctrl/meta keys are down.
      * Selecting text should not mess with the hover, hover pinning nor the URL.
      */
-    const codeClicksWithoutSelections = allCodeClicks.pipe(filter(() => window.getSelection().toString() === ''))
+    const codeClicksWithoutSelections = allCodeClicks.pipe(
+        filter(() => window.getSelection().toString() === ''),
+        filter(event => !isGoToDefClick(event.event))
+    )
+
+    /**
+     * click events on the code element, when the ctrl/meta keys are down.
+     */
+    const goToDefCodeClicks = allCodeClicks.pipe(filter(event => isGoToDefClick(event.event)))
 
     // Mouse is moving, don't show the tooltip
     subscription.add(
@@ -314,9 +328,10 @@ export const createHoverifier = ({
         })
     )
 
-    const codeMouseOverTargets = allCodeMouseOvers.pipe(
+    const codeMouseOverTargets = merge(allCodeMouseOvers, allCodeKeyDowns, allCodeKeyUps).pipe(
         map(({ event, ...rest }) => ({
             target: event.target as HTMLElement,
+            goToDefHoverHighlight: isGoToDefClick(event),
             ...rest,
         })),
         debounceTime(50),
@@ -347,6 +362,7 @@ export const createHoverifier = ({
         filter(({ event }) => event.currentTarget !== null),
         map(({ event, ...rest }) => ({
             target: event.target as HTMLElement,
+            goToDefHoverHighlight: false,
             ...rest,
         })),
         switchMap(
@@ -391,9 +407,31 @@ export const createHoverifier = ({
                 return undefined
             }
             const part = dom.getDiffCodePart && dom.getDiffCodePart(target)
-            return { ...rest, eventType: 'jump' as 'jump', target, position: { ...position, part }, codeView, dom }
+            return {
+                ...rest,
+                eventType: 'jump' as 'jump',
+                target,
+                position: { ...position, part },
+                codeView,
+                dom,
+                goToDefHoverHighlight: false,
+            }
         }),
         filter(isDefined)
+    )
+
+    /**
+     * Ctrl/Cmd-clicks on tokens should act as go to definition clicks
+     */
+    subscription.add(
+        goToDefCodeClicks
+            .pipe(
+                // On go to definition code clicks (i.e., when the user holds down control/command while clicking on a symbol),
+                // we don't want to open in a new window. In this one situation, set the ctrlKey and metaKey values to false
+                // to prevent goToDefinitionClicks subscribers from assuming this behavior.
+                map(e => ({ ...e.event, ctrlKey: false, metaKey: false } as MouseEvent))
+            )
+            .subscribe(event => goToDefinitionClicks.next(event))
     )
 
     // REPOSITIONING
@@ -499,7 +537,7 @@ export const createHoverifier = ({
                     }).pipe(map(position => ({ position, hoverOrError, ...rest })))
                 })
             )
-            .subscribe(({ hoverOrError, position, codeView, dom, part }) => {
+            .subscribe(({ hoverOrError, position, codeView, dom, part, goToDefHoverHighlight }) => {
                 container.update({
                     hoverOrError,
                     // Reset the hover position, it's gonna be repositioned after the hover was rendered
@@ -508,6 +546,7 @@ export const createHoverifier = ({
                 const currentHighlighted = codeView.querySelector('.selection-highlight')
                 if (currentHighlighted) {
                     currentHighlighted.classList.remove('selection-highlight')
+                    currentHighlighted.classList.remove('selection-go-to-def-highlight')
                 }
                 if (!position) {
                     return
@@ -518,6 +557,9 @@ export const createHoverifier = ({
                     return
                 }
                 token.classList.add('selection-highlight')
+                if (goToDefHoverHighlight) {
+                    token.classList.add('selection-go-to-def-highlight')
+                }
             })
     )
     // Telemetry for hovers
@@ -670,7 +712,7 @@ export const createHoverifier = ({
     )
     subscription.add(
         goToDefinitionClicks.subscribe(event => {
-            container.update({ clickedGoToDefinition: event.ctrlKey || event.metaKey ? 'new-tab' : 'same-tab' })
+            container.update({ clickedGoToDefinition: isGoToDefClick(event) ? 'new-tab' : 'same-tab' })
         })
     )
 
