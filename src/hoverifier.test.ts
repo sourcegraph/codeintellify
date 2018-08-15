@@ -139,7 +139,7 @@ describe('Hoverifier', () => {
 
                 const hoverifier = createHoverifier({
                     closeButtonClicks: new Observable<MouseEvent>(),
-                    goToDefinitionClicks: new Observable<MouseEvent>(),
+                    goToDefinitionClicks: new Subject<MouseEvent>(),
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
                     fetchHover,
