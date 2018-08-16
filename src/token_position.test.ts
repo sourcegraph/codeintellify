@@ -160,13 +160,13 @@ describe('token_positions', () => {
         })
 
         it('gets the full token, even when it crosses multiple elements', () => {
-            const codeView = dom.createElementFromString('<div>To<span>ken</span></div>')
+            const codeView = dom.createElementFromString('<div> To<span>ken </span></div>')
 
             const positions = [
                 // Test walking to the right
-                { line: 1, character: 1 },
+                { line: 1, character: 2 },
                 // Test walking to the left
-                { line: 1, character: 3 },
+                { line: 1, character: 4 },
             ]
 
             for (const position of positions) {
@@ -176,6 +176,20 @@ describe('token_positions', () => {
 
                 chai.expect(token!.textContent).to.equal('Token')
             }
+        })
+
+        it("doesn't wrap tokens that span multiple elements more than once", () => {
+            const codeView = dom.createElementFromString('<div> To<span>ken </span></div>')
+
+            const domFn = {
+                getCodeElementFromLineNumber: (code: HTMLElement) => code.children.item(0) as HTMLElement,
+            }
+            const position = { line: 1, character: 2 }
+
+            const token1 = getTokenAtPosition(codeView, position, domFn)
+            const token2 = getTokenAtPosition(codeView, position, domFn)
+
+            chai.expect(token1).to.equal(token2, 'getTokenAtPosition is wrapping tokens more than once')
         })
     })
 

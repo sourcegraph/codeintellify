@@ -310,8 +310,26 @@ export function findElementWithOffset(codeElement: HTMLElement, offset: number):
     tokenRange.setStartBefore(startNode)
     tokenRange.setEndAfter(endNode)
 
-    // Return the common ancestor as the full token.
-    return tokenRange.commonAncestorContainer as HTMLElement
+    // If the text nodes are the same, its safe to return the common ancester which is the container element.
+    if (startNode === endNode || (tokenRange.commonAncestorContainer as HTMLElement).classList.contains('wrapped')) {
+        return tokenRange.commonAncestorContainer as HTMLElement
+    }
+
+    // Otherwise, we can't guarantee that the common ancester container doesn't contain
+    // whitespace or other characters around it. To solve for this case, we'll just
+    // surround the contents of the range with a new span.
+    const wrapper = document.createElement('span')
+    wrapper.classList.add('wrapped')
+
+    // NOTE: We can't use tokenRange.surroundContents(wrapper) because(from https://developer.mozilla.org/en-US/docs/Web/API/Range/surroundContents):
+    //
+    // An exception will be thrown, however, if the Range splits a non-Text node with only one of its
+    // boundary points. That is, unlike the alternative above, if there are partially selected nodes,
+    // they will not be cloned and instead the operation will fail.
+    wrapper.appendChild(tokenRange.extractContents())
+    tokenRange.insertNode(wrapper)
+
+    return wrapper
 }
 
 /**

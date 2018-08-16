@@ -407,7 +407,50 @@ export const createHoverifier = ({
             .pipe(
                 // with the latest target that came from either a mouseover, click or location change (whatever was the most recent)
                 withLatestFrom(merge(codeMouseOverTargets, codeClickTargets, jumpTargets)),
-                map(([{ hoverOverlayElement, relativeElement }, { target }]) =>
+                map(
+                    ([
+                        { hoverOverlayElement, relativeElement },
+                        { target, position, codeView, dom, adjustPosition, resolveContext },
+                    ]) => ({
+                        hoverOverlayElement,
+                        relativeElement,
+                        target,
+                        position,
+                        codeView,
+                        dom,
+                        adjustPosition,
+                        resolveContext,
+                    })
+                ),
+                switchMap(({ position, codeView, adjustPosition, resolveContext, ...rest }) => {
+                    if (!position || !adjustPosition) {
+                        return of({ position, codeView, ...rest })
+                    }
+
+                    return adjustPosition({
+                        position: { ...position, ...resolveContext(position) },
+                        codeView,
+                        direction: AdjustmentDirection.ActualToCodeView,
+                    }).pipe(
+                        map(({ line, character }) => ({
+                            position: { ...position, line, character },
+                            codeView,
+                            ...rest,
+                        }))
+                    )
+                }),
+                map(({ target, position, codeView, dom, ...rest }) => {
+                    // We should ensure we have the correct dom element to place the overlay above.
+                    // It is possible that tokens span multiple elements meaning that its possible for the
+                    // hover overlay to be placed in the middle of a token.
+                    const token = position ? getTokenAtPosition(codeView, position, dom, position.part) : target
+
+                    return {
+                        target: token || target,
+                        ...rest,
+                    }
+                }),
+                map(({ hoverOverlayElement, relativeElement, target }) =>
                     calculateOverlayPosition({ relativeElement, target, hoverOverlayElement })
                 )
             )
