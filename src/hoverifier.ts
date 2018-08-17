@@ -520,26 +520,31 @@ export const createHoverifier = ({
             .pipe(
                 switchMap(hoverObservable => hoverObservable),
                 switchMap(({ hoverOrError, position, adjustPosition, ...rest }) => {
-                    if (!HoverMerged.is(hoverOrError) || !hoverOrError.range || !position) {
+                    let pos =
+                        HoverMerged.is(hoverOrError) && hoverOrError.range && position
+                            ? { ...hoverOrError.range.start, ...position }
+                            : position
+
+                    if (!pos) {
                         return of({ hoverOrError, position: undefined as Position | undefined, ...rest })
                     }
 
                     // LSP is 0-indexed, the code here is currently 1-indexed
-                    const { line, character } = hoverOrError.range.start
-                    const pos = { line: line + 1, character: character + 1, ...position }
+                    const { line, character } = pos
+                    pos = { line: line + 1, character: character + 1, ...pos }
 
-                    if (!adjustPosition) {
-                        return of({ hoverOrError, position: pos, ...rest })
-                    }
+                    const adjustingPosition = adjustPosition
+                        ? adjustPosition({
+                              codeView: rest.codeView,
+                              direction: AdjustmentDirection.ActualToCodeView,
+                              position: {
+                                  ...pos,
+                                  part: rest.part,
+                              },
+                          })
+                        : of(pos)
 
-                    return adjustPosition({
-                        codeView: rest.codeView,
-                        direction: AdjustmentDirection.ActualToCodeView,
-                        position: {
-                            ...position,
-                            part: rest.part,
-                        },
-                    }).pipe(map(position => ({ position, hoverOrError, ...rest })))
+                    return adjustingPosition.pipe(map(position => ({ position, hoverOrError, ...rest })))
                 })
             )
             .subscribe(({ hoverOrError, position, codeView, dom, part }) => {
