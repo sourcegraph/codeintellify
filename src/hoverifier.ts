@@ -557,7 +557,7 @@ export const createHoverifier = ({
                 if (currentHighlighted) {
                     currentHighlighted.classList.remove('selection-highlight')
                 }
-                if (!position) {
+                if (!position || !hoverOrError) {
                     return
                 }
 
