@@ -485,6 +485,16 @@ export const createHoverifier = ({
             }
             // Fetch the hover for that position
             const hoverFetch = fetchHover(position).pipe(
+                // Some language servers don't conform to the LSP specification
+                // (e.g. Python LS sometimes returns an empty object). For the
+                // convenience of consumers of codeintellify, we'll handle this
+                // here.
+                map(
+                    hoverMergedOrNull =>
+                        hoverMergedOrNull === null || HoverMerged.is(hoverMergedOrNull)
+                            ? hoverMergedOrNull
+                            : new Error(`Invalid hover response: ${JSON.stringify(hoverMergedOrNull)}`)
+                ),
                 catchError(error => {
                     if (error && error.code === EMODENOTFOUND) {
                         return [null]
