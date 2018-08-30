@@ -31,6 +31,7 @@
   "dependencies": {
     "@sourcegraph/event-positions": "0.0.1",
     "@sourcegraph/react-loading-spinner": "0.0.6",
+    "abortable-rx": "^1.0.8",
     "highlight.js": "^9.12.0",
     "lodash": "^4.17.10",
     "marked": "^0.4.0",

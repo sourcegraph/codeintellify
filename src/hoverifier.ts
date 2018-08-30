@@ -1,3 +1,4 @@
+import { defer } from 'abortable-rx'
 import { isEqual, noop } from 'lodash'
 import {
     combineLatest,
@@ -29,8 +30,8 @@ import {
 import { Key } from 'ts-key-enum'
 import { Position } from 'vscode-languageserver-types'
 import { asError, ErrorLike } from './errors'
-import { isDefined } from './helpers'
 import { overlayUIHasContent, scrollIntoCenterIfNeeded } from './helpers'
+import { isDefined } from './helpers'
 import { HoverOverlayProps, isJumpURL } from './HoverOverlay'
 import { calculateOverlayPosition } from './overlay_position'
 import { DiffPart, PositionEvent, SupportedMouseEvent } from './positions'
@@ -146,6 +147,7 @@ export interface AdjustPositionProps {
     position: HoveredToken & HoveredTokenContext
     /** The direction the adjustment should go. */
     direction: AdjustmentDirection
+    signal: AbortSignal
 }
 
 /**
@@ -250,8 +252,14 @@ export const LOADER_DELAY = 300
 /** The time in ms after the mouse has stopped moving in which to show the tooltip */
 export const TOOLTIP_DISPLAY_DELAY = 100
 
-export type HoverFetcher = (position: HoveredToken & HoveredTokenContext) => SubscribableOrPromise<HoverMerged | null>
-export type JumpURLFetcher = (position: HoveredToken & HoveredTokenContext) => SubscribableOrPromise<string | null>
+export type HoverFetcher = (
+    position: HoveredToken & HoveredTokenContext,
+    signal: AbortSignal
+) => SubscribableOrPromise<HoverMerged | null>
+export type JumpURLFetcher = (
+    position: HoveredToken & HoveredTokenContext,
+    signal: AbortSignal
+) => SubscribableOrPromise<string | null>
 
 /**
  * Function responsible for resolving the position of a hovered token
@@ -339,11 +347,12 @@ export const createHoverifier = ({
         switchMap(
             ({ adjustPosition, codeView, resolveContext, position, ...rest }) =>
                 adjustPosition && position
-                    ? from(
+                    ? defer(signal =>
                           adjustPosition({
                               codeView,
                               position: { ...position, ...resolveContext(position) },
                               direction: AdjustmentDirection.CodeViewToActual,
+                              signal,
                           })
                       ).pipe(
                           map(({ line, character }) => ({
@@ -368,11 +377,12 @@ export const createHoverifier = ({
         switchMap(
             ({ adjustPosition, codeView, resolveContext, position, ...rest }) =>
                 adjustPosition && position
-                    ? from(
+                    ? defer(signal =>
                           adjustPosition({
                               codeView,
                               position: { ...position, ...resolveContext(position) },
                               direction: AdjustmentDirection.CodeViewToActual,
+                              signal,
                           })
                       ).pipe(
                           map(({ line, character }) => ({
@@ -445,11 +455,12 @@ export const createHoverifier = ({
                         return of({ position, codeView, ...rest })
                     }
 
-                    return from(
+                    return defer(signal =>
                         adjustPosition({
                             position: { ...position, ...resolveContext(position) },
                             codeView,
                             direction: AdjustmentDirection.ActualToCodeView,
+                            signal,
                         })
                     ).pipe(
                         map(({ line, character }) => ({
@@ -509,7 +520,7 @@ export const createHoverifier = ({
                 return of({ hoverOrError: null, position: undefined, part: undefined, ...rest })
             }
             // Fetch the hover for that position
-            const hoverFetch = from(fetchHover(position)).pipe(
+            const hoverFetch = defer(signal => fetchHover(position, signal)).pipe(
                 // Some language servers don't conform to the LSP specification
                 // (e.g. Python LS sometimes returns an empty object). For the
                 // convenience of consumers of codeintellify, we'll handle this
@@ -555,31 +566,32 @@ export const createHoverifier = ({
             .pipe(
                 switchMap(hoverObservable => hoverObservable),
                 switchMap(({ hoverOrError, position, adjustPosition, ...rest }) => {
-                    let pos =
-                        HoverMerged.is(hoverOrError) && hoverOrError.range && position
-                            ? { ...hoverOrError.range.start, ...position }
-                            : position
-
-                    if (!pos) {
+                    if (!HoverMerged.is(hoverOrError) || !hoverOrError.range || !position) {
                         return of({ hoverOrError, position: undefined as Position | undefined, ...rest })
                     }
 
+                    const rangeStart =
+                        HoverMerged.is(hoverOrError) && hoverOrError.range && position
+                            ? { ...hoverOrError.range.start, ...position }
+                            : { ...position }
+
                     // LSP is 0-indexed, the code here is currently 1-indexed
-                    const { line, character } = pos
-                    pos = { line: line + 1, character: character + 1, ...pos }
+                    rangeStart.line++
+                    rangeStart.character++
 
                     const adjustingPosition = adjustPosition
-                        ? from(
+                        ? defer(signal =>
                               adjustPosition({
                                   codeView: rest.codeView,
                                   direction: AdjustmentDirection.ActualToCodeView,
                                   position: {
-                                      ...pos,
+                                      ...rangeStart,
                                       part: rest.part,
                                   },
+                                  signal,
                               })
                           )
-                        : of(pos)
+                        : of(rangeStart)
 
                     return adjustingPosition.pipe(map(position => ({ position, hoverOrError, ...rest })))
                 })
@@ -630,7 +642,7 @@ export const createHoverifier = ({
             }
             return concat(
                 [LOADING],
-                from(fetchJumpURL(position)).pipe(
+                defer(signal => fetchJumpURL(position, signal)).pipe(
                     map(url => (url !== null ? { jumpURL: url } : null)),
                     catchError(error => [asError(error)])
                 )
