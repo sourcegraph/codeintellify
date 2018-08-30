@@ -472,16 +472,21 @@ export const createHoverifier = ({
      * For every position, emits an Observable with new values for the `hoverOrError` state.
      * This is a higher-order Observable (Observable that emits Observables).
      */
-    const hoverObservables = resolvedPositions.pipe(
+    const hoverObservables: Observable<
+        Observable<{
+            eventType: SupportedMouseEvent | 'jump'
+            dom: DOMFunctions
+            target: HTMLElement
+            adjustPosition?: PositionAdjuster
+            codeView: HTMLElement
+            hoverOrError?: typeof LOADING | HoverMerged | Error | null
+            position?: HoveredToken & HoveredTokenContext
+            part?: DiffPart
+        }>
+    > = resolvedPositions.pipe(
         map(({ position, ...rest }) => {
             if (!position) {
-                return of({
-                    // Typescript seems to give up on type inference if we don't explicitely declare the types here.
-                    hoverOrError: null as 'loading' | HoverMerged | Error | null | undefined,
-                    position: undefined as (HoveredToken & HoveredTokenContext) | undefined,
-                    part: undefined,
-                    ...rest,
-                })
+                return of({ hoverOrError: null, position: undefined, part: undefined, ...rest })
             }
             // Fetch the hover for that position
             const hoverFetch = fetchHover(position).pipe(
