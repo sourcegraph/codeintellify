@@ -11,7 +11,6 @@ import {
     of,
     Subject,
     Subscribable,
-    SubscribableOrPromise,
     Subscription,
     zip,
 } from 'rxjs'
@@ -154,7 +153,7 @@ export interface AdjustPositionProps {
  * Function to adjust positions coming into and out of hoverifier. It can be used to correct the position used in HoverFetcher and
  * JumpURLFetcher requests and the position of th etoken to highlight in the code view. This is useful for code hosts that convert whitespace.
  */
-export type PositionAdjuster = (props: AdjustPositionProps) => SubscribableOrPromise<Position>
+export type PositionAdjuster = (props: AdjustPositionProps) => Promise<Position>
 
 /**
  * HoverifyOptions that need to be included internally with every event
@@ -255,11 +254,11 @@ export const TOOLTIP_DISPLAY_DELAY = 100
 export type HoverFetcher = (
     position: HoveredToken & HoveredTokenContext,
     signal: AbortSignal
-) => SubscribableOrPromise<HoverMerged | null>
+) => Promise<HoverMerged | null>
 export type JumpURLFetcher = (
     position: HoveredToken & HoveredTokenContext,
     signal: AbortSignal
-) => SubscribableOrPromise<string | null>
+) => Promise<string | null>
 
 /**
  * Function responsible for resolving the position of a hovered token
