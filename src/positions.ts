@@ -1,4 +1,4 @@
-import { fromEvent, merge, Observable } from 'rxjs'
+import { from, fromEvent, merge, Observable, Subscribable } from 'rxjs'
 import { filter, map, switchMap, tap } from 'rxjs/operators'
 import { Position } from 'vscode-languageserver-types'
 import { convertCodeElementIdempotent, DiffPart, DOMFunctions, HoveredToken, locateTarget } from './token_position'
@@ -27,10 +27,10 @@ export interface PositionEvent {
 
 export { DOMFunctions, DiffPart }
 export const findPositionsFromEvents = (options: DOMFunctions) => (
-    elements: Observable<HTMLElement>
+    elements: Subscribable<HTMLElement>
 ): Observable<PositionEvent> =>
     merge(
-        elements.pipe(
+        from(elements).pipe(
             switchMap(element => fromEvent<MouseEvent>(element, 'mouseover')),
             map(event => ({ event, eventType: 'mouseover' as 'mouseover' })),
             filter(({ event }) => event.currentTarget !== null),
@@ -50,7 +50,7 @@ export const findPositionsFromEvents = (options: DOMFunctions) => (
                 }
             })
         ),
-        elements.pipe(
+        from(elements).pipe(
             switchMap(element => fromEvent<MouseEvent>(element, 'click')),
             map(event => ({ event, eventType: 'click' as 'click' })),
             // ignore click events caused by the user selecting text.
