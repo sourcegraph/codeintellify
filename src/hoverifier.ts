@@ -1,5 +1,19 @@
 import { isEqual, noop } from 'lodash'
-import { combineLatest, concat, EMPTY, fromEvent, merge, Observable, of, Subject, Subscription, zip } from 'rxjs'
+import {
+    combineLatest,
+    concat,
+    EMPTY,
+    from,
+    fromEvent,
+    merge,
+    Observable,
+    of,
+    Subject,
+    Subscribable,
+    SubscribableOrPromise,
+    Subscription,
+    zip,
+} from 'rxjs'
 import {
     catchError,
     debounceTime,
@@ -38,7 +52,7 @@ export interface HoverifierOptions {
     /**
      * Emit the HoverOverlay element on this after it was rerendered when its content changed and it needs to be repositioned.
      */
-    hoverOverlayRerenders: Observable<{
+    hoverOverlayRerenders: Subscribable<{
         /**
          * The HoverOverlay element
          */
@@ -53,14 +67,14 @@ export interface HoverifierOptions {
     /**
      * Emit on this Observable when the Go-To-Definition button in the HoverOverlay was clicked
      */
-    goToDefinitionClicks: Observable<MouseEvent>
+    goToDefinitionClicks: Subscribable<MouseEvent>
 
     /**
      * Emit on this Observable when the close button in the HoverOverlay was clicked
      */
-    closeButtonClicks: Observable<MouseEvent>
+    closeButtonClicks: Subscribable<MouseEvent>
 
-    hoverOverlayElements: Observable<HTMLElement | null>
+    hoverOverlayElements: Subscribable<HTMLElement | null>
 
     /**
      * Called for programmatic navigation (like `history.push()`)
@@ -138,7 +152,7 @@ export interface AdjustPositionProps {
  * Function to adjust positions coming into and out of hoverifier. It can be used to correct the position used in HoverFetcher and
  * JumpURLFetcher requests and the position of th etoken to highlight in the code view. This is useful for code hosts that convert whitespace.
  */
-export type PositionAdjuster = (props: AdjustPositionProps) => Observable<Position>
+export type PositionAdjuster = (props: AdjustPositionProps) => SubscribableOrPromise<Position>
 
 /**
  * HoverifyOptions that need to be included internally with every event
@@ -150,13 +164,13 @@ export interface EventOptions {
 }
 
 export interface HoverifyOptions extends EventOptions {
-    positionEvents: Observable<PositionEvent>
+    positionEvents: Subscribable<PositionEvent>
 
     /**
      * Emit on this Observable to trigger the overlay on a position in this code view.
      * This Observable is intended to be used to trigger a Hover after a URL change with a position.
      */
-    positionJumps?: Observable<PositionJump>
+    positionJumps?: Subscribable<PositionJump>
 }
 
 /**
@@ -236,8 +250,8 @@ export const LOADER_DELAY = 300
 /** The time in ms after the mouse has stopped moving in which to show the tooltip */
 export const TOOLTIP_DISPLAY_DELAY = 100
 
-export type HoverFetcher = (position: HoveredToken & HoveredTokenContext) => Observable<HoverMerged | null>
-export type JumpURLFetcher = (position: HoveredToken & HoveredTokenContext) => Observable<string | null>
+export type HoverFetcher = (position: HoveredToken & HoveredTokenContext) => SubscribableOrPromise<HoverMerged | null>
+export type JumpURLFetcher = (position: HoveredToken & HoveredTokenContext) => SubscribableOrPromise<string | null>
 
 /**
  * Function responsible for resolving the position of a hovered token
@@ -325,11 +339,13 @@ export const createHoverifier = ({
         switchMap(
             ({ adjustPosition, codeView, resolveContext, position, ...rest }) =>
                 adjustPosition && position
-                    ? adjustPosition({
-                          codeView,
-                          position: { ...position, ...resolveContext(position) },
-                          direction: AdjustmentDirection.CodeViewToActual,
-                      }).pipe(
+                    ? from(
+                          adjustPosition({
+                              codeView,
+                              position: { ...position, ...resolveContext(position) },
+                              direction: AdjustmentDirection.CodeViewToActual,
+                          })
+                      ).pipe(
                           map(({ line, character }) => ({
                               codeView,
                               resolveContext,
@@ -352,11 +368,13 @@ export const createHoverifier = ({
         switchMap(
             ({ adjustPosition, codeView, resolveContext, position, ...rest }) =>
                 adjustPosition && position
-                    ? adjustPosition({
-                          codeView,
-                          position: { ...position, ...resolveContext(position) },
-                          direction: AdjustmentDirection.CodeViewToActual,
-                      }).pipe(
+                    ? from(
+                          adjustPosition({
+                              codeView,
+                              position: { ...position, ...resolveContext(position) },
+                              direction: AdjustmentDirection.CodeViewToActual,
+                          })
+                      ).pipe(
                           map(({ line, character }) => ({
                               codeView,
                               resolveContext,
@@ -403,7 +421,7 @@ export const createHoverifier = ({
     // latest hover target by the time componentDidUpdate is triggered from the setState() in the second chain
     subscription.add(
         // Take every rerender
-        hoverOverlayRerenders
+        from(hoverOverlayRerenders)
             .pipe(
                 // with the latest target that came from either a mouseover, click or location change (whatever was the most recent)
                 withLatestFrom(merge(codeMouseOverTargets, codeClickTargets, jumpTargets)),
@@ -427,11 +445,13 @@ export const createHoverifier = ({
                         return of({ position, codeView, ...rest })
                     }
 
-                    return adjustPosition({
-                        position: { ...position, ...resolveContext(position) },
-                        codeView,
-                        direction: AdjustmentDirection.ActualToCodeView,
-                    }).pipe(
+                    return from(
+                        adjustPosition({
+                            position: { ...position, ...resolveContext(position) },
+                            codeView,
+                            direction: AdjustmentDirection.ActualToCodeView,
+                        })
+                    ).pipe(
                         map(({ line, character }) => ({
                             position: { ...position, line, character },
                             codeView,
@@ -489,7 +509,7 @@ export const createHoverifier = ({
                 return of({ hoverOrError: null, position: undefined, part: undefined, ...rest })
             }
             // Fetch the hover for that position
-            const hoverFetch = fetchHover(position).pipe(
+            const hoverFetch = from(fetchHover(position)).pipe(
                 // Some language servers don't conform to the LSP specification
                 // (e.g. Python LS sometimes returns an empty object). For the
                 // convenience of consumers of codeintellify, we'll handle this
@@ -549,14 +569,16 @@ export const createHoverifier = ({
                     pos = { line: line + 1, character: character + 1, ...pos }
 
                     const adjustingPosition = adjustPosition
-                        ? adjustPosition({
-                              codeView: rest.codeView,
-                              direction: AdjustmentDirection.ActualToCodeView,
-                              position: {
-                                  ...pos,
-                                  part: rest.part,
-                              },
-                          })
+                        ? from(
+                              adjustPosition({
+                                  codeView: rest.codeView,
+                                  direction: AdjustmentDirection.ActualToCodeView,
+                                  position: {
+                                      ...pos,
+                                      part: rest.part,
+                                  },
+                              })
+                          )
                         : of(pos)
 
                     return adjustingPosition.pipe(map(position => ({ position, hoverOrError, ...rest })))
@@ -608,7 +630,7 @@ export const createHoverifier = ({
             }
             return concat(
                 [LOADING],
-                fetchJumpURL(position).pipe(
+                from(fetchJumpURL(position)).pipe(
                     map(url => (url !== null ? { jumpURL: url } : null)),
                     catchError(error => [asError(error)])
                 )
@@ -749,9 +771,15 @@ export const createHoverifier = ({
             const subscription = new Subscription()
             const eventWithOptions = map((event: PositionEvent) => ({ ...event, ...eventOptions }))
             // Broadcast all events from this code view
-            subscription.add(positionEvents.pipe(eventWithOptions).subscribe(allPositionsFromEvents))
             subscription.add(
-                positionJumps.pipe(map(jump => ({ ...jump, ...eventOptions }))).subscribe(allPositionJumps)
+                from(positionEvents)
+                    .pipe(eventWithOptions)
+                    .subscribe(allPositionsFromEvents)
+            )
+            subscription.add(
+                from(positionJumps)
+                    .pipe(map(jump => ({ ...jump, ...eventOptions })))
+                    .subscribe(allPositionJumps)
             )
             return subscription
         },
