@@ -14,9 +14,7 @@ jobs:
         - npm run tslint
         - npm run build
         - npm test -- --single-run --browsers ChromeHeadlessNoSandbox
-        - bash <(curl -s https://codecov.io/bash) -t df60f52a-e38d-4acc-98df-5ca520687bce
-        - ./node_modules/.bin/nyc report --reporter json
-        - 'bash <(curl -s https://codecov.io/bash)'
+        - bash <(curl -s https://codecov.io/bash)
     - stage: release
       script:
         - npm run build
