@@ -6,6 +6,15 @@
     "enabled": true,
     "schedule": ["on the 1st through 7th day of the month"]
   },
-  "rangeStrategy": "replace",
+  "packageRules": [
+    {
+      "depTypeList": ["dependencies"],
+      "rangeStrategy": "widen"
+    },
+    {
+      "depTypeList": ["devDependencies"],
+      "rangeStrategy": "replace"
+    }
+  ],
   "prCreation": "not-pending"
 }
