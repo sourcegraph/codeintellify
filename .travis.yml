@@ -6,6 +6,8 @@ cache:
 env:
   global:
     - FORCE_COLOR=1
+install:
+  - npm ci
 jobs:
   include:
     - stage: test
