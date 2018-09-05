@@ -1,0 +1,30 @@
+language: node_js
+node_js: '10'
+cache:
+  directories:
+    - ~/.npm
+env:
+  global:
+    - FORCE_COLOR=1
+jobs:
+  include:
+    - stage: test
+      script:
+        - npm run prettier
+        - npm run tslint
+        - npm run build
+        - npm test -- --single-run --browsers ChromeHeadlessNoSandbox
+        - bash <(curl -s https://codecov.io/bash) -t df60f52a-e38d-4acc-98df-5ca520687bce
+        - nyc report --reporter json
+        - 'bash <(curl -s https://codecov.io/bash)'
+    - stage: release
+      script:
+        - npm run build
+        - npm run semantic-release
+stages:
+  - test
+  - name: release
+    if: branch = master AND type = push AND fork = false
+branches:
+  only:
+    - master
