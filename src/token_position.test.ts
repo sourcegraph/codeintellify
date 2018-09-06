@@ -78,7 +78,7 @@ describe('token_positions', () => {
             }
         })
 
-        it.only('does not change the text', () => {
+        it('does not change the text', () => {
             const text = 'fmt.Sprintf("%5d", someVar)'
             const elem = dom.createElementFromString(text)
 
