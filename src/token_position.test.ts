@@ -77,6 +77,15 @@ describe('token_positions', () => {
                 }
             }
         })
+
+        it('does not change the text', () => {
+            const text = 'fmt.Sprintf("%5d", someVar)'
+            const elem = dom.createElementFromString(text)
+
+            convertNode(elem)
+
+            expect(elem.textContent).to.equal(text)
+        })
     })
 
     describe('findElementWithOffset()', () => {

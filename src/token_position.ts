@@ -109,7 +109,7 @@ export function convertNode(parentNode: HTMLElement): void {
         const isLastNode = i === parentNode.childNodes.length - 1
 
         if (node.nodeType === Node.TEXT_NODE) {
-            let nodeText = unescape(node.textContent || '')
+            let nodeText = node.textContent || ''
             if (nodeText === '') {
                 continue
             }
@@ -160,7 +160,7 @@ const enum TokenType {
  * @param node The node containing the token.
  */
 function getTokenType(node: Node): TokenType {
-    const text = unescape(node.textContent || '')
+    const text = node.textContent || ''
     if (text.length === 0) {
         return TokenType.Other
     }
