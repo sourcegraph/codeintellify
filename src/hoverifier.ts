@@ -30,7 +30,7 @@ import { Key } from 'ts-key-enum'
 import { Position } from 'vscode-languageserver-types'
 import { asError, ErrorLike } from './errors'
 import { isDefined } from './helpers'
-import { overlayUIHasContent, scrollIntoCenterIfNeeded } from './helpers'
+import { isEmptyHover, overlayUIHasContent, scrollIntoCenterIfNeeded } from './helpers'
 import { HoverOverlayProps, isJumpURL } from './HoverOverlay'
 import { calculateOverlayPosition } from './overlay_position'
 import { DiffPart, PositionEvent, SupportedMouseEvent } from './positions'
@@ -594,7 +594,7 @@ export const createHoverifier = ({
                 if (currentHighlighted) {
                     currentHighlighted.classList.remove('selection-highlight')
                 }
-                if (!position || !hoverOrError) {
+                if (!position || !hoverOrError || (HoverMerged.is(hoverOrError) && isEmptyHover(hoverOrError))) {
                     return
                 }
 
