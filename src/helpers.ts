@@ -91,15 +91,20 @@ export const highlightCodeSafe = (code: string, language?: string): string => {
  * Renders the given markdown to HTML, highlighting code and sanitizing dangerous HTML.
  * Can throw an exception on parse errors.
  */
-export const renderMarkdown = (markdown: string): string =>
-    sanitize(
-        marked(markdown, {
-            gfm: true,
-            breaks: true,
-            sanitize: false,
-            highlight: (code, language) => '<code>' + highlightCodeSafe(code, language) + '</code>',
-        })
-    )
+export const renderMarkdown = (markdown: string): string => {
+    const rendered = marked(markdown, {
+        gfm: true,
+        breaks: true,
+        sanitize: false,
+        highlight: (code, language) => highlightCodeSafe(code, language),
+    })
+    return sanitize(rendered, {
+        allowedTags: [...sanitize.defaults.allowedTags, 'span'],
+        allowedClasses: {
+            '*': [/^hljs-.+/ as any],
+        },
+    })
+}
 
 /**
  * Converts a synthetic React event to a persisted, native Event object.
