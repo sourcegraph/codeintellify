@@ -99,9 +99,13 @@ export const renderMarkdown = (markdown: string): string => {
         highlight: (code, language) => highlightCodeSafe(code, language),
     })
     return sanitize(rendered, {
+        // Allow highligh.js styles, e.g.
+        // <span class="hljs-keyword">
+        // <code class="language-javascript">
         allowedTags: [...sanitize.defaults.allowedTags, 'span'],
-        allowedClasses: {
-            '*': [/^hljs-.+/ as any],
+        allowedAttributes: {
+            span: ['class'],
+            code: ['class'],
         },
     })
 }
