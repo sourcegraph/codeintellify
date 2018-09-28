@@ -83,6 +83,13 @@ describe('overlay_position', () => {
                     applyOffsets(hoverOverlayElement, position)
                     assert.deepStrictEqual(position, { left: 100, top: 116 })
                 })
+
+                it('should return a position aligned with the right of the target', () => {
+                    const target = createTarget({ left: 700, top: 200 })
+                    const position = calculateOverlayPosition({ relativeElement, target, hoverOverlayElement })
+                    applyOffsets(hoverOverlayElement, position)
+                    assert.deepStrictEqual(position, { left: 410, top: 50 })
+                })
             })
             describe('scrolled', () => {
                 beforeEach(() => {
@@ -102,6 +109,13 @@ describe('overlay_position', () => {
                     const position = calculateOverlayPosition({ relativeElement, target, hoverOverlayElement })
                     applyOffsets(hoverOverlayElement, position)
                     assert.deepStrictEqual(position, { left: 100, top: 466 })
+                })
+
+                it('should return a position aligned with the right of the target', () => {
+                    const target = createTarget({ left: 700, top: 450 })
+                    const position = calculateOverlayPosition({ relativeElement, target, hoverOverlayElement })
+                    applyOffsets(hoverOverlayElement, position)
+                    assert.deepStrictEqual(position, { left: 410, top: 466 })
                 })
             })
         })
@@ -132,6 +146,13 @@ describe('overlay_position', () => {
                     applyOffsets(hoverOverlayElement, position)
                     assert.deepStrictEqual(position, { left: 100, top: 156 })
                 })
+
+                it('should return a position aligned with the right of the target', () => {
+                    const target = createTarget({ left: 700, top: 200 })
+                    const position = calculateOverlayPosition({ relativeElement, target, hoverOverlayElement })
+                    applyOffsets(hoverOverlayElement, position)
+                    assert.deepStrictEqual(position, { left: 410, top: 50 })
+                })
             })
             describe('scrolled', () => {
                 beforeEach(() => {
@@ -156,6 +177,13 @@ describe('overlay_position', () => {
                     const position = calculateOverlayPosition({ relativeElement, target, hoverOverlayElement })
                     applyOffsets(hoverOverlayElement, position)
                     assert.deepStrictEqual(position, { left: 300, top: 466 })
+                })
+
+                it('should return a position aligned with the right of the target', () => {
+                    const target = createTarget({ left: 900, top: 450 })
+                    const position = calculateOverlayPosition({ relativeElement, target, hoverOverlayElement })
+                    applyOffsets(hoverOverlayElement, position)
+                    assert.deepStrictEqual(position, { left: 610, top: 466 })
                 })
             })
         })
