@@ -27,8 +27,20 @@ export const calculateOverlayPosition = ({
     const targetBounds = target.getBoundingClientRect()
     const hoverOverlayBounds = hoverOverlayElement.getBoundingClientRect()
 
-    // If the relativeElement is scrolled horizontally, we need to account for the offset (if not scrollLeft will be 0)
-    const relativeHoverOverlayLeft = targetBounds.left + relativeElement.scrollLeft - relativeElementBounds.left
+    let relativeHoverOverlayLeft: number
+
+    // Check if the right of the hover overlay would be outside of the relative element or the viewport
+    if (relativeElementBounds.right < targetBounds.left + hoverOverlayBounds.width) {
+        // Position it to be aligned with the right side of the target
+        // Calculate the offset from the right of the relative element
+        // If the relativeElement is scrolled horizontally, we need to account for the offset (if not scrollLeft will be 0)
+        relativeHoverOverlayLeft =
+            targetBounds.right - relativeElementBounds.left + relativeElement.scrollLeft - hoverOverlayBounds.width
+    } else {
+        // Else position it to be aligned with the left of the target
+        // If the relativeElement is scrolled horizontally, we need to account for the offset (if not scrollLeft will be 0)
+        relativeHoverOverlayLeft = targetBounds.left + relativeElement.scrollLeft - relativeElementBounds.left
+    }
 
     let relativeHoverOverlayTop: number
     // Check if the top of the hover overlay would be outside of the relative element or the viewport
