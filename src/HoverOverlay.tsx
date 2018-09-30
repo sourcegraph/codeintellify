@@ -62,6 +62,9 @@ export interface HoverOverlayProps {
     /** The component used to render links */
     linkComponent: LinkComponent
 
+    /** An optional class name to apply to the outermost element of the HoverOverlay */
+    className?: string
+
     /** Called when the Go-to-definition button was clicked */
     onGoToDefinitionClick?: (event: MouseEvent) => void
 
@@ -89,9 +92,10 @@ export const HoverOverlay: React.StatelessComponent<HoverOverlayProps> = ({
     overlayPosition,
     showCloseButton,
     logTelemetryEvent = noop,
+    className = '',
 }) => (
     <div
-        className="hover-overlay card"
+        className={`hover-overlay card ${className}`}
         ref={hoverRef}
         // tslint:disable-next-line:jsx-ban-props needed for dynamic styling
         style={
