@@ -92,10 +92,10 @@ export const HoverOverlay: React.StatelessComponent<HoverOverlayProps> = ({
     overlayPosition,
     showCloseButton,
     logTelemetryEvent = noop,
-    className,
+    className = '',
 }) => (
     <div
-        className={className ? `${className} hover-overlay card` : 'hover-overlay card'}
+        className={`hover-overlay card ${className}`}
         ref={hoverRef}
         // tslint:disable-next-line:jsx-ban-props needed for dynamic styling
         style={
