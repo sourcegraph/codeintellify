@@ -28,6 +28,14 @@
         &:not(:first-child) {
             border-top: 1px solid var(--border-color);
         }
+        hr {
+            margin: 0.5rem -0.5rem;
+            background: var(--border-color);
+        }
+        p,
+        pre {
+            margin-bottom: 0.5rem;
+        }
     }
 
     &__contents {
