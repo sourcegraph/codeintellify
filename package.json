@@ -35,7 +35,7 @@
     "lodash": "^4.17.10",
     "marked": "^0.4.0 || ^0.5.0",
     "mdi-react": "^4.0.0 || ^5.0.0",
-    "rxjs": "^6.3.2",
+    "rxjs": "^6.3.3",
     "sanitize-html": "^1.18.2",
     "ts-key-enum": "^2.0.0",
     "vscode-languageserver-types": "^3.8.2"
