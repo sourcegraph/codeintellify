@@ -47,7 +47,7 @@ describe('overlay_position', () => {
                     position: absolute;
                 }
             `
-            document.head.appendChild(style)
+            document.head!.appendChild(style)
 
             relativeElement = document.createElement('div')
             relativeElement.className = 'relative-element'

@@ -7,10 +7,8 @@ import * as React from 'react'
 import { MarkedString, MarkupContent, MarkupKind } from 'vscode-languageserver-types'
 import { asError, ErrorLike, isErrorLike } from './errors'
 import { highlightCodeSafe, renderMarkdown, toNativeEvent } from './helpers'
-import { HoveredTokenContext } from './hoverifier'
 import { HoveredToken } from './token_position'
 import { HoverMerged, LOADING } from './types'
-import { toPrettyBlobURL } from './url'
 
 /** The component used to render a link */
 export type LinkComponent = React.ComponentType<{ to: string } & React.HTMLAttributes<HTMLElement>>
@@ -31,7 +29,10 @@ const ButtonOrLink: React.StatelessComponent<
     )
 }
 
-export interface HoverOverlayProps {
+/**
+ * @template C Extra context for the hovered token.
+ */
+export interface HoverOverlayProps<C = {}> {
     /** What to show as contents */
     hoverOrError?: typeof LOADING | HoverMerged | null | ErrorLike // TODO disallow null and undefined
 
@@ -44,6 +45,13 @@ export interface HoverOverlayProps {
      */
     definitionURLOrError?: typeof LOADING | { jumpURL: string } | null | ErrorLike
 
+    /**
+     * The URL to navigate to to view references.
+     * If loaded, is set as the href of the find-references button.
+     * If undefined or null, the button is disabled.
+     */
+    referencesURL?: string | null
+
     /** The position of the tooltip (assigned to `style`) */
     overlayPosition?: { left: number; top: number }
 
@@ -54,7 +62,7 @@ export interface HoverOverlayProps {
      * The hovered token (position and word).
      * Used for the Find References buttons and for error messages
      */
-    hoveredToken?: HoveredToken & HoveredTokenContext
+    hoveredToken?: HoveredToken & C
 
     /** Whether to show the close button for the hover overlay */
     showCloseButton: boolean
@@ -81,8 +89,9 @@ export const isJumpURL = (val: any): val is { jumpURL: string } =>
 const transformMouseEvent = (handler: (event: MouseEvent) => void) => (event: React.MouseEvent<HTMLElement>) =>
     handler(toNativeEvent(event))
 
-export const HoverOverlay: React.StatelessComponent<HoverOverlayProps> = ({
+export const HoverOverlay: <C>(props: HoverOverlayProps<C>) => React.ReactElement<any> = ({
     definitionURLOrError,
+    referencesURL,
     hoveredToken,
     hoverOrError,
     hoverRef,
@@ -187,24 +196,18 @@ export const HoverOverlay: React.StatelessComponent<HoverOverlayProps> = ({
             >
                 Go to definition {definitionURLOrError === LOADING && <LoadingSpinner className="icon-inline" />}
             </ButtonOrLink>
-            <ButtonOrLink
-                linkComponent={linkComponent}
-                // tslint:disable-next-line:jsx-no-lambda
-                onClick={() => logTelemetryEvent('FindRefsClicked')}
-                to={
-                    hoveredToken &&
-                    toPrettyBlobURL({
-                        repoPath: hoveredToken.repoPath,
-                        rev: hoveredToken.rev,
-                        filePath: hoveredToken.filePath,
-                        position: hoveredToken,
-                        viewState: 'references',
-                    })
-                }
-                className="btn btn-secondary hover-overlay__action e2e-tooltip-find-refs"
-            >
-                Find references
-            </ButtonOrLink>
+            {hoveredToken &&
+                referencesURL && (
+                    <ButtonOrLink
+                        linkComponent={linkComponent}
+                        // tslint:disable-next-line:jsx-no-lambda
+                        onClick={() => logTelemetryEvent('FindRefsClicked')}
+                        to={referencesURL}
+                        className="btn btn-secondary hover-overlay__action e2e-tooltip-find-refs"
+                    >
+                        Find references
+                    </ButtonOrLink>
+                )}
         </div>
         {definitionURLOrError === null ? (
             <div className="alert alert-info hover-overlay__alert-below">

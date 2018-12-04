@@ -1,5 +1,5 @@
 import { Position } from 'vscode-languageserver-types'
-import { LineOrPositionOrRange } from './url'
+import { LineOrPositionOrRange } from './types'
 
 /**
  * A collection of methods needed to tell codeintellify how to look at the DOM. These are required for

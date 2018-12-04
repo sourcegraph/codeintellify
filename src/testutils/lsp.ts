@@ -25,7 +25,7 @@ export const createHoverMerged = (hover: Partial<HoverMerged> = {}): HoverMerged
  * @param hover optional values to be passed to createHoverMerged
  * @param delayTime optionally delay the hover fetch
  */
-export function createStubHoverFetcher(hover: Partial<HoverMerged> = {}, delayTime?: number): HoverFetcher {
+export function createStubHoverFetcher(hover: Partial<HoverMerged> = {}, delayTime?: number): HoverFetcher<{}> {
     return () => of(createHoverMerged(hover)).pipe(delay(delayTime || 0))
 }
 
@@ -34,6 +34,6 @@ export function createStubHoverFetcher(hover: Partial<HoverMerged> = {}, delayTi
  * @param jumpURL optional value to emit as the url
  * @param delayTime optionally delay the jump url fetch
  */
-export function createStubJumpURLFetcher(jumpURL = '', delayTime?: number): JumpURLFetcher {
+export function createStubJumpURLFetcher(jumpURL = '', delayTime?: number): JumpURLFetcher<{}> {
     return () => of(jumpURL).pipe(delay(delayTime || 0))
 }

@@ -43,12 +43,14 @@ import {
     getTokenAtPosition,
     HoveredToken,
 } from './token_position'
-import { EMODENOTFOUND, HoverMerged, LOADING } from './types'
-import { FileSpec, LineOrPositionOrRange, RepoSpec, ResolvedRevSpec, RevSpec } from './url'
+import { EMODENOTFOUND, HoverMerged, LineOrPositionOrRange, LOADING } from './types'
 
 export { HoveredToken }
 
-export interface HoverifierOptions {
+/**
+ * @template C Extra context for the hovered token.
+ */
+export interface HoverifierOptions<C extends object> {
     /**
      * Emit the HoverOverlay element on this after it was rerendered when its content changed and it needs to be repositioned.
      */
@@ -86,8 +88,9 @@ export interface HoverifierOptions {
      */
     logTelemetryEvent?: (event: string, data?: any) => void
 
-    fetchHover: HoverFetcher
-    fetchJumpURL: JumpURLFetcher
+    fetchHover: HoverFetcher<C>
+    fetchJumpURL: JumpURLFetcher<C>
+    getReferencesURL: (hoverToken: HoveredToken & C) => string | null
 }
 
 /**
@@ -95,8 +98,10 @@ export interface HoverifierOptions {
  * It will do very dirty things to it. Only call it if you're into that.
  *
  * There can be multiple code views in the DOM, which will only show a single HoverOverlay if the same Hoverifier was used.
+ *
+ * @template C Extra context for the hovered token.
  */
-export interface Hoverifier {
+export interface Hoverifier<C extends object> {
     /**
      * The current Hover state. You can use this to read the initial state synchronously.
      */
@@ -109,7 +114,7 @@ export interface Hoverifier {
     /**
      * Hoverifies a code view.
      */
-    hoverify(options: HoverifyOptions): Subscription
+    hoverify(options: HoverifyOptions<C>): Subscription
 
     unsubscribe(): void
 }
@@ -139,11 +144,14 @@ export enum AdjustmentDirection {
     ActualToCodeView,
 }
 
-export interface AdjustPositionProps {
+/**
+ * @template C Extra context for the hovered token.
+ */
+export interface AdjustPositionProps<C extends object> {
     /** The code view the token is in. */
     codeView: HTMLElement
     /** The position the token is at. */
-    position: HoveredToken & HoveredTokenContext
+    position: HoveredToken & C
     /** The direction the adjustment should go. */
     direction: AdjustmentDirection
 }
@@ -151,19 +159,27 @@ export interface AdjustPositionProps {
 /**
  * Function to adjust positions coming into and out of hoverifier. It can be used to correct the position used in HoverFetcher and
  * JumpURLFetcher requests and the position of th etoken to highlight in the code view. This is useful for code hosts that convert whitespace.
+ *
+ *
+ * @template C Extra context for the hovered token.
  */
-export type PositionAdjuster = (props: AdjustPositionProps) => SubscribableOrPromise<Position>
+export type PositionAdjuster<C extends object> = (props: AdjustPositionProps<C>) => SubscribableOrPromise<Position>
 
 /**
  * HoverifyOptions that need to be included internally with every event
+ *
+ * @template C Extra context for the hovered token.
  */
-export interface EventOptions {
-    resolveContext: ContextResolver
-    adjustPosition?: PositionAdjuster
+export interface EventOptions<C extends object> {
+    resolveContext: ContextResolver<C>
+    adjustPosition?: PositionAdjuster<C>
     dom: DOMFunctions
 }
 
-export interface HoverifyOptions extends EventOptions {
+/**
+ * @template C Extra context for the hovered token.
+ */
+export interface HoverifyOptions<C extends object> extends EventOptions<C> {
     positionEvents: Subscribable<PositionEvent>
 
     /**
@@ -190,9 +206,13 @@ export interface HoverState {
     selectedPosition?: LineOrPositionOrRange
 }
 
-interface InternalHoverifierState {
+/**
+ * @template C Extra context for the hovered token.
+ */
+interface InternalHoverifierState<C extends object> {
     hoverOrError?: typeof LOADING | HoverMerged | null | ErrorLike
     definitionURLOrError?: typeof LOADING | { jumpURL: string } | null | ErrorLike
+    referencesURL?: string | null
 
     hoverOverlayIsFixed: boolean
 
@@ -206,7 +226,7 @@ interface InternalHoverifierState {
     clickedGoToDefinition: false | 'same-tab' | 'new-tab'
 
     /** The currently hovered token */
-    hoveredToken?: HoveredToken & HoveredTokenContext
+    hoveredToken?: HoveredToken & C
 
     mouseIsMoving: boolean
 
@@ -221,13 +241,13 @@ interface InternalHoverifierState {
 /**
  * Returns true if the HoverOverlay component should be rendered according to the given state.
  */
-const shouldRenderOverlay = (state: InternalHoverifierState): boolean =>
+const shouldRenderOverlay = (state: InternalHoverifierState<{}>): boolean =>
     !(!state.hoverOverlayIsFixed && state.mouseIsMoving) && overlayUIHasContent(state)
 
 /**
  * Maps internal HoverifierState to the publicly exposed HoverState
  */
-const internalToExternalState = (internalState: InternalHoverifierState): HoverState => ({
+const internalToExternalState = (internalState: InternalHoverifierState<{}>): HoverState => ({
     selectedPosition: internalState.selectedPosition,
     hoverOverlayProps: shouldRenderOverlay(internalState)
         ? {
@@ -238,6 +258,7 @@ const internalToExternalState = (internalState: InternalHoverifierState): HoverS
                   isJumpURL(internalState.definitionURLOrError) || internalState.clickedGoToDefinition
                       ? internalState.definitionURLOrError
                       : undefined,
+              referencesURL: internalState.referencesURL,
               hoveredToken: internalState.hoveredToken,
               showCloseButton: internalState.hoverOverlayIsFixed,
           }
@@ -250,32 +271,44 @@ export const LOADER_DELAY = 300
 /** The time in ms after the mouse has stopped moving in which to show the tooltip */
 export const TOOLTIP_DISPLAY_DELAY = 100
 
-export type HoverFetcher = (position: HoveredToken & HoveredTokenContext) => SubscribableOrPromise<HoverMerged | null>
-export type JumpURLFetcher = (position: HoveredToken & HoveredTokenContext) => SubscribableOrPromise<string | null>
+/**
+ * @template C Extra context for the hovered token.
+ */
+export type HoverFetcher<C extends object> = (position: HoveredToken & C) => SubscribableOrPromise<HoverMerged | null>
+
+/**
+ * @template C Extra context for the hovered token.
+ */
+export type JumpURLFetcher<C extends object> = (position: HoveredToken & C) => SubscribableOrPromise<string | null>
 
 /**
  * Function responsible for resolving the position of a hovered token
  * and its diff part to a full context including repository, commit ID and file path.
+ *
+ * @template C Extra context for the hovered token.
  */
-export type ContextResolver = (hoveredToken: HoveredToken) => HoveredTokenContext
+export type ContextResolver<C extends object> = (hoveredToken: HoveredToken) => C
 
-export interface HoveredTokenContext extends RepoSpec, RevSpec, FileSpec, ResolvedRevSpec {}
-
-export const createHoverifier = ({
+/**
+ * @template C Extra context for the hovered token.
+ */
+export function createHoverifier<C extends object>({
     goToDefinitionClicks,
     closeButtonClicks,
     hoverOverlayRerenders,
     pushHistory,
     fetchHover,
     fetchJumpURL,
+    getReferencesURL,
     logTelemetryEvent = noop,
-}: HoverifierOptions): Hoverifier => {
+}: HoverifierOptions<C>): Hoverifier<C> {
     // Internal state that is not exposed to the caller
     // Shared between all hoverified code views
-    const container = createObservableStateContainer<InternalHoverifierState>({
+    const container = createObservableStateContainer<InternalHoverifierState<C>>({
         hoverOverlayIsFixed: false,
         clickedGoToDefinition: false,
         definitionURLOrError: undefined,
+        referencesURL: undefined,
         hoveredToken: undefined,
         hoverOrError: undefined,
         hoverOverlayPosition: undefined,
@@ -283,7 +316,7 @@ export const createHoverifier = ({
         selectedPosition: undefined,
     })
 
-    interface MouseEventTrigger extends PositionEvent, EventOptions {}
+    interface MouseEventTrigger extends PositionEvent, EventOptions<C> {}
 
     // These Subjects aggregate all events from all hoverified code views
     const allPositionsFromEvents = new Subject<MouseEventTrigger>()
@@ -295,7 +328,7 @@ export const createHoverifier = ({
     const allCodeMouseOvers = allPositionsFromEvents.pipe(filter(isEventType('mouseover')))
     const allCodeClicks = allPositionsFromEvents.pipe(filter(isEventType('click')))
 
-    const allPositionJumps = new Subject<PositionJump & EventOptions>()
+    const allPositionJumps = new Subject<PositionJump & EventOptions<C>>()
 
     const subscription = new Subscription()
 
@@ -489,6 +522,13 @@ export const createHoverifier = ({
         share()
     )
 
+    /** Emits new referencesURL values. */
+    subscription.add(
+        resolvedPositions
+            .pipe(map(({ position }) => (position ? getReferencesURL(position) : null)))
+            .subscribe(referencesURL => container.update({ referencesURL }))
+    )
+
     /**
      * For every position, emits an Observable with new values for the `hoverOrError` state.
      * This is a higher-order Observable (Observable that emits Observables).
@@ -498,10 +538,10 @@ export const createHoverifier = ({
             eventType: SupportedMouseEvent | 'jump'
             dom: DOMFunctions
             target: HTMLElement
-            adjustPosition?: PositionAdjuster
+            adjustPosition?: PositionAdjuster<C>
             codeView: HTMLElement
             hoverOrError?: typeof LOADING | HoverMerged | Error | null
-            position?: HoveredToken & HoveredTokenContext
+            position?: HoveredToken & C
             part?: DiffPart
         }>
     > = resolvedPositions.pipe(
@@ -611,7 +651,7 @@ export const createHoverifier = ({
         zip(resolvedPositions, hoverObservables)
             .pipe(
                 distinctUntilChanged(([positionA], [positionB]) => isEqual(positionA, positionB)),
-                switchMap(([position, hoverObservable]) => hoverObservable),
+                switchMap(([, hoverObservable]) => hoverObservable),
                 filter(({ hoverOrError }) => HoverMerged.is(hoverOrError))
             )
             .subscribe(() => {
@@ -768,7 +808,7 @@ export const createHoverifier = ({
             map(internalToExternalState),
             distinctUntilChanged((a, b) => isEqual(a, b))
         ),
-        hoverify({ positionEvents, positionJumps = EMPTY, ...eventOptions }: HoverifyOptions): Subscription {
+        hoverify({ positionEvents, positionJumps = EMPTY, ...eventOptions }: HoverifyOptions<C>): Subscription {
             const subscription = new Subscription()
             const eventWithOptions = map((event: PositionEvent) => ({ ...event, ...eventOptions }))
             // Broadcast all events from this code view
