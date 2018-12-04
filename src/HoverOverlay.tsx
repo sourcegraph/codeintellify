@@ -52,7 +52,7 @@ export interface HoverOverlayProps {
 
     /**
      * The hovered token (position and word).
-     * Used for the Find References/Implementations buttons and for error messages
+     * Used for the Find References buttons and for error messages
      */
     hoveredToken?: HoveredToken & HoveredTokenContext
 
@@ -204,24 +204,6 @@ export const HoverOverlay: React.StatelessComponent<HoverOverlayProps> = ({
                 className="btn btn-secondary hover-overlay__action e2e-tooltip-find-refs"
             >
                 Find references
-            </ButtonOrLink>
-            <ButtonOrLink
-                linkComponent={linkComponent}
-                // tslint:disable-next-line:jsx-no-lambda
-                onClick={() => logTelemetryEvent('FindImplementationsClicked')}
-                to={
-                    hoveredToken &&
-                    toPrettyBlobURL({
-                        repoPath: hoveredToken.repoPath,
-                        rev: hoveredToken.rev,
-                        filePath: hoveredToken.filePath,
-                        position: hoveredToken,
-                        viewState: 'impl',
-                    })
-                }
-                className="btn btn-secondary hover-overlay__action e2e-tooltip-find-impl"
-            >
-                Find implementations
             </ButtonOrLink>
         </div>
         {definitionURLOrError === null ? (
