@@ -481,8 +481,9 @@ export const createHoverifier = ({
 
     /** Emits new positions including context at which a tooltip needs to be shown from clicks, mouseovers and URL changes. */
     const resolvedPositions = merge(codeMouseOverTargets, jumpTargets, codeClickTargets).pipe(
-        map(({ position, resolveContext, ...rest }) => ({
+        map(({ position, resolveContext, eventType, ...rest }) => ({
             ...rest,
+            eventType,
             position: Position.is(position) ? { ...position, ...resolveContext(position) } : undefined,
         })),
         share()
