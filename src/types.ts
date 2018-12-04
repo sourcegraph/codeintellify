@@ -26,3 +26,16 @@ export namespace HoverMerged {
         )
     }
 }
+
+/**
+ * Represents a line, a position, a line range, or a position range. It forbids
+ * just a character, or a range from a line to a position or vice versa (such as
+ * "L1-2:3" or "L1:2-3"), none of which would make much sense.
+ *
+ * 1-indexed.
+ */
+export type LineOrPositionOrRange =
+    | { line?: undefined; character?: undefined; endLine?: undefined; endCharacter?: undefined }
+    | { line: number; character?: number; endLine?: undefined; endCharacter?: undefined }
+    | { line: number; character?: undefined; endLine?: number; endCharacter?: undefined }
+    | { line: number; character: number; endLine: number; endCharacter: number }

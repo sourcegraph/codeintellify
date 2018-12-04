@@ -134,7 +134,7 @@ describe('Hoverifier', () => {
                 const fetchHover = createStubHoverFetcher({})
                 const fetchJumpURL = createStubJumpURLFetcher('def')
 
-                const adjustPosition: PositionAdjuster = ({ direction, position }) => {
+                const adjustPosition: PositionAdjuster<{}> = ({ direction, position }) => {
                     adjustmentDirections.next(direction)
 
                     return of(position)
