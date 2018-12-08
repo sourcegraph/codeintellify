@@ -46,7 +46,6 @@ describe('Hoverifier', () => {
                     fetchHover: createStubHoverFetcher(hover, delayTime),
                     fetchJumpURL: createStubJumpURLFetcher(defURL, delayTime),
                     pushHistory: noop,
-                    logTelemetryEvent: noop,
                 })
 
                 const positionJumps = new Subject<{
@@ -148,7 +147,6 @@ describe('Hoverifier', () => {
                     fetchHover,
                     fetchJumpURL,
                     pushHistory: noop,
-                    logTelemetryEvent: noop,
                 })
 
                 const positionJumps = new Subject<{

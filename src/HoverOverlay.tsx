@@ -1,5 +1,5 @@
 import { LoadingSpinner } from '@sourcegraph/react-loading-spinner'
-import { castArray, noop, upperFirst } from 'lodash'
+import { castArray, upperFirst } from 'lodash'
 import AlertCircleOutlineIcon from 'mdi-react/AlertCircleOutlineIcon'
 import CloseIcon from 'mdi-react/CloseIcon'
 import InformationOutlineIcon from 'mdi-react/InformationOutlineIcon'
@@ -78,8 +78,6 @@ export interface HoverOverlayProps<C = {}> {
 
     /** Called when the close button is clicked */
     onCloseButtonClick?: (event: MouseEvent) => void
-
-    logTelemetryEvent?: (event: string, data?: any) => void
 }
 
 /** Returns true if the input is successful jump URL result */
@@ -100,7 +98,6 @@ export const HoverOverlay: <C>(props: HoverOverlayProps<C>) => React.ReactElemen
     onGoToDefinitionClick,
     overlayPosition,
     showCloseButton,
-    logTelemetryEvent = noop,
     className = '',
 }) => (
     <div
@@ -201,7 +198,6 @@ export const HoverOverlay: <C>(props: HoverOverlayProps<C>) => React.ReactElemen
                     <ButtonOrLink
                         linkComponent={linkComponent}
                         // tslint:disable-next-line:jsx-no-lambda
-                        onClick={() => logTelemetryEvent('FindRefsClicked')}
                         to={referencesURL}
                         className="btn btn-secondary hover-overlay__action e2e-tooltip-find-refs"
                     >
