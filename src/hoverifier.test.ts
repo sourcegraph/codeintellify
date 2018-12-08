@@ -18,7 +18,7 @@ import {
 import { HoverOverlayProps } from './HoverOverlay'
 import { findPositionsFromEvents, SupportedMouseEvent } from './positions'
 import { CodeViewProps, DOM } from './testutils/dom'
-import { createHoverMerged, createStubHoverFetcher, createStubJumpURLFetcher } from './testutils/lsp'
+import { createHoverAttachment, createStubHoverFetcher, createStubJumpURLFetcher } from './testutils/lsp'
 import { dispatchMouseEventAtPositionImpure } from './testutils/mouse'
 import { LOADING } from './types'
 
@@ -48,7 +48,6 @@ describe('Hoverifier', () => {
                     fetchHover: createStubHoverFetcher({ range: hoverRange }, LOADER_DELAY + delayTime),
                     fetchJumpURL: () => of(null),
                     pushHistory: noop,
-                    getReferencesURL: () => null,
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -113,7 +112,6 @@ describe('Hoverifier', () => {
                     fetchHover: createStubHoverFetcher(hover, delayTime),
                     fetchJumpURL: createStubJumpURLFetcher(defURL, delayTime),
                     pushHistory: noop,
-                    getReferencesURL: () => null,
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -360,7 +358,6 @@ describe('Hoverifier', () => {
                     fetchHover: createStubHoverFetcher(hover, delayTime),
                     fetchJumpURL: createStubJumpURLFetcher(defURL, delayTime),
                     pushHistory: noop,
-                    getReferencesURL: () => null,
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -406,7 +403,7 @@ describe('Hoverifier', () => {
                     [key: string]: Pick<HoverOverlayProps, 'hoverOrError' | 'definitionURLOrError'>
                 } = {
                     a: { hoverOrError: LOADING, definitionURLOrError: undefined }, // def url is undefined when it is loading
-                    b: { hoverOrError: createHoverMerged(hover), definitionURLOrError: { jumpURL: defURL } },
+                    b: { hoverOrError: createHoverAttachment(hover), definitionURLOrError: { jumpURL: defURL } },
                 }
 
                 // Click https://sourcegraph.sgdev.org/github.com/gorilla/mux@cb4698366aa625048f3b815af6a0dea8aef9280a/-/blob/mux.go#L24:6
@@ -438,7 +435,6 @@ describe('Hoverifier', () => {
                     fetchHover: createStubHoverFetcher(hover),
                     fetchJumpURL: createStubJumpURLFetcher(defURL),
                     pushHistory: noop,
-                    getReferencesURL: () => null,
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -503,7 +499,6 @@ describe('Hoverifier', () => {
                     fetchHover: createStubHoverFetcher(hover),
                     fetchJumpURL: createStubJumpURLFetcher(defURL),
                     pushHistory: noop,
-                    getReferencesURL: () => null,
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -588,7 +583,6 @@ describe('Hoverifier', () => {
                     fetchHover,
                     fetchJumpURL,
                     pushHistory: noop,
-                    getReferencesURL: () => null,
                 })
 
                 const positionJumps = new Subject<PositionJump>()

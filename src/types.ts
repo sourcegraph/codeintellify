@@ -1,27 +1,31 @@
-import { Hover, MarkedString, MarkupContent, Range } from 'vscode-languageserver-types'
+import { Range } from 'vscode-languageserver-types'
 
 export const LOADING: 'loading' = 'loading'
 
-/** A hover that is merged from multiple Hover results and normalized. */
-export type HoverMerged = Pick<Hover, Exclude<keyof Hover, 'contents'>> & {
-    /** Also allows MarkupContent[]. */
-    // tslint:disable-next-line deprecation We want to handle MarkedString
-    contents: (MarkupContent | MarkedString)[]
+/**
+ * Describes the range in the document (usually a token) that the hover is attached to.
+ */
+export interface HoverAttachment {
+    /**
+     * The range to which this hover applies. When missing, it will use the range at the current
+     * position or the current position itself.
+     */
+    range?: Range
 }
 
-export namespace HoverMerged {
-    /** Reports whether the value conforms to the HoverMerged interface. */
-    export function is(value: any): value is HoverMerged {
-        // Based on Hover.is from vscode-languageserver-types.
-        return (
-            value !== null &&
-            typeof value === 'object' &&
-            Array.isArray(value.contents) &&
-            // tslint:disable-next-line deprecation We want to handle MarkedString
-            (value.contents as any[]).every(c => MarkupContent.is(c) || MarkedString.is(c)) &&
-            (value.range === undefined || Range.is(value.range))
-        )
-    }
+/**
+ * Reports whether {@link value} is a {@link HoverAttachment} value with a range.
+ */
+export function isHoverAttachmentWithRange(value: any): value is HoverAttachment & { range: Range } {
+    return (
+        value &&
+        value.range &&
+        value.range.start &&
+        typeof value.range.start.line === 'number' &&
+        typeof value.range.start.character === 'number' &&
+        typeof value.range.end.line === 'number' &&
+        typeof value.range.end.character === 'number'
+    )
 }
 
 /**
