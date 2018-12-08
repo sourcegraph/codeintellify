@@ -29,7 +29,7 @@ import {
 import { Key } from 'ts-key-enum'
 import { Position, Range } from 'vscode-languageserver-types'
 import { asError, ErrorLike, isErrorLike } from './errors'
-import { overlayUIHasContent, scrollIntoCenterIfNeeded } from './helpers'
+import { scrollIntoCenterIfNeeded } from './helpers'
 import { HoverOverlayProps, isJumpURL } from './HoverOverlay'
 import { calculateOverlayPosition } from './overlay_position'
 import { DiffPart, PositionEvent, SupportedMouseEvent } from './positions'
@@ -42,7 +42,7 @@ import {
     getTokenAtPosition,
     HoveredToken,
 } from './token_position'
-import { HoverMerged, LineOrPositionOrRange, LOADING } from './types'
+import { HoverAttachment, isHoverAttachmentWithRange, LineOrPositionOrRange, LOADING } from './types'
 
 export { HoveredToken }
 
@@ -208,7 +208,7 @@ export interface HoverState {
  * @template C Extra context for the hovered token.
  */
 interface InternalHoverifierState<C extends object> {
-    hoverOrError?: typeof LOADING | HoverMerged | null | ErrorLike
+    hoverOrError?: typeof LOADING | HoverAttachment | null | ErrorLike
     definitionURLOrError?: typeof LOADING | { jumpURL: string } | null | ErrorLike
 
     hoverOverlayIsFixed: boolean
@@ -244,7 +244,7 @@ interface InternalHoverifierState<C extends object> {
  * Returns true if the HoverOverlay component should be rendered according to the given state.
  */
 const shouldRenderOverlay = (state: InternalHoverifierState<{}>): boolean =>
-    !(!state.hoverOverlayIsFixed && state.mouseIsMoving) && overlayUIHasContent(state)
+    !(!state.hoverOverlayIsFixed && state.mouseIsMoving) && !!state.hoverOrError && !isErrorLike(state.hoverOrError)
 
 /**
  * Maps internal HoverifierState to the publicly exposed HoverState
@@ -279,7 +279,9 @@ export const MOUSEOVER_DELAY = 50
 /**
  * @template C Extra context for the hovered token.
  */
-export type HoverFetcher<C extends object> = (position: HoveredToken & C) => SubscribableOrPromise<HoverMerged | null>
+export type HoverFetcher<C extends object> = (
+    position: HoveredToken & C
+) => SubscribableOrPromise<HoverAttachment | null>
 
 /**
  * @template C Extra context for the hovered token.
@@ -543,7 +545,7 @@ export function createHoverifier<C extends object>({
             target: HTMLElement
             adjustPosition?: PositionAdjuster<C>
             codeView: HTMLElement
-            hoverOrError?: typeof LOADING | HoverMerged | ErrorLike | null
+            hoverOrError?: typeof LOADING | HoverAttachment | ErrorLike | null
             position?: HoveredToken & C
             part?: DiffPart
         }>
@@ -554,16 +556,6 @@ export function createHoverifier<C extends object>({
             }
             // Fetch the hover for that position
             const hoverFetch = from(fetchHover(position)).pipe(
-                // Some language servers don't conform to the LSP specification
-                // (e.g. Python LS sometimes returns an empty object). For the
-                // convenience of consumers of codeintellify, we'll handle this
-                // here.
-                map(
-                    hoverMergedOrNull =>
-                        hoverMergedOrNull === null || HoverMerged.is(hoverMergedOrNull)
-                            ? hoverMergedOrNull
-                            : new Error(`Invalid hover response: ${JSON.stringify(hoverMergedOrNull)}`)
-                ),
                 catchError((error): [ErrorLike] => [asError(error)]),
                 share()
             )
@@ -595,7 +587,7 @@ export function createHoverifier<C extends object>({
                 switchMap(hoverObservable => hoverObservable),
                 switchMap(({ hoverOrError, position, adjustPosition, ...rest }) => {
                     let pos =
-                        HoverMerged.is(hoverOrError) && hoverOrError.range && position
+                        isHoverAttachmentWithRange(hoverOrError) && position
                             ? { ...hoverOrError.range.start, ...position }
                             : position
 
@@ -684,7 +676,7 @@ export function createHoverifier<C extends object>({
                 [LOADING],
                 from(fetchJumpURL(position)).pipe(
                     map(url => (url !== null ? { jumpURL: url } : null)),
-                    catchError(error => [asError(error)])
+                    catchError((error): [ErrorLike] => [asError(error)])
                 )
             )
         })
@@ -739,8 +731,7 @@ export function createHoverifier<C extends object>({
                                 // In the time between the click/jump and the loader being displayed,
                                 // pin the hover overlay so mouseover events get ignored
                                 // If the hover comes back empty (and the definition) it will get unpinned again
-                                hoverOrError === undefined ||
-                                overlayUIHasContent({ hoverOrError, definitionURLOrError })
+                                hoverOrError === undefined || isJumpURL(definitionURLOrError)
                         )
                     )
                 })

@@ -1,14 +1,13 @@
 import { LoadingSpinner } from '@sourcegraph/react-loading-spinner'
-import { castArray, upperFirst } from 'lodash'
+import { upperFirst } from 'lodash'
 import AlertCircleOutlineIcon from 'mdi-react/AlertCircleOutlineIcon'
 import CloseIcon from 'mdi-react/CloseIcon'
 import InformationOutlineIcon from 'mdi-react/InformationOutlineIcon'
 import * as React from 'react'
-import { MarkedString, MarkupContent, MarkupKind } from 'vscode-languageserver-types'
-import { asError, ErrorLike, isErrorLike } from './errors'
-import { highlightCodeSafe, renderMarkdown, toNativeEvent } from './helpers'
+import { ErrorLike, isErrorLike } from './errors'
+import { toNativeEvent } from './helpers'
 import { HoveredToken } from './token_position'
-import { HoverMerged, LOADING } from './types'
+import { HoverAttachment, LOADING } from './types'
 
 /** The component used to render a link */
 export type LinkComponent = React.ComponentType<{ to: string } & React.HTMLAttributes<HTMLElement>>
@@ -34,7 +33,7 @@ const ButtonOrLink: React.StatelessComponent<
  */
 export interface HoverOverlayProps<C = {}> {
     /** What to show as contents */
-    hoverOrError?: typeof LOADING | HoverMerged | null | ErrorLike // TODO disallow null and undefined
+    hoverOrError?: typeof LOADING | HoverAttachment | null | ErrorLike // TODO disallow null and undefined
 
     /**
      * The URL to jump to on go to definition.
@@ -82,7 +81,6 @@ const transformMouseEvent = (handler: (event: MouseEvent) => void) => (event: Re
 
 export const HoverOverlay: <C>(props: HoverOverlayProps<C>) => React.ReactElement<any> = ({
     definitionURLOrError,
-    hoveredToken,
     hoverOrError,
     hoverRef,
     linkComponent,
@@ -133,46 +131,8 @@ export const HoverOverlay: <C>(props: HoverOverlayProps<C>) => React.ReactElemen
                         </h4>
                         {upperFirst(hoverOrError.message)}
                     </div>
-                ) : (
-                    // tslint:disable-next-line deprecation We want to handle the deprecated MarkedString
-                    castArray<MarkedString | MarkupContent>(hoverOrError.contents)
-                        .map(value => (typeof value === 'string' ? { kind: MarkupKind.Markdown, value } : value))
-                        .map((content, i) => {
-                            if (MarkupContent.is(content)) {
-                                if (content.kind === MarkupKind.Markdown) {
-                                    try {
-                                        return (
-                                            <div
-                                                className="hover-overlay__content hover-overlay__row e2e-tooltip-content"
-                                                key={i}
-                                                dangerouslySetInnerHTML={{ __html: renderMarkdown(content.value) }}
-                                            />
-                                        )
-                                    } catch (err) {
-                                        return (
-                                            <div className="hover-overlay__row alert alert-danger">
-                                                <strong>
-                                                    <AlertCircleOutlineIcon className="icon-inline" /> Error rendering
-                                                    hover content
-                                                </strong>{' '}
-                                                {upperFirst(asError(err).message)}
-                                            </div>
-                                        )
-                                    }
-                                }
-                                return content.value
-                            }
-                            return (
-                                <code
-                                    className="hover-overlay__content hover-overlay__row e2e-tooltip-content"
-                                    key={i}
-                                    dangerouslySetInnerHTML={{
-                                        __html: highlightCodeSafe(content.value, content.language),
-                                    }}
-                                />
-                            )
-                        })
-                )}
+                ) : null // hover content
+                }
             </div>
         )}
 
