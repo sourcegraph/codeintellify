@@ -1,4 +1,4 @@
-import { isEqual, noop } from 'lodash'
+import { isEqual } from 'lodash'
 import {
     combineLatest,
     concat,
@@ -82,11 +82,6 @@ export interface HoverifierOptions<C extends object> {
      * Called for programmatic navigation (like `history.push()`)
      */
     pushHistory: (path: string) => void
-
-    /**
-     * Called to log telemetry events
-     */
-    logTelemetryEvent?: (event: string, data?: any) => void
 
     fetchHover: HoverFetcher<C>
     fetchJumpURL: JumpURLFetcher<C>
@@ -196,7 +191,7 @@ export interface HoverState {
     /**
      * The props to pass to `HoverOverlay`, or `undefined` if it should not be rendered.
      */
-    hoverOverlayProps?: Pick<HoverOverlayProps, Exclude<keyof HoverOverlayProps, 'linkComponent' | 'logTelemetryEvent'>>
+    hoverOverlayProps?: Pick<HoverOverlayProps, Exclude<keyof HoverOverlayProps, 'linkComponent'>>
 
     /**
      * The currently selected position, if any.
@@ -300,7 +295,6 @@ export function createHoverifier<C extends object>({
     fetchHover,
     fetchJumpURL,
     getReferencesURL,
-    logTelemetryEvent = noop,
 }: HoverifierOptions<C>): Hoverifier<C> {
     // Internal state that is not exposed to the caller
     // Shared between all hoverified code views
@@ -646,18 +640,6 @@ export function createHoverifier<C extends object>({
                 token.classList.add('selection-highlight')
             })
     )
-    // Telemetry for hovers
-    subscription.add(
-        zip(resolvedPositions, hoverObservables)
-            .pipe(
-                distinctUntilChanged(([positionA], [positionB]) => isEqual(positionA, positionB)),
-                switchMap(([, hoverObservable]) => hoverObservable),
-                filter(({ hoverOrError }) => HoverMerged.is(hoverOrError))
-            )
-            .subscribe(() => {
-                logTelemetryEvent('SymbolHovered')
-            })
-    )
 
     /**
      * For every position, emits an Observable that emits new values for the `definitionURLOrError` state.
@@ -739,9 +721,6 @@ export function createHoverifier<C extends object>({
     // On every click on a go to definition button, reveal loader/error/not found UI
     subscription.add(
         goToDefinitionClicks.subscribe(event => {
-            // Telemetry
-            logTelemetryEvent('GoToDefClicked')
-
             // If we don't have a result yet that would be jumped to by the native <a> tag...
             if (!isJumpURL(container.values.definitionURLOrError)) {
                 // Prevent default link behaviour (jump will be done programmatically once finished)
