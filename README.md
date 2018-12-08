@@ -12,7 +12,7 @@ Adds code intelligence to code views on the web. Used in [Sourcegraph](https://s
 
 - Listens to hover and click events on the code view
 - On mouse hovers, determines the line+column position, does an LSP hover request and renders it in a nice tooltip overlay at the token
-- Shows buttons for go-to-definition and find-references
+- Shows button for go-to-definition
 - When clicking a token, pins the tooltip to that token
 - Highlights the hovered token
 

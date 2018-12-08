@@ -84,7 +84,6 @@ export interface HoverifierOptions<C extends object> {
 
     fetchHover: HoverFetcher<C>
     fetchJumpURL: JumpURLFetcher<C>
-    getReferencesURL: (hoverToken: HoveredToken & C) => string | null
 }
 
 /**
@@ -211,7 +210,6 @@ export interface HoverState {
 interface InternalHoverifierState<C extends object> {
     hoverOrError?: typeof LOADING | HoverMerged | null | ErrorLike
     definitionURLOrError?: typeof LOADING | { jumpURL: string } | null | ErrorLike
-    referencesURL?: string | null
 
     hoverOverlayIsFixed: boolean
 
@@ -263,7 +261,6 @@ const internalToExternalState = (internalState: InternalHoverifierState<{}>): Ho
                   isJumpURL(internalState.definitionURLOrError) || internalState.clickedGoToDefinition
                       ? internalState.definitionURLOrError
                       : undefined,
-              referencesURL: internalState.referencesURL,
               hoveredToken: internalState.hoveredToken,
               showCloseButton: internalState.hoverOverlayIsFixed,
           }
@@ -307,7 +304,6 @@ export function createHoverifier<C extends object>({
     pushHistory,
     fetchHover,
     fetchJumpURL,
-    getReferencesURL,
 }: HoverifierOptions<C>): Hoverifier<C> {
     // Internal state that is not exposed to the caller
     // Shared between all hoverified code views
@@ -315,7 +311,6 @@ export function createHoverifier<C extends object>({
         hoverOverlayIsFixed: false,
         clickedGoToDefinition: false,
         definitionURLOrError: undefined,
-        referencesURL: undefined,
         hoveredToken: undefined,
         hoverOrError: undefined,
         hoverOverlayPosition: undefined,
@@ -535,13 +530,6 @@ export function createHoverifier<C extends object>({
         // so the overlay doesn't temporarily disappear when, e.g., clicking to pin the overlay when it's already
         // visible due to a mouseover.
         distinctUntilChanged((a, b) => isEqual(a.position, b.position))
-    )
-
-    /** Emits new referencesURL values. */
-    subscription.add(
-        resolvedPositions
-            .pipe(map(({ position }) => (position ? getReferencesURL(position) : null)))
-            .subscribe(referencesURL => container.update({ referencesURL }))
     )
 
     /**

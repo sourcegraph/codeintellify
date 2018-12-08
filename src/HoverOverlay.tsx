@@ -45,13 +45,6 @@ export interface HoverOverlayProps<C = {}> {
      */
     definitionURLOrError?: typeof LOADING | { jumpURL: string } | null | ErrorLike
 
-    /**
-     * The URL to navigate to to view references.
-     * If loaded, is set as the href of the find-references button.
-     * If undefined or null, the button is disabled.
-     */
-    referencesURL?: string | null
-
     /** The position of the tooltip (assigned to `style`) */
     overlayPosition?: { left: number; top: number }
 
@@ -89,7 +82,6 @@ const transformMouseEvent = (handler: (event: MouseEvent) => void) => (event: Re
 
 export const HoverOverlay: <C>(props: HoverOverlayProps<C>) => React.ReactElement<any> = ({
     definitionURLOrError,
-    referencesURL,
     hoveredToken,
     hoverOrError,
     hoverRef,
@@ -193,17 +185,6 @@ export const HoverOverlay: <C>(props: HoverOverlayProps<C>) => React.ReactElemen
             >
                 Go to definition {definitionURLOrError === LOADING && <LoadingSpinner className="icon-inline" />}
             </ButtonOrLink>
-            {hoveredToken &&
-                referencesURL && (
-                    <ButtonOrLink
-                        linkComponent={linkComponent}
-                        // tslint:disable-next-line:jsx-no-lambda
-                        to={referencesURL}
-                        className="btn btn-secondary hover-overlay__action e2e-tooltip-find-refs"
-                    >
-                        Find references
-                    </ButtonOrLink>
-                )}
         </div>
         {definitionURLOrError === null ? (
             <div className="alert alert-info hover-overlay__alert-below">
