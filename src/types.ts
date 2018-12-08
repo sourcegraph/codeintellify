@@ -2,9 +2,6 @@ import { Hover, MarkedString, MarkupContent, Range } from 'vscode-languageserver
 
 export const LOADING: 'loading' = 'loading'
 
-/** LSP proxy error code for unsupported modes */
-export const EMODENOTFOUND = -32000
-
 /** A hover that is merged from multiple Hover results and normalized. */
 export type HoverMerged = Pick<Hover, Exclude<keyof Hover, 'contents'>> & {
     /** Also allows MarkupContent[]. */
