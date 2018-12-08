@@ -43,7 +43,7 @@ import {
     getTokenAtPosition,
     HoveredToken,
 } from './token_position'
-import { EMODENOTFOUND, HoverMerged, LineOrPositionOrRange, LOADING } from './types'
+import { HoverMerged, LineOrPositionOrRange, LOADING } from './types'
 
 export { HoveredToken }
 
@@ -561,12 +561,7 @@ export function createHoverifier<C extends object>({
                             ? hoverMergedOrNull
                             : new Error(`Invalid hover response: ${JSON.stringify(hoverMergedOrNull)}`)
                 ),
-                catchError(error => {
-                    if (error && error.code === EMODENOTFOUND) {
-                        return [null]
-                    }
-                    return [asError(error)]
-                }),
+                catchError(error => [asError(error)]),
                 share()
             )
             // 1. Reset the hover content, so no old hover content is displayed at the new position while fetching
