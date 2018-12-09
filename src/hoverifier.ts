@@ -68,11 +68,6 @@ export interface HoverifierOptions<C extends object, D, A> {
     }>
 
     /**
-     * Emit on this Observable when the Go-To-Definition button in the HoverOverlay was clicked
-     */
-    goToDefinitionClicks: Subscribable<MouseEvent>
-
-    /**
      * Emit on this Observable when the close button in the HoverOverlay was clicked
      */
     closeButtonClicks: Subscribable<MouseEvent>
@@ -316,7 +311,6 @@ export type ContextResolver<C extends object> = (hoveredToken: HoveredToken) => 
  * @template A The type of an action.
  */
 export function createHoverifier<C extends object, D, A>({
-    goToDefinitionClicks,
     closeButtonClicks,
     hoverOverlayRerenders,
     fetchHover,
@@ -734,17 +728,6 @@ export function createHoverifier<C extends object, D, A>({
             .subscribe(hoverOverlayIsFixed => {
                 container.update({ hoverOverlayIsFixed })
             })
-    )
-
-    // On every click on a go to definition button, reveal loader/error/not found UI
-    subscription.add(
-        goToDefinitionClicks.subscribe(event => {
-            // If we don't have a result yet that would be jumped to by the native <a> tag...
-            if (!container.values.actionsOrError || isErrorLike(container.values.actionsOrError)) {
-                // Prevent default link behaviour (jump will be done programmatically once finished)
-                event.preventDefault()
-            }
-        })
     )
 
     // When the close button is clicked, unpin, hide and reset the hover

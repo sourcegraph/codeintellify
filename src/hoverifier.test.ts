@@ -41,7 +41,6 @@ describe('Hoverifier', () => {
             scheduler.run(({ cold, expectObservable }) => {
                 const hoverifier = createHoverifier({
                     closeButtonClicks: NEVER,
-                    goToDefinitionClicks: NEVER,
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
                     fetchHover: createStubHoverFetcher({ range: hoverRange }, LOADER_DELAY + delayTime),
@@ -103,7 +102,6 @@ describe('Hoverifier', () => {
             scheduler.run(({ cold, expectObservable }) => {
                 const hoverifier = createHoverifier({
                     closeButtonClicks: NEVER,
-                    goToDefinitionClicks: new Observable<MouseEvent>(),
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
                     fetchHover: createStubHoverFetcher(hover, delayTime),
@@ -192,7 +190,6 @@ describe('Hoverifier', () => {
                 scheduler.run(({ cold, expectObservable }) => {
                     const hoverifier = createHoverifier({
                         closeButtonClicks: NEVER,
-                        goToDefinitionClicks: new Observable<MouseEvent>(),
                         hoverOverlayElements: of(null),
                         hoverOverlayRerenders: EMPTY,
                         // Only show on line 24, not line 25 (which is the 2nd click event below).
@@ -265,7 +262,6 @@ describe('Hoverifier', () => {
                 scheduler.run(({ cold, expectObservable }) => {
                     const hoverifier = createHoverifier({
                         closeButtonClicks: NEVER,
-                        goToDefinitionClicks: new Observable<MouseEvent>(),
                         hoverOverlayElements: of(null),
                         hoverOverlayRerenders: EMPTY,
                         // Only show on line 24, not line 25 (which is the 2nd click event below).
@@ -346,7 +342,6 @@ describe('Hoverifier', () => {
             scheduler.run(({ cold, expectObservable }) => {
                 const hoverifier = createHoverifier({
                     closeButtonClicks: new Observable<MouseEvent>(),
-                    goToDefinitionClicks: new Observable<MouseEvent>(),
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
                     fetchHover: createStubHoverFetcher(hover, delayTime),
@@ -418,7 +413,6 @@ describe('Hoverifier', () => {
             scheduler.run(({ cold, expectObservable }) => {
                 const hoverifier = createHoverifier({
                     closeButtonClicks: new Observable<MouseEvent>(),
-                    goToDefinitionClicks: new Observable<MouseEvent>(),
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
                     fetchHover: createStubHoverFetcher(hover),
@@ -480,7 +474,6 @@ describe('Hoverifier', () => {
             scheduler.run(({ cold, expectObservable }) => {
                 const hoverifier = createHoverifier({
                     closeButtonClicks: new Observable<MouseEvent>(),
-                    goToDefinitionClicks: new Observable<MouseEvent>(),
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
                     fetchHover: createStubHoverFetcher(hover),
@@ -563,7 +556,6 @@ describe('Hoverifier', () => {
 
                 const hoverifier = createHoverifier({
                     closeButtonClicks: new Observable<MouseEvent>(),
-                    goToDefinitionClicks: new Observable<MouseEvent>(),
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
                     fetchHover,
