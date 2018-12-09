@@ -30,7 +30,7 @@ import {
 import { Key } from 'ts-key-enum'
 import { asError, ErrorLike, isErrorLike } from './errors'
 import { scrollIntoCenterIfNeeded } from './helpers'
-import { HoverOverlayProps, isJumpURL } from './HoverOverlay'
+import { HoverOverlayProps } from './HoverOverlay'
 import { calculateOverlayPosition } from './overlay_position'
 import { DiffPart, PositionEvent, SupportedMouseEvent } from './positions'
 import { createObservableStateContainer } from './state'
@@ -48,8 +48,9 @@ export { HoveredToken }
 
 /**
  * @template C Extra context for the hovered token.
+ * @template A The type of an action.
  */
-export interface HoverifierOptions<C extends object> {
+export interface HoverifierOptions<C extends object, A> {
     /**
      * Emit the HoverOverlay element on this after it was rerendered when its content changed and it needs to be repositioned.
      */
@@ -77,13 +78,12 @@ export interface HoverifierOptions<C extends object> {
 
     hoverOverlayElements: Subscribable<HTMLElement | null>
 
-    /**
-     * Called for programmatic navigation (like `history.push()`)
-     */
-    pushHistory: (path: string) => void
-
     fetchHover: HoverFetcher<C>
-    fetchJumpURL: JumpURLFetcher<C>
+
+    /**
+     * Called to fetch the actions to display in the hover.
+     */
+    fetchActions: ActionsFetcher<C, A>
 }
 
 /**
@@ -93,16 +93,17 @@ export interface HoverifierOptions<C extends object> {
  * There can be multiple code views in the DOM, which will only show a single HoverOverlay if the same Hoverifier was used.
  *
  * @template C Extra context for the hovered token.
+ * @template A The type of an action.
  */
-export interface Hoverifier<C extends object> {
+export interface Hoverifier<C extends object, A> {
     /**
      * The current Hover state. You can use this to read the initial state synchronously.
      */
-    hoverState: Readonly<HoverState>
+    hoverState: Readonly<HoverState<C, A>>
     /**
      * This Observable is to notify that the state that is used to render the HoverOverlay needs to be updated.
      */
-    hoverStateUpdates: Observable<Readonly<HoverState>>
+    hoverStateUpdates: Observable<Readonly<HoverState<C, A>>>
 
     /**
      * Hoverifies a code view.
@@ -151,7 +152,7 @@ export interface AdjustPositionProps<C extends object> {
 
 /**
  * Function to adjust positions coming into and out of hoverifier. It can be used to correct the position used in HoverFetcher and
- * JumpURLFetcher requests and the position of th etoken to highlight in the code view. This is useful for code hosts that convert whitespace.
+ * ActionsFetcher requests and the position of th etoken to highlight in the code view. This is useful for code hosts that convert whitespace.
  *
  *
  * @template C Extra context for the hovered token.
@@ -184,12 +185,15 @@ export interface HoverifyOptions<C extends object> extends EventOptions<C> {
 
 /**
  * Output that contains the information needed to render the HoverOverlay.
+ *
+ * @template C Extra context for the hovered token.
+ * @template A The type of an action.
  */
-export interface HoverState {
+export interface HoverState<C extends object, A> {
     /**
      * The props to pass to `HoverOverlay`, or `undefined` if it should not be rendered.
      */
-    hoverOverlayProps?: Pick<HoverOverlayProps, Exclude<keyof HoverOverlayProps, 'linkComponent'>>
+    hoverOverlayProps?: Pick<HoverOverlayProps<C, A>, Exclude<keyof HoverOverlayProps<C, A>, 'actionComponent'>>
 
     /**
      * The highlighted range, which is the range in the hover result or else the range of the hovered token.
@@ -206,21 +210,15 @@ export interface HoverState {
 
 /**
  * @template C Extra context for the hovered token.
+ * @template A The type of an action.
  */
-interface InternalHoverifierState<C extends object> {
+interface InternalHoverifierState<C extends object, A> {
     hoverOrError?: typeof LOADING | HoverAttachment | null | ErrorLike
-    definitionURLOrError?: typeof LOADING | { jumpURL: string } | null | ErrorLike
 
     hoverOverlayIsFixed: boolean
 
     /** The desired position of the hover overlay */
     hoverOverlayPosition?: { left: number; top: number }
-
-    /**
-     * Whether the user has clicked the go to definition button for the current overlay yet,
-     * and whether he pressed Ctrl/Cmd while doing it to open it in a new tab or not.
-     */
-    clickedGoToDefinition: false | 'same-tab' | 'new-tab'
 
     /** The currently hovered token */
     hoveredToken?: HoveredToken & C
@@ -238,31 +236,37 @@ interface InternalHoverifierState<C extends object> {
      * Highlighted with a background color.
      */
     selectedPosition?: LineOrPositionOrRange
+
+    /**
+     * Actions to display as buttons or links in the hover.
+     */
+    actionsOrError?: typeof LOADING | A[] | null | ErrorLike
 }
 
 /**
  * Returns true if the HoverOverlay component should be rendered according to the given state.
  */
-const shouldRenderOverlay = (state: InternalHoverifierState<{}>): boolean =>
+const shouldRenderOverlay = (state: InternalHoverifierState<{}, {}>): boolean =>
     !(!state.hoverOverlayIsFixed && state.mouseIsMoving) && !!state.hoverOrError && !isErrorLike(state.hoverOrError)
 
 /**
  * Maps internal HoverifierState to the publicly exposed HoverState
+ *
+ * @template C Extra context for the hovered token.
+ * @template A The type of an action.
  */
-const internalToExternalState = (internalState: InternalHoverifierState<{}>): HoverState => ({
+const internalToExternalState = <C extends object, A>(
+    internalState: InternalHoverifierState<C, A>
+): HoverState<C, A> => ({
     selectedPosition: internalState.selectedPosition,
     highlightedRange: shouldRenderOverlay(internalState) ? internalState.highlightedRange : undefined,
     hoverOverlayProps: shouldRenderOverlay(internalState)
         ? {
               overlayPosition: internalState.hoverOverlayPosition,
               hoverOrError: internalState.hoverOrError,
-              definitionURLOrError:
-                  // always modify the href, but only show error/loader/not found after the button was clicked
-                  isJumpURL(internalState.definitionURLOrError) || internalState.clickedGoToDefinition
-                      ? internalState.definitionURLOrError
-                      : undefined,
               hoveredToken: internalState.hoveredToken,
               showCloseButton: internalState.hoverOverlayIsFixed,
+              actionsOrError: internalState.actionsOrError,
           }
         : undefined,
 })
@@ -285,8 +289,9 @@ export type HoverFetcher<C extends object> = (
 
 /**
  * @template C Extra context for the hovered token.
+ * @template A The type of an action.
  */
-export type JumpURLFetcher<C extends object> = (position: HoveredToken & C) => SubscribableOrPromise<string | null>
+export type ActionsFetcher<C extends object, A> = (position: HoveredToken & C) => SubscribableOrPromise<A[] | null>
 
 /**
  * Function responsible for resolving the position of a hovered token
@@ -298,26 +303,25 @@ export type ContextResolver<C extends object> = (hoveredToken: HoveredToken) => 
 
 /**
  * @template C Extra context for the hovered token.
+ * @template A The type of an action.
  */
-export function createHoverifier<C extends object>({
+export function createHoverifier<C extends object, A>({
     goToDefinitionClicks,
     closeButtonClicks,
     hoverOverlayRerenders,
-    pushHistory,
     fetchHover,
-    fetchJumpURL,
-}: HoverifierOptions<C>): Hoverifier<C> {
+    fetchActions,
+}: HoverifierOptions<C, A>): Hoverifier<C, A> {
     // Internal state that is not exposed to the caller
     // Shared between all hoverified code views
-    const container = createObservableStateContainer<InternalHoverifierState<C>>({
+    const container = createObservableStateContainer<InternalHoverifierState<C, A>>({
         hoverOverlayIsFixed: false,
-        clickedGoToDefinition: false,
-        definitionURLOrError: undefined,
         hoveredToken: undefined,
         hoverOrError: undefined,
         hoverOverlayPosition: undefined,
         mouseIsMoving: false,
         selectedPosition: undefined,
+        actionsOrError: undefined,
     })
 
     interface MouseEventTrigger extends PositionEvent, EventOptions<C> {}
@@ -347,7 +351,7 @@ export function createHoverifier<C extends object>({
         merge(
             allCodeMouseMoves.pipe(
                 map(({ event }) => event.target),
-                // Make sure a move of the mouse from the go-to-definition button
+                // Make sure a move of the mouse from the action button
                 // back to the same target doesn't cause the tooltip to briefly disappear
                 distinctUntilChanged(),
                 map(() => true)
@@ -663,45 +667,27 @@ export function createHoverifier<C extends object>({
     )
 
     /**
-     * For every position, emits an Observable that emits new values for the `definitionURLOrError` state.
+     * For every position, emits an Observable that emits new values for the `actionsOrError` state.
      * This is a higher-order Observable (Observable that emits Observables).
      */
-    const definitionObservables = resolvedPositions.pipe(
-        // Fetch the definition location for that position
+    const actionObservables = resolvedPositions.pipe(
+        // Fetch the actions for that position
         map(({ position }) => {
             if (!position) {
                 return of(null)
             }
-            return concat(
-                [LOADING],
-                from(fetchJumpURL(position)).pipe(
-                    map(url => (url !== null ? { jumpURL: url } : null)),
-                    catchError((error): [ErrorLike] => [asError(error)])
-                )
-            )
+            return concat([LOADING], from(fetchActions(position)).pipe(catchError(error => [asError(error)])))
         })
     )
 
-    // GO TO DEFINITION FETCH
-    // On every new hover position, (pre)fetch definition and update the state
+    // ACTIONS FETCH
+    // On every new hover position, (pre)fetch actions and update the state
     subscription.add(
-        definitionObservables
+        actionObservables
             // flatten inner Observables
-            .pipe(switchMap(definitionObservable => definitionObservable))
-            .subscribe(definitionURLOrError => {
-                container.update({ definitionURLOrError })
-                // If the j2d button was already clicked and we now have the result, jump to it
-                // TODO move this logic into HoverOverlay
-                if (container.values.clickedGoToDefinition && isJumpURL(definitionURLOrError)) {
-                    switch (container.values.clickedGoToDefinition) {
-                        case 'same-tab':
-                            pushHistory(definitionURLOrError.jumpURL)
-                            break
-                        case 'new-tab':
-                            window.open(definitionURLOrError.jumpURL, '_blank')
-                            break
-                    }
-                }
+            .pipe(switchMap(actionObservable => actionObservable))
+            .subscribe(actionsOrError => {
+                container.update({ actionsOrError })
             })
     )
 
@@ -713,11 +699,11 @@ export function createHoverifier<C extends object>({
     // zip together the corresponding hover and definition fetches
     subscription.add(
         combineLatest(
-            zip(hoverObservables, definitionObservables),
+            zip(hoverObservables, actionObservables),
             resolvedPositionEvents.pipe(map(({ eventType }) => eventType))
         )
             .pipe(
-                switchMap(([[hoverObservable, definitionObservable], eventType]) => {
+                switchMap(([[hoverObservable, actionObservable], eventType]) => {
                     // If the position was triggered by a mouseover, never pin
                     if (eventType !== 'click' && eventType !== 'jump') {
                         return [false]
@@ -725,13 +711,12 @@ export function createHoverifier<C extends object>({
                     // combine the latest values for them, so we have access to both values
                     // and can reevaluate our pinning decision whenever one of the two updates,
                     // independent of the order in which they emit
-                    return combineLatest(hoverObservable, definitionObservable).pipe(
-                        map(
-                            ([{ hoverOrError }, definitionURLOrError]) =>
-                                // In the time between the click/jump and the loader being displayed,
-                                // pin the hover overlay so mouseover events get ignored
-                                // If the hover comes back empty (and the definition) it will get unpinned again
-                                hoverOrError === undefined || isJumpURL(definitionURLOrError)
+                    return combineLatest(hoverObservable, actionObservable).pipe(
+                        map(([{ hoverOrError }, actionsOrError]) =>
+                            // In the time between the click/jump and the loader being displayed,
+                            // pin the hover overlay so mouseover events get ignored
+                            // If the hover comes back empty (and the definition) it will get unpinned again
+                            Boolean(hoverOrError === undefined || (actionsOrError && !isErrorLike(actionsOrError)))
                         )
                     )
                 })
@@ -745,7 +730,7 @@ export function createHoverifier<C extends object>({
     subscription.add(
         goToDefinitionClicks.subscribe(event => {
             // If we don't have a result yet that would be jumped to by the native <a> tag...
-            if (!isJumpURL(container.values.definitionURLOrError)) {
+            if (!container.values.actionsOrError || isErrorLike(container.values.actionsOrError)) {
                 // Prevent default link behaviour (jump will be done programmatically once finished)
                 event.preventDefault()
             }
@@ -764,8 +749,7 @@ export function createHoverifier<C extends object>({
                 hoverOverlayPosition: undefined,
                 hoverOrError: undefined,
                 hoveredToken: undefined,
-                definitionURLOrError: undefined,
-                clickedGoToDefinition: false,
+                actionsOrError: undefined,
             })
         })
     )
@@ -791,19 +775,12 @@ export function createHoverifier<C extends object>({
         resolvedPositions.subscribe(({ position }) => {
             container.update({
                 hoveredToken: position,
-                // On every new target (from mouseover or click) hide the j2d loader/error/not found UI again
-                clickedGoToDefinition: false,
             })
-        })
-    )
-    subscription.add(
-        goToDefinitionClicks.subscribe(event => {
-            container.update({ clickedGoToDefinition: event.ctrlKey || event.metaKey ? 'new-tab' : 'same-tab' })
         })
     )
 
     return {
-        get hoverState(): Readonly<HoverState> {
+        get hoverState(): Readonly<HoverState<C, A>> {
             return internalToExternalState(container.values)
         },
         hoverStateUpdates: container.updates.pipe(

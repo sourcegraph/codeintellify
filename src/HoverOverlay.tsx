@@ -9,40 +9,20 @@ import { toNativeEvent } from './helpers'
 import { HoveredToken } from './token_position'
 import { HoverAttachment, LOADING } from './types'
 
-/** The component used to render a link */
-export type LinkComponent = React.ComponentType<{ to: string } & React.HTMLAttributes<HTMLElement>>
-
 /**
- * Uses a placeholder `<button>` or a React Router `<Link>` depending on whether `to` is set.
+ * The component used to render an action.
+ *
+ * @template A The type of an action.
  */
-const ButtonOrLink: React.StatelessComponent<
-    { linkComponent: LinkComponent; to?: string } & React.HTMLAttributes<HTMLElement>
-> = ({ linkComponent, to, children, ...rest }) => {
-    const Link = linkComponent
-    return to ? (
-        <Link to={to} {...rest}>
-            {children}
-        </Link>
-    ) : (
-        <button {...rest}>{children}</button>
-    )
-}
+export type ActionComponent<A> = React.ComponentType<A & React.HTMLAttributes<HTMLElement>>
 
 /**
  * @template C Extra context for the hovered token.
+ * @template A The type of an action.
  */
-export interface HoverOverlayProps<C = {}> {
+export interface HoverOverlayProps<C extends object, A> {
     /** What to show as contents */
     hoverOrError?: typeof LOADING | HoverAttachment | null | ErrorLike // TODO disallow null and undefined
-
-    /**
-     * The URL to jump to on go to definition.
-     * If loaded, is set as the href of the go to definition button.
-     * If LOADING, a loader is displayed on the button.
-     * If null, an info alert is displayed "no definition found".
-     * If an error, an error alert is displayed with the error message.
-     */
-    definitionURLOrError?: typeof LOADING | { jumpURL: string } | null | ErrorLike
 
     /** The position of the tooltip (assigned to `style`) */
     overlayPosition?: { left: number; top: number }
@@ -62,36 +42,38 @@ export interface HoverOverlayProps<C = {}> {
     /** Whether to show the close button for the hover overlay */
     showCloseButton: boolean
 
-    /** The component used to render links */
-    linkComponent: LinkComponent
+    /**
+     * Actions to display as buttons or links in the hover.
+     */
+    actionsOrError?: typeof LOADING | A[] | null | ErrorLike
 
     /** An optional class name to apply to the outermost element of the HoverOverlay */
     className?: string
-
-    /** Called when the Go-to-definition button was clicked */
-    onGoToDefinitionClick?: (event: MouseEvent) => void
 
     /** Called when the close button is clicked */
     onCloseButtonClick?: (event: MouseEvent) => void
 }
 
-/** Returns true if the input is successful jump URL result */
-export const isJumpURL = (val: any): val is { jumpURL: string } =>
-    val !== null && typeof val === 'object' && typeof val.jumpURL === 'string'
-
 const transformMouseEvent = (handler: (event: MouseEvent) => void) => (event: React.MouseEvent<HTMLElement>) =>
     handler(toNativeEvent(event))
-
-export const HoverOverlay: <C>(props: HoverOverlayProps<C>) => React.ReactElement<any> = ({
-    definitionURLOrError,
+/**
+ * @template C Extra context for the hovered token.
+ * @template A The type of an action.
+ */
+export const HoverOverlay: <C extends object, A>(
+    props: HoverOverlayProps<C, A> & {
+        /** The component used to render actions. */
+        actionComponent: ActionComponent<A>
+    }
+) => React.ReactElement<any> = ({
     hoverOrError,
     hoverRef,
     children,
-    linkComponent,
     onCloseButtonClick,
-    onGoToDefinitionClick,
     overlayPosition,
     showCloseButton,
+    actionsOrError,
+    actionComponent: ActionComponent,
     className = '',
 }) => (
     <div
@@ -136,27 +118,24 @@ export const HoverOverlay: <C>(props: HoverOverlayProps<C>) => React.ReactElemen
                 children
             )}
         </div>
-        <div className="hover-overlay__actions hover-overlay__row">
-            <ButtonOrLink
-                linkComponent={linkComponent}
-                to={isJumpURL(definitionURLOrError) ? definitionURLOrError.jumpURL : undefined}
-                className="btn btn-secondary hover-overlay__action e2e-tooltip-j2d"
-                onClick={onGoToDefinitionClick ? transformMouseEvent(onGoToDefinitionClick) : undefined}
-            >
-                Go to definition {definitionURLOrError === LOADING && <LoadingSpinner className="icon-inline" />}
-            </ButtonOrLink>
-        </div>
-        {definitionURLOrError === null ? (
+        {actionsOrError === null ? (
             <div className="alert alert-info hover-overlay__alert-below">
                 <InformationOutlineIcon className="icon-inline" /> No definition found
             </div>
+        ) : isErrorLike(actionsOrError) ? (
+            <div className="alert alert-danger hover-overlay__alert-below">
+                <strong>
+                    <AlertCircleOutlineIcon className="icon-inline" /> Error finding definition:
+                </strong>{' '}
+                {upperFirst(actionsOrError.message)}
+            </div>
         ) : (
-            isErrorLike(definitionURLOrError) && (
-                <div className="alert alert-danger hover-overlay__alert-below">
-                    <strong>
-                        <AlertCircleOutlineIcon className="icon-inline" /> Error finding definition:
-                    </strong>{' '}
-                    {upperFirst(definitionURLOrError.message)}
+            actionsOrError !== undefined &&
+            actionsOrError !== LOADING && (
+                <div className="hover-overlay__actions hover-overlay__row">
+                    {actionsOrError.map((action, i) => (
+                        <ActionComponent key={i} {...action} />
+                    ))}
                 </div>
             )
         )}
