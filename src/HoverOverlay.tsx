@@ -18,20 +18,18 @@ export type ActionComponent<A> = React.ComponentType<A & React.HTMLAttributes<HT
 
 /**
  * @template C Extra context for the hovered token.
+ * @template D The type of the hover content data.
  * @template A The type of an action.
  */
-export interface HoverOverlayProps<C extends object, A> {
+export interface HoverOverlayProps<C extends object, D, A> {
     /** What to show as contents */
-    hoverOrError?: typeof LOADING | HoverAttachment | null | ErrorLike // TODO disallow null and undefined
+    hoverOrError?: typeof LOADING | (HoverAttachment & D) | null | ErrorLike // TODO disallow null and undefined
 
     /** The position of the tooltip (assigned to `style`) */
     overlayPosition?: { left: number; top: number }
 
     /** A ref callback to get the root overlay element. Use this to calculate the position. */
     hoverRef?: React.Ref<HTMLDivElement>
-
-    /** The content of the hover overlay. */
-    children?: React.ReactNode | React.ReactNode[]
 
     /**
      * The hovered token (position and word).
@@ -56,12 +54,17 @@ export interface HoverOverlayProps<C extends object, A> {
 
 const transformMouseEvent = (handler: (event: MouseEvent) => void) => (event: React.MouseEvent<HTMLElement>) =>
     handler(toNativeEvent(event))
+
 /**
  * @template C Extra context for the hovered token.
+ * @template D The type of the hover content data.
  * @template A The type of an action.
  */
-export const HoverOverlay: <C extends object, A>(
-    props: HoverOverlayProps<C, A> & {
+export const HoverOverlay: <C extends object, D, A>(
+    props: HoverOverlayProps<C, D, A> & {
+        /** The content of the hover overlay. */
+        children?: React.ReactNode | React.ReactNode[]
+
         /** The component used to render actions. */
         actionComponent: ActionComponent<A>
     }

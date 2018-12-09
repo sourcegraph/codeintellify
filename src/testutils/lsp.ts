@@ -22,7 +22,7 @@ export const createHoverAttachment = (hover: Partial<HoverAttachment> = {}): Hov
  * @param hover optional values to be passed to createHoverAttachment
  * @param delayTime optionally delay the hover fetch
  */
-export function createStubHoverFetcher(hover: Partial<HoverAttachment> = {}, delayTime?: number): HoverFetcher<{}> {
+export function createStubHoverFetcher(hover: Partial<HoverAttachment> = {}, delayTime?: number): HoverFetcher<{}, {}> {
     return () => of(createHoverAttachment(hover)).pipe(delay(delayTime || 0))
 }
 

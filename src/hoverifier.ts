@@ -48,9 +48,10 @@ export { HoveredToken }
 
 /**
  * @template C Extra context for the hovered token.
+ * @template D The type of the hover content data.
  * @template A The type of an action.
  */
-export interface HoverifierOptions<C extends object, A> {
+export interface HoverifierOptions<C extends object, D, A> {
     /**
      * Emit the HoverOverlay element on this after it was rerendered when its content changed and it needs to be repositioned.
      */
@@ -78,7 +79,10 @@ export interface HoverifierOptions<C extends object, A> {
 
     hoverOverlayElements: Subscribable<HTMLElement | null>
 
-    fetchHover: HoverFetcher<C>
+    /**
+     * Called to fetch the data to display in the hover.
+     */
+    fetchHover: HoverFetcher<C, D>
 
     /**
      * Called to fetch the actions to display in the hover.
@@ -93,17 +97,18 @@ export interface HoverifierOptions<C extends object, A> {
  * There can be multiple code views in the DOM, which will only show a single HoverOverlay if the same Hoverifier was used.
  *
  * @template C Extra context for the hovered token.
+ * @template D The type of the hover content data.
  * @template A The type of an action.
  */
-export interface Hoverifier<C extends object, A> {
+export interface Hoverifier<C extends object, D, A> {
     /**
      * The current Hover state. You can use this to read the initial state synchronously.
      */
-    hoverState: Readonly<HoverState<C, A>>
+    hoverState: Readonly<HoverState<C, D, A>>
     /**
      * This Observable is to notify that the state that is used to render the HoverOverlay needs to be updated.
      */
-    hoverStateUpdates: Observable<Readonly<HoverState<C, A>>>
+    hoverStateUpdates: Observable<Readonly<HoverState<C, D, A>>>
 
     /**
      * Hoverifies a code view.
@@ -187,13 +192,14 @@ export interface HoverifyOptions<C extends object> extends EventOptions<C> {
  * Output that contains the information needed to render the HoverOverlay.
  *
  * @template C Extra context for the hovered token.
+ *  * @template D The type of the hover content data.
  * @template A The type of an action.
  */
-export interface HoverState<C extends object, A> {
+export interface HoverState<C extends object, D, A> {
     /**
      * The props to pass to `HoverOverlay`, or `undefined` if it should not be rendered.
      */
-    hoverOverlayProps?: Pick<HoverOverlayProps<C, A>, Exclude<keyof HoverOverlayProps<C, A>, 'actionComponent'>>
+    hoverOverlayProps?: Pick<HoverOverlayProps<C, D, A>, Exclude<keyof HoverOverlayProps<C, D, A>, 'actionComponent'>>
 
     /**
      * The highlighted range, which is the range in the hover result or else the range of the hovered token.
@@ -210,10 +216,11 @@ export interface HoverState<C extends object, A> {
 
 /**
  * @template C Extra context for the hovered token.
+ * @template D The type of the hover content data.
  * @template A The type of an action.
  */
-interface InternalHoverifierState<C extends object, A> {
-    hoverOrError?: typeof LOADING | HoverAttachment | null | ErrorLike
+interface InternalHoverifierState<C extends object, D, A> {
+    hoverOrError?: typeof LOADING | (HoverAttachment & D) | null | ErrorLike
 
     hoverOverlayIsFixed: boolean
 
@@ -246,18 +253,19 @@ interface InternalHoverifierState<C extends object, A> {
 /**
  * Returns true if the HoverOverlay component should be rendered according to the given state.
  */
-const shouldRenderOverlay = (state: InternalHoverifierState<{}, {}>): boolean =>
+const shouldRenderOverlay = (state: InternalHoverifierState<{}, {}, {}>): boolean =>
     !(!state.hoverOverlayIsFixed && state.mouseIsMoving) && !!state.hoverOrError && !isErrorLike(state.hoverOrError)
 
 /**
  * Maps internal HoverifierState to the publicly exposed HoverState
  *
  * @template C Extra context for the hovered token.
+ * @template D The type of the hover content data.
  * @template A The type of an action.
  */
-const internalToExternalState = <C extends object, A>(
-    internalState: InternalHoverifierState<C, A>
-): HoverState<C, A> => ({
+const internalToExternalState = <C extends object, D, A>(
+    internalState: InternalHoverifierState<C, D, A>
+): HoverState<C, D, A> => ({
     selectedPosition: internalState.selectedPosition,
     highlightedRange: shouldRenderOverlay(internalState) ? internalState.highlightedRange : undefined,
     hoverOverlayProps: shouldRenderOverlay(internalState)
@@ -282,10 +290,11 @@ export const MOUSEOVER_DELAY = 50
 
 /**
  * @template C Extra context for the hovered token.
+ * @template D The type of the hover content data.
  */
-export type HoverFetcher<C extends object> = (
+export type HoverFetcher<C extends object, D> = (
     position: HoveredToken & C
-) => SubscribableOrPromise<HoverAttachment | null>
+) => SubscribableOrPromise<(HoverAttachment & D) | null>
 
 /**
  * @template C Extra context for the hovered token.
@@ -303,18 +312,19 @@ export type ContextResolver<C extends object> = (hoveredToken: HoveredToken) => 
 
 /**
  * @template C Extra context for the hovered token.
+ * @template D The type of the hover content data.
  * @template A The type of an action.
  */
-export function createHoverifier<C extends object, A>({
+export function createHoverifier<C extends object, D, A>({
     goToDefinitionClicks,
     closeButtonClicks,
     hoverOverlayRerenders,
     fetchHover,
     fetchActions,
-}: HoverifierOptions<C, A>): Hoverifier<C, A> {
+}: HoverifierOptions<C, D, A>): Hoverifier<C, D, A> {
     // Internal state that is not exposed to the caller
     // Shared between all hoverified code views
-    const container = createObservableStateContainer<InternalHoverifierState<C, A>>({
+    const container = createObservableStateContainer<InternalHoverifierState<C, D, A>>({
         hoverOverlayIsFixed: false,
         hoveredToken: undefined,
         hoverOrError: undefined,
@@ -549,7 +559,7 @@ export function createHoverifier<C extends object, A>({
             target: HTMLElement
             adjustPosition?: PositionAdjuster<C>
             codeView: HTMLElement
-            hoverOrError?: typeof LOADING | HoverAttachment | ErrorLike | null
+            hoverOrError?: typeof LOADING | (HoverAttachment & D) | ErrorLike | null
             position?: HoveredToken & C
             part?: DiffPart
         }>
@@ -780,7 +790,7 @@ export function createHoverifier<C extends object, A>({
     )
 
     return {
-        get hoverState(): Readonly<HoverState<C, A>> {
+        get hoverState(): Readonly<HoverState<C, D, A>> {
             return internalToExternalState(container.values)
         },
         hoverStateUpdates: container.updates.pipe(

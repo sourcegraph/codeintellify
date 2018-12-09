@@ -390,7 +390,7 @@ describe('Hoverifier', () => {
                 const outputDiagram = `${LOADER_DELAY}ms a ${TOOLTIP_DISPLAY_DELAY - 1}ms b`
 
                 const outputValues: {
-                    [key: string]: Pick<HoverOverlayProps<{}, string>, 'hoverOrError' | 'actionsOrError'>
+                    [key: string]: Pick<HoverOverlayProps<{}, {}, string>, 'hoverOrError' | 'actionsOrError'>
                 } = {
                     a: { hoverOrError: LOADING, actionsOrError: LOADING }, // actions is undefined when it is loading
                     b: { hoverOrError: createHoverAttachment(hover), actionsOrError: actions },
