@@ -50,6 +50,9 @@ export interface HoverOverlayProps<C = {}> {
     /** A ref callback to get the root overlay element. Use this to calculate the position. */
     hoverRef?: React.Ref<HTMLDivElement>
 
+    /** The content of the hover overlay. */
+    children?: React.ReactNode | React.ReactNode[]
+
     /**
      * The hovered token (position and word).
      * Used for the Find References buttons and for error messages
@@ -83,6 +86,7 @@ export const HoverOverlay: <C>(props: HoverOverlayProps<C>) => React.ReactElemen
     definitionURLOrError,
     hoverOrError,
     hoverRef,
+    children,
     linkComponent,
     onCloseButtonClick,
     onGoToDefinitionClick,
@@ -116,26 +120,22 @@ export const HoverOverlay: <C>(props: HoverOverlayProps<C>) => React.ReactElemen
                 <CloseIcon className="icon-inline" />
             </button>
         )}
-
-        {hoverOrError && (
-            <div className="hover-overlay__contents">
-                {hoverOrError === LOADING ? (
-                    <div className="hover-overlay__row hover-overlay__loader-row">
-                        <LoadingSpinner className="icon-inline" />
-                    </div>
-                ) : isErrorLike(hoverOrError) ? (
-                    <div className="hover-overlay__row hover-overlay__hover-error alert alert-danger">
-                        <h4>
-                            <AlertCircleOutlineIcon className="icon-inline" /> Error fetching hover from language
-                            server:
-                        </h4>
-                        {upperFirst(hoverOrError.message)}
-                    </div>
-                ) : null // hover content
-                }
-            </div>
-        )}
-
+        <div className="hover-overlay__contents">
+            {hoverOrError === LOADING ? (
+                <div className="hover-overlay__row hover-overlay__loader-row">
+                    <LoadingSpinner className="icon-inline" />
+                </div>
+            ) : isErrorLike(hoverOrError) ? (
+                <div className="hover-overlay__row hover-overlay__hover-error alert alert-danger">
+                    <h4>
+                        <AlertCircleOutlineIcon className="icon-inline" /> Error fetching hover from language server:
+                    </h4>
+                    {upperFirst(hoverOrError.message)}
+                </div>
+            ) : (
+                children
+            )}
+        </div>
         <div className="hover-overlay__actions hover-overlay__row">
             <ButtonOrLink
                 linkComponent={linkComponent}
