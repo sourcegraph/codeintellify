@@ -4,7 +4,6 @@ import { EMPTY, NEVER, Observable, of, Subject, Subscription } from 'rxjs'
 import { distinctUntilChanged, filter, map } from 'rxjs/operators'
 import { TestScheduler } from 'rxjs/testing'
 
-import { noop } from 'lodash'
 import { propertyIsDefined } from './helpers'
 import {
     AdjustmentDirection,
@@ -18,7 +17,7 @@ import {
 import { HoverOverlayProps } from './HoverOverlay'
 import { findPositionsFromEvents, SupportedMouseEvent } from './positions'
 import { CodeViewProps, DOM } from './testutils/dom'
-import { createHoverAttachment, createStubHoverFetcher, createStubJumpURLFetcher } from './testutils/lsp'
+import { createHoverAttachment, createStubActionsFetcher, createStubHoverFetcher } from './testutils/lsp'
 import { dispatchMouseEventAtPositionImpure } from './testutils/mouse'
 import { LOADING } from './types'
 
@@ -46,8 +45,7 @@ describe('Hoverifier', () => {
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
                     fetchHover: createStubHoverFetcher({ range: hoverRange }, LOADER_DELAY + delayTime),
-                    fetchJumpURL: () => of(null),
-                    pushHistory: noop,
+                    fetchActions: () => of(null),
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -100,7 +98,6 @@ describe('Hoverifier', () => {
             const scheduler = new TestScheduler((a, b) => chai.assert.deepEqual(a, b))
 
             const hover = {}
-            const defURL = 'def url'
             const delayTime = 10
 
             scheduler.run(({ cold, expectObservable }) => {
@@ -110,8 +107,7 @@ describe('Hoverifier', () => {
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
                     fetchHover: createStubHoverFetcher(hover, delayTime),
-                    fetchJumpURL: createStubJumpURLFetcher(defURL, delayTime),
-                    pushHistory: noop,
+                    fetchActions: createStubActionsFetcher(['foo', 'bar'], delayTime),
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -202,9 +198,10 @@ describe('Hoverifier', () => {
                         // Only show on line 24, not line 25 (which is the 2nd click event below).
                         fetchHover: position =>
                             position.line === 24 ? createStubHoverFetcher({}, delayTime)(position) : of(null),
-                        fetchJumpURL: position =>
-                            position.line === 24 ? createStubJumpURLFetcher('def url', delayTime)(position) : of(null),
-                        pushHistory: noop,
+                        fetchActions: position =>
+                            position.line === 24
+                                ? createStubActionsFetcher(['foo', 'bar'], delayTime)(position)
+                                : of(null),
                     })
 
                     const positionJumps = new Subject<PositionJump>()
@@ -274,9 +271,8 @@ describe('Hoverifier', () => {
                         // Only show on line 24, not line 25 (which is the 2nd click event below).
                         fetchHover: position =>
                             position.line === 24 ? createStubHoverFetcher({})(position) : of(null),
-                        fetchJumpURL: position =>
-                            position.line === 24 ? createStubJumpURLFetcher('def url')(position) : of(null),
-                        pushHistory: noop,
+                        fetchActions: position =>
+                            position.line === 24 ? createStubActionsFetcher(['foo', 'bar'])(position) : of(null),
                     })
 
                     const positionJumps = new Subject<PositionJump>()
@@ -345,7 +341,7 @@ describe('Hoverifier', () => {
 
             const delayTime = LOADER_DELAY + 100
             const hover = {}
-            const defURL = 'def url'
+            const actions = ['foo', 'bar']
 
             scheduler.run(({ cold, expectObservable }) => {
                 const hoverifier = createHoverifier({
@@ -354,8 +350,7 @@ describe('Hoverifier', () => {
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
                     fetchHover: createStubHoverFetcher(hover, delayTime),
-                    fetchJumpURL: createStubJumpURLFetcher(defURL, delayTime),
-                    pushHistory: noop,
+                    fetchActions: createStubActionsFetcher(actions, delayTime),
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -374,21 +369,18 @@ describe('Hoverifier', () => {
                     })
                 )
 
-                const hoverAndDefinitionUpdates = hoverifier.hoverStateUpdates.pipe(
+                const hoverAndActionsUpdates = hoverifier.hoverStateUpdates.pipe(
                     filter(propertyIsDefined('hoverOverlayProps')),
-                    map(({ hoverOverlayProps: { definitionURLOrError, hoverOrError } }) => ({
-                        definitionURLOrError,
+                    map(({ hoverOverlayProps: { actionsOrError, hoverOrError } }) => ({
+                        actionsOrError,
                         hoverOrError,
                     })),
-                    distinctUntilChanged(isEqual),
-                    // For this test, only emit when both hover and def are here.
-                    // Even though the fetchers are emitting at the same time, this observable emits twice.
+                    distinctUntilChanged((a, b) => isEqual(a, b)),
+                    // For this test, filter out the intermediate emissions where exactly one of the fetchers is
+                    // loading.
                     filter(
-                        ({ definitionURLOrError, hoverOrError }) =>
-                            !(
-                                (definitionURLOrError && hoverOrError === LOADING) ||
-                                (hoverOrError !== LOADING && !definitionURLOrError)
-                            )
+                        ({ actionsOrError, hoverOrError }) =>
+                            (actionsOrError === LOADING) === (hoverOrError === LOADING)
                     )
                 )
 
@@ -398,10 +390,10 @@ describe('Hoverifier', () => {
                 const outputDiagram = `${LOADER_DELAY}ms a ${TOOLTIP_DISPLAY_DELAY - 1}ms b`
 
                 const outputValues: {
-                    [key: string]: Pick<HoverOverlayProps, 'hoverOrError' | 'definitionURLOrError'>
+                    [key: string]: Pick<HoverOverlayProps<{}, string>, 'hoverOrError' | 'actionsOrError'>
                 } = {
-                    a: { hoverOrError: LOADING, definitionURLOrError: undefined }, // def url is undefined when it is loading
-                    b: { hoverOrError: createHoverAttachment(hover), definitionURLOrError: { jumpURL: defURL } },
+                    a: { hoverOrError: LOADING, actionsOrError: LOADING }, // actions is undefined when it is loading
+                    b: { hoverOrError: createHoverAttachment(hover), actionsOrError: actions },
                 }
 
                 // Click https://sourcegraph.sgdev.org/github.com/gorilla/mux@cb4698366aa625048f3b815af6a0dea8aef9280a/-/blob/mux.go#L24:6
@@ -412,7 +404,7 @@ describe('Hoverifier', () => {
                     })
                 )
 
-                expectObservable(hoverAndDefinitionUpdates).toBe(outputDiagram, outputValues)
+                expectObservable(hoverAndActionsUpdates).toBe(outputDiagram, outputValues)
             })
         }
     })
@@ -422,7 +414,6 @@ describe('Hoverifier', () => {
             const scheduler = new TestScheduler((a, b) => chai.assert.deepEqual(a, b))
 
             const hover = {}
-            const defURL = 'def url'
 
             scheduler.run(({ cold, expectObservable }) => {
                 const hoverifier = createHoverifier({
@@ -431,8 +422,7 @@ describe('Hoverifier', () => {
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
                     fetchHover: createStubHoverFetcher(hover),
-                    fetchJumpURL: createStubJumpURLFetcher(defURL),
-                    pushHistory: noop,
+                    fetchActions: () => of(null),
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -486,7 +476,6 @@ describe('Hoverifier', () => {
             const scheduler = new TestScheduler((a, b) => chai.assert.deepEqual(a, b))
 
             const hover = {}
-            const defURL = 'def url'
 
             scheduler.run(({ cold, expectObservable }) => {
                 const hoverifier = createHoverifier({
@@ -495,8 +484,7 @@ describe('Hoverifier', () => {
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
                     fetchHover: createStubHoverFetcher(hover),
-                    fetchJumpURL: createStubJumpURLFetcher(defURL),
-                    pushHistory: noop,
+                    fetchActions: () => of(null),
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -551,7 +539,7 @@ describe('Hoverifier', () => {
     /**
      * This test ensures that the adjustPosition options is being called in the ways we expect. This test is actually not the best way to ensure the feature
      * works as expected. This is a good example of a bad side effect of how the main `hoverifier.ts` file is too tightly integrated with itself. Ideally, I'd be able to assert
-     * that the effected positions have actually been adjusted as intended but this is impossible with the current implementation. We can assert that the `HoverFetcher` and `JumpURLFetcher`s
+     * that the effected positions have actually been adjusted as intended but this is impossible with the current implementation. We can assert that the `HoverFetcher` and `ActionsFetcher`s
      * have the adjusted positions (AdjustmentDirection.CodeViewToActual). However, we cannot reliably assert that the code "highlighting" the token has the position adjusted (AdjustmentDirection.ActualToCodeView).
      */
     /**
@@ -565,7 +553,7 @@ describe('Hoverifier', () => {
                 const adjustmentDirections = new Subject<AdjustmentDirection>()
 
                 const fetchHover = createStubHoverFetcher({})
-                const fetchJumpURL = createStubJumpURLFetcher('def')
+                const fetchActions = createStubActionsFetcher(['foo', 'bar'])
 
                 const adjustPosition: PositionAdjuster<{}> = ({ direction, position }) => {
                     adjustmentDirections.next(direction)
@@ -579,8 +567,7 @@ describe('Hoverifier', () => {
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
                     fetchHover,
-                    fetchJumpURL,
-                    pushHistory: noop,
+                    fetchActions,
                 })
 
                 const positionJumps = new Subject<PositionJump>()

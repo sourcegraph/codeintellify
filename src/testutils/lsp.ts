@@ -1,7 +1,7 @@
 import { of } from 'rxjs'
 import { delay } from 'rxjs/operators'
 
-import { HoverFetcher, JumpURLFetcher } from '../hoverifier'
+import { ActionsFetcher, HoverFetcher } from '../hoverifier'
 import { HoverAttachment } from '../types'
 
 /**
@@ -27,10 +27,12 @@ export function createStubHoverFetcher(hover: Partial<HoverAttachment> = {}, del
 }
 
 /**
- * Create a stubbed JumpURLFetcher
- * @param jumpURL optional value to emit as the url
- * @param delayTime optionally delay the jump url fetch
+ * Create a stubbed ActionsFetcher
+ *
+ * @template A The type of an action.
+ * @param actions optional value to emit as the actions
+ * @param delayTime optionally delay the fetch
  */
-export function createStubJumpURLFetcher(jumpURL = '', delayTime?: number): JumpURLFetcher<{}> {
-    return () => of(jumpURL).pipe(delay(delayTime || 0))
+export function createStubActionsFetcher<A>(actions: A[], delayTime?: number): ActionsFetcher<{}, A> {
+    return () => of(actions).pipe(delay(delayTime || 0))
 }
