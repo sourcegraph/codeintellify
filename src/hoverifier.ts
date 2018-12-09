@@ -261,7 +261,7 @@ const internalToExternalState = (internalState: InternalHoverifierState<{}>): Ho
 })
 
 /** The time in ms after which to show a loader if the result has not returned yet */
-export const LOADER_DELAY = 300
+export const LOADER_DELAY = 1200
 
 /** The time in ms after the mouse has stopped moving in which to show the tooltip */
 export const TOOLTIP_DISPLAY_DELAY = 100
