@@ -1,4 +1,4 @@
-import { Range } from 'vscode-languageserver-types'
+import { Position, Range } from '@sourcegraph/extension-api-types'
 
 export const LOADING: 'loading' = 'loading'
 
@@ -26,6 +26,13 @@ export function isHoverAttachmentWithRange(value: any): value is HoverAttachment
         typeof value.range.end.line === 'number' &&
         typeof value.range.end.character === 'number'
     )
+}
+
+/**
+ * Reports whether {@link value} is a {@link Position}.
+ */
+export function isPosition(value: any): value is Position {
+    return value && typeof value.line === 'number' && typeof value.character === 'number'
 }
 
 /**
