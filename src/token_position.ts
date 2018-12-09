@@ -1,4 +1,4 @@
-import { Position } from 'vscode-languageserver-types'
+import { Position } from '@sourcegraph/extension-api-types'
 import { LineOrPositionOrRange } from './types'
 
 /**

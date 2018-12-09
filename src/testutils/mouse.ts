@@ -1,5 +1,5 @@
 import { CharacterPositions } from '@sourcegraph/event-positions'
-import { Position } from 'vscode-languageserver-types'
+import { Position } from '@sourcegraph/extension-api-types'
 import { convertNode } from '../token_position'
 import { CodeViewProps } from './dom'
 

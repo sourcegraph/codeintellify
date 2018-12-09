@@ -1,8 +1,8 @@
+import { Range } from '@sourcegraph/extension-api-types'
 import { isEqual } from 'lodash'
 import { EMPTY, NEVER, Observable, of, Subject, Subscription } from 'rxjs'
 import { distinctUntilChanged, filter, map } from 'rxjs/operators'
 import { TestScheduler } from 'rxjs/testing'
-import { Range } from 'vscode-languageserver-types'
 
 import { noop } from 'lodash'
 import { propertyIsDefined } from './helpers'
@@ -205,7 +205,6 @@ describe('Hoverifier', () => {
                         fetchJumpURL: position =>
                             position.line === 24 ? createStubJumpURLFetcher('def url', delayTime)(position) : of(null),
                         pushHistory: noop,
-                        getReferencesURL: () => null,
                     })
 
                     const positionJumps = new Subject<PositionJump>()
@@ -278,7 +277,6 @@ describe('Hoverifier', () => {
                         fetchJumpURL: position =>
                             position.line === 24 ? createStubJumpURLFetcher('def url')(position) : of(null),
                         pushHistory: noop,
-                        getReferencesURL: () => null,
                     })
 
                     const positionJumps = new Subject<PositionJump>()

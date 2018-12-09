@@ -1,5 +1,5 @@
+import { Position } from '@sourcegraph/extension-api-types'
 import * as assert from 'assert'
-import { Position } from 'vscode-languageserver-types'
 import { CodeViewProps, DOM } from './testutils/dom'
 import {
     convertNode,

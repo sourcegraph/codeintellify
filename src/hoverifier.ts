@@ -1,3 +1,4 @@
+import { Position, Range } from '@sourcegraph/extension-api-types'
 import { isEqual } from 'lodash'
 import {
     combineLatest,
@@ -27,7 +28,6 @@ import {
     withLatestFrom,
 } from 'rxjs/operators'
 import { Key } from 'ts-key-enum'
-import { Position, Range } from 'vscode-languageserver-types'
 import { asError, ErrorLike, isErrorLike } from './errors'
 import { scrollIntoCenterIfNeeded } from './helpers'
 import { HoverOverlayProps, isJumpURL } from './HoverOverlay'
@@ -42,7 +42,7 @@ import {
     getTokenAtPosition,
     HoveredToken,
 } from './token_position'
-import { HoverAttachment, isHoverAttachmentWithRange, LineOrPositionOrRange, LOADING } from './types'
+import { HoverAttachment, isHoverAttachmentWithRange, isPosition, LineOrPositionOrRange, LOADING } from './types'
 
 export { HoveredToken }
 
@@ -437,7 +437,7 @@ export function createHoverifier<C extends object>({
             let cell: HTMLElement | null
             let target: HTMLElement | undefined
             let part: DiffPart | undefined
-            if (Position.is(position)) {
+            if (isPosition(position)) {
                 cell = dom.getCodeElementFromLineNumber(codeView, position.line, position.part)
                 if (cell) {
                     target = findElementWithOffset(cell, position.character)
@@ -479,7 +479,7 @@ export function createHoverifier<C extends object>({
                     })
                 ),
                 switchMap(({ position, codeView, adjustPosition, resolveContext, ...rest }) => {
-                    if (!position || !Position.is(position) || !adjustPosition) {
+                    if (!position || !isPosition(position) || !adjustPosition) {
                         return of({ position, codeView, ...rest })
                     }
 
@@ -502,7 +502,7 @@ export function createHoverifier<C extends object>({
                     // that tokens span multiple elements meaning that it's possible for the hover overlay to be
                     // placed in the middle of a token.
                     target:
-                        position && Position.is(position)
+                        position && isPosition(position)
                             ? getTokenAtPosition(codeView, position, dom, position.part)
                             : target,
                     ...rest,
@@ -522,7 +522,7 @@ export function createHoverifier<C extends object>({
         map(({ position, resolveContext, eventType, ...rest }) => ({
             ...rest,
             eventType,
-            position: Position.is(position) ? { ...position, ...resolveContext(position) } : undefined,
+            position: isPosition(position) ? { ...position, ...resolveContext(position) } : undefined,
         })),
         share()
     )

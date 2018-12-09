@@ -1,7 +1,7 @@
+import { Position } from '@sourcegraph/extension-api-types'
 import { of } from 'rxjs'
 import { filter, map } from 'rxjs/operators'
 import { TestScheduler } from 'rxjs/testing'
-import { Position } from 'vscode-languageserver-types'
 
 import { CodeViewProps, DOM } from './testutils/dom'
 import { dispatchMouseEventAtPositionImpure } from './testutils/mouse'
