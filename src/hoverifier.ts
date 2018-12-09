@@ -247,9 +247,16 @@ interface InternalHoverifierState<C extends object, D, A> {
 
 /**
  * Returns true if the HoverOverlay component should be rendered according to the given state.
+ *
+ * The primary purpose of this is to reduce UI jitter by not showing the overlay when there is nothing to show
+ * (because there is no content, or because it is still loading).
  */
 const shouldRenderOverlay = (state: InternalHoverifierState<{}, {}, {}>): boolean =>
-    !(!state.hoverOverlayIsFixed && state.mouseIsMoving) && !!state.hoverOrError && !isErrorLike(state.hoverOrError)
+    !(!state.hoverOverlayIsFixed && state.mouseIsMoving) &&
+    ((!!state.hoverOrError && state.hoverOrError !== LOADING) ||
+        (!!state.actionsOrError &&
+            state.actionsOrError !== LOADING &&
+            (isErrorLike(state.actionsOrError) || state.actionsOrError.length > 0)))
 
 /**
  * Maps internal HoverifierState to the publicly exposed HoverState
