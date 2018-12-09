@@ -2,7 +2,8 @@
 
 .hover-overlay {
     position: absolute;
-    width: 32rem;
+    min-width: 6rem;
+    max-width: 32rem;
     max-height: 15rem;
     display: flex;
     flex-direction: column;
