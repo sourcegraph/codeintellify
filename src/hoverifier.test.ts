@@ -89,10 +89,7 @@ describe('Hoverifier', () => {
 
                 const inputDiagram = 'a'
 
-                // This diagram is probably wrong. We shouldn't have to subtract 1 from the TOOLTIP_DISPLAY_DELAY.
-                // The actual frames are 300 and 400 but the expected without the -1 is 300 and 401.
-                // I'm either misunderstanding something about marble diagram syntax or there is a 1ms delay somewhere in
-                // the code that I'm missing.
+                // Subtract 1ms before "b" because "a" takes up 1ms.
                 const outputDiagram = `${LOADER_DELAY}ms a ${TOOLTIP_DISPLAY_DELAY - 1}ms b`
 
                 const outputValues: {
