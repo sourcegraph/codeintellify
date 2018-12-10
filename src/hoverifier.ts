@@ -521,13 +521,20 @@ export function createHoverifier<C extends object>({
     )
 
     /** Emits new positions including context at which a tooltip needs to be shown from clicks, mouseovers and URL changes. */
-    const resolvedPositions = merge(codeMouseOverTargets, jumpTargets, codeClickTargets).pipe(
+    const resolvedPositionEvents = merge(codeMouseOverTargets, jumpTargets, codeClickTargets).pipe(
         map(({ position, resolveContext, eventType, ...rest }) => ({
             ...rest,
             eventType,
             position: Position.is(position) ? { ...position, ...resolveContext(position) } : undefined,
         })),
         share()
+    )
+
+    const resolvedPositions = resolvedPositionEvents.pipe(
+        // Suppress emissions from other events that refer to the same position as the current one. This makes it
+        // so the overlay doesn't temporarily disappear when, e.g., clicking to pin the overlay when it's already
+        // visible due to a mouseover.
+        distinctUntilChanged((a, b) => isEqual(a.position, b.position))
     )
 
     /** Emits new referencesURL values. */
@@ -713,11 +720,14 @@ export function createHoverifier<C extends object>({
     // if either the hover or the definition turn out non-empty, pin the tooltip.
     // If they both turn out empty, unpin it so we don't end up with an invisible tooltip.
     //
-    // zip together a position and the hover and definition fetches it triggered
+    // zip together the corresponding hover and definition fetches
     subscription.add(
-        zip(resolvedPositions, hoverObservables, definitionObservables)
+        combineLatest(
+            zip(hoverObservables, definitionObservables),
+            resolvedPositionEvents.pipe(map(({ eventType }) => eventType))
+        )
             .pipe(
-                switchMap(([{ eventType }, hoverObservable, definitionObservable]) => {
+                switchMap(([[hoverObservable, definitionObservable], eventType]) => {
                     // If the position was triggered by a mouseover, never pin
                     if (eventType !== 'click' && eventType !== 'jump') {
                         return [false]
