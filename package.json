@@ -13,7 +13,6 @@
     "lib"
   ],
   "scripts": {
-    "commitmsg": "commitlint -e $GIT_PARAMS",
     "semantic-release": "semantic-release",
     "prettier": "prettier '**/{*.{js?(on),ts?(x),scss,yml},.*.js?(on),.*.yml}' --write --list-different",
     "typecheck": "tsc -p tsconfig.json",
@@ -93,5 +92,10 @@
     "typescript": "^3.2.1",
     "webpack": "^4.13.0",
     "webpack-cli": "^3.0.8"
+  },
+  "husky": {
+    "hooks": {
+      "commit-msg": "commitlint -e $HUSKY_GIT_PARAMS"
+    }
   }
 }
