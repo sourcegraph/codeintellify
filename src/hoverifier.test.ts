@@ -108,7 +108,6 @@ describe('Hoverifier', () => {
 
             scheduler.run(({ cold, expectObservable }) => {
                 const hoverifier = createHoverifier({
-                    closeButtonClicks: new Observable<MouseEvent>(),
                     goToDefinitionClicks: new Observable<MouseEvent>(),
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
@@ -348,7 +347,6 @@ describe('Hoverifier', () => {
                 }
 
                 const hoverifier = createHoverifier({
-                    closeButtonClicks: new Observable<MouseEvent>(),
                     goToDefinitionClicks: new Observable<MouseEvent>(),
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,

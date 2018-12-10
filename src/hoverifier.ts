@@ -71,11 +71,6 @@ export interface HoverifierOptions<C extends object> {
      */
     goToDefinitionClicks: Subscribable<MouseEvent>
 
-    /**
-     * Emit on this Observable when the close button in the HoverOverlay was clicked
-     */
-    closeButtonClicks: Subscribable<MouseEvent>
-
     hoverOverlayElements: Subscribable<HTMLElement | null>
 
     /**
@@ -266,7 +261,6 @@ const internalToExternalState = (internalState: InternalHoverifierState<{}>): Ho
                       : undefined,
               referencesURL: internalState.referencesURL,
               hoveredToken: internalState.hoveredToken,
-              showCloseButton: internalState.hoverOverlayIsFixed,
           }
         : undefined,
 })
@@ -303,7 +297,6 @@ export type ContextResolver<C extends object> = (hoveredToken: HoveredToken) => 
  */
 export function createHoverifier<C extends object>({
     goToDefinitionClicks,
-    closeButtonClicks,
     hoverOverlayRerenders,
     pushHistory,
     fetchHover,
@@ -753,22 +746,21 @@ export function createHoverifier<C extends object>({
         })
     )
 
-    // When the close button is clicked, unpin, hide and reset the hover
+    // When the overlay is closed by user action, unpin, hide and reset the hover
     subscription.add(
-        merge(
-            closeButtonClicks,
-            fromEvent<KeyboardEvent>(window, 'keydown').pipe(filter(event => event.key === Key.Escape))
-        ).subscribe(event => {
-            event.preventDefault()
-            container.update({
-                hoverOverlayIsFixed: false,
-                hoverOverlayPosition: undefined,
-                hoverOrError: undefined,
-                hoveredToken: undefined,
-                definitionURLOrError: undefined,
-                clickedGoToDefinition: false,
-            })
-        })
+        merge(fromEvent<KeyboardEvent>(window, 'keydown').pipe(filter(event => event.key === Key.Escape))).subscribe(
+            event => {
+                event.preventDefault()
+                container.update({
+                    hoverOverlayIsFixed: false,
+                    hoverOverlayPosition: undefined,
+                    hoverOrError: undefined,
+                    hoveredToken: undefined,
+                    definitionURLOrError: undefined,
+                    clickedGoToDefinition: false,
+                })
+            }
+        )
     )
 
     // LOCATION CHANGES

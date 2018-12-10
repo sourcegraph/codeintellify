@@ -11,16 +11,6 @@
 
     transition: opacity 100ms ease-in-out;
 
-    &__close-button {
-        position: absolute;
-        top: 0;
-        right: 0;
-        padding: 0.25rem;
-        background: inherit;
-        z-index: 1;
-        border: none;
-    }
-
     &__row {
         display: block;
         width: 100%;

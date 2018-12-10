@@ -1,7 +1,6 @@
 import { LoadingSpinner } from '@sourcegraph/react-loading-spinner'
 import { castArray, upperFirst } from 'lodash'
 import AlertCircleOutlineIcon from 'mdi-react/AlertCircleOutlineIcon'
-import CloseIcon from 'mdi-react/CloseIcon'
 import InformationOutlineIcon from 'mdi-react/InformationOutlineIcon'
 import * as React from 'react'
 import { MarkedString, MarkupContent, MarkupKind } from 'vscode-languageserver-types'
@@ -64,9 +63,6 @@ export interface HoverOverlayProps<C = {}> {
      */
     hoveredToken?: HoveredToken & C
 
-    /** Whether to show the close button for the hover overlay */
-    showCloseButton: boolean
-
     /** The component used to render links */
     linkComponent: LinkComponent
 
@@ -75,9 +71,6 @@ export interface HoverOverlayProps<C = {}> {
 
     /** Called when the Go-to-definition button was clicked */
     onGoToDefinitionClick?: (event: MouseEvent) => void
-
-    /** Called when the close button is clicked */
-    onCloseButtonClick?: (event: MouseEvent) => void
 }
 
 /** Returns true if the input is successful jump URL result */
@@ -94,10 +87,8 @@ export const HoverOverlay: <C>(props: HoverOverlayProps<C>) => React.ReactElemen
     hoverOrError,
     hoverRef,
     linkComponent,
-    onCloseButtonClick,
     onGoToDefinitionClick,
     overlayPosition,
-    showCloseButton,
     className = '',
 }) => (
     <div
@@ -118,15 +109,6 @@ export const HoverOverlay: <C>(props: HoverOverlayProps<C>) => React.ReactElemen
                   }
         }
     >
-        {showCloseButton && (
-            <button
-                className="hover-overlay__close-button btn btn-icon"
-                onClick={onCloseButtonClick ? transformMouseEvent(onCloseButtonClick) : undefined}
-            >
-                <CloseIcon className="icon-inline" />
-            </button>
-        )}
-
         {hoverOrError && (
             <div className="hover-overlay__contents">
                 {hoverOrError === LOADING ? (
