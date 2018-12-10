@@ -27,10 +27,10 @@ import {
     withLatestFrom,
 } from 'rxjs/operators'
 import { Key } from 'ts-key-enum'
-import { Position } from 'vscode-languageserver-types'
-import { asError, ErrorLike } from './errors'
+import { Position, Range } from 'vscode-languageserver-types'
+import { asError, ErrorLike, isErrorLike } from './errors'
 import { isDefined } from './helpers'
-import { isEmptyHover, overlayUIHasContent, scrollIntoCenterIfNeeded } from './helpers'
+import { overlayUIHasContent, scrollIntoCenterIfNeeded } from './helpers'
 import { HoverOverlayProps, isJumpURL } from './HoverOverlay'
 import { calculateOverlayPosition } from './overlay_position'
 import { DiffPart, PositionEvent, SupportedMouseEvent } from './positions'
@@ -194,6 +194,11 @@ export interface HoverState {
     hoverOverlayProps?: Pick<HoverOverlayProps, Exclude<keyof HoverOverlayProps, 'linkComponent'>>
 
     /**
+     * The highlighted range, which is the range in the hover result or else the range of the hovered token.
+     */
+    highlightedRange?: Range
+
+    /**
      * The currently selected position, if any.
      * Can be a single line number or a line range.
      * Highlighted with a background color.
@@ -223,6 +228,11 @@ interface InternalHoverifierState<C extends object> {
     /** The currently hovered token */
     hoveredToken?: HoveredToken & C
 
+    /**
+     * The highlighted range, which is the range in the hoverOrError data or else the range of the hovered token.
+     */
+    highlightedRange?: Range
+
     mouseIsMoving: boolean
 
     /**
@@ -244,6 +254,7 @@ const shouldRenderOverlay = (state: InternalHoverifierState<{}>): boolean =>
  */
 const internalToExternalState = (internalState: InternalHoverifierState<{}>): HoverState => ({
     selectedPosition: internalState.selectedPosition,
+    highlightedRange: shouldRenderOverlay(internalState) ? internalState.highlightedRange : undefined,
     hoverOverlayProps: shouldRenderOverlay(internalState)
         ? {
               overlayPosition: internalState.hoverOverlayPosition,
@@ -265,6 +276,9 @@ export const LOADER_DELAY = 1200
 
 /** The time in ms after the mouse has stopped moving in which to show the tooltip */
 export const TOOLTIP_DISPLAY_DELAY = 100
+
+/** The time in ms to debounce mouseover events. */
+export const MOUSEOVER_DELAY = 50
 
 /**
  * @template C Extra context for the hovered token.
@@ -360,7 +374,7 @@ export function createHoverifier<C extends object>({
             target: event.target as HTMLElement,
             ...rest,
         })),
-        debounceTime(50),
+        debounceTime(MOUSEOVER_DELAY),
         // Do not consider mouseovers while overlay is pinned
         filter(() => !container.values.hoverOverlayIsFixed),
         switchMap(
@@ -534,7 +548,7 @@ export function createHoverifier<C extends object>({
             target: HTMLElement
             adjustPosition?: PositionAdjuster<C>
             codeView: HTMLElement
-            hoverOrError?: typeof LOADING | HoverMerged | Error | null
+            hoverOrError?: typeof LOADING | HoverMerged | ErrorLike | null
             position?: HoveredToken & C
             part?: DiffPart
         }>
@@ -555,7 +569,7 @@ export function createHoverifier<C extends object>({
                             ? hoverMergedOrNull
                             : new Error(`Invalid hover response: ${JSON.stringify(hoverMergedOrNull)}`)
                 ),
-                catchError(error => [asError(error)]),
+                catchError((error): [ErrorLike] => [asError(error)]),
                 share()
             )
             // 1. Reset the hover content, so no old hover content is displayed at the new position while fetching
@@ -615,20 +629,35 @@ export function createHoverifier<C extends object>({
                 })
             )
             .subscribe(({ hoverOrError, position, codeView, dom, part }) => {
+                // Update the highlighted token if the hover result is successful. If the hover result specifies a
+                // range, use that; otherwise use the hover position (which will be expanded into a full token in
+                // getTokenAtPosition).
+                let highlightedRange: Range | undefined
+                if (hoverOrError && !isErrorLike(hoverOrError) && hoverOrError !== LOADING) {
+                    if (hoverOrError.range) {
+                        highlightedRange = hoverOrError.range
+                    } else if (position) {
+                        highlightedRange = { start: position, end: position }
+                    }
+                }
+
                 container.update({
                     hoverOrError,
+                    highlightedRange,
                     // Reset the hover position, it's gonna be repositioned after the hover was rendered
                     hoverOverlayPosition: undefined,
                 })
+
+                // Ensure the previously highlighted range is not highlighted and the new highlightedRange (if any)
+                // is highlighted.
                 const currentHighlighted = codeView.querySelector('.selection-highlight')
                 if (currentHighlighted) {
                     currentHighlighted.classList.remove('selection-highlight')
                 }
-                if (!position || !hoverOrError || (HoverMerged.is(hoverOrError) && isEmptyHover(hoverOrError))) {
+                if (!highlightedRange) {
                     return
                 }
-
-                const token = getTokenAtPosition(codeView, position, dom, part)
+                const token = getTokenAtPosition(codeView, highlightedRange.start, dom, part)
                 if (!token) {
                     return
                 }

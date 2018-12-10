@@ -1,8 +1,8 @@
 import { isEqual } from 'lodash'
-import { EMPTY, Observable, of, Subject, Subscription } from 'rxjs'
+import { EMPTY, NEVER, Observable, of, Subject, Subscription } from 'rxjs'
 import { distinctUntilChanged, filter, map } from 'rxjs/operators'
 import { TestScheduler } from 'rxjs/testing'
-import { Position } from 'vscode-languageserver-types'
+import { Position, Range } from 'vscode-languageserver-types'
 
 import { noop } from 'lodash'
 import { propertyIsDefined } from './helpers'
@@ -10,6 +10,7 @@ import {
     AdjustmentDirection,
     createHoverifier,
     LOADER_DELAY,
+    MOUSEOVER_DELAY,
     PositionAdjuster,
     TOOLTIP_DISPLAY_DELAY,
 } from './hoverifier'
@@ -27,6 +28,74 @@ describe('Hoverifier', () => {
     let testcases: CodeViewProps[] = []
     before(() => {
         testcases = dom.createCodeViews()
+    })
+
+    it('highlights token when hover is fetched (not before)', () => {
+        for (const codeView of testcases) {
+            const scheduler = new TestScheduler((a, b) => chai.assert.deepEqual(a, b))
+
+            const delayTime = 100
+            const hoverRange = { start: { line: 1, character: 2 }, end: { line: 3, character: 4 } }
+
+            scheduler.run(({ cold, expectObservable }) => {
+                const hoverifier = createHoverifier({
+                    closeButtonClicks: NEVER,
+                    goToDefinitionClicks: NEVER,
+                    hoverOverlayElements: of(null),
+                    hoverOverlayRerenders: EMPTY,
+                    fetchHover: createStubHoverFetcher({ range: hoverRange }, LOADER_DELAY + delayTime),
+                    fetchJumpURL: () => of(null),
+                    pushHistory: noop,
+                    getReferencesURL: () => null,
+                })
+
+                const positionJumps = new Subject<{
+                    position: Position
+                    codeView: HTMLElement
+                    scrollElement: HTMLElement
+                }>()
+
+                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
+
+                const subscriptions = new Subscription()
+
+                subscriptions.add(hoverifier)
+                subscriptions.add(
+                    hoverifier.hoverify({
+                        dom: codeView,
+                        positionEvents,
+                        positionJumps,
+                        resolveContext: () => codeView.revSpec,
+                    })
+                )
+
+                const highlightedRangeUpdates = hoverifier.hoverStateUpdates.pipe(
+                    map(hoverOverlayProps => (hoverOverlayProps ? hoverOverlayProps.highlightedRange : null)),
+                    distinctUntilChanged((a, b) => isEqual(a, b))
+                )
+
+                const inputDiagram = 'a'
+
+                const outputDiagram = `${MOUSEOVER_DELAY}ms a ${LOADER_DELAY + delayTime - 1}ms b`
+
+                const outputValues: {
+                    [key: string]: Range | undefined
+                } = {
+                    a: undefined, // highlightedRange is undefined when the hover is loading
+                    b: hoverRange,
+                }
+
+                // Hover over https://sourcegraph.sgdev.org/github.com/gorilla/mux@cb4698366aa625048f3b815af6a0dea8aef9280a/-/blob/mux.go#L24:6
+                cold(inputDiagram).subscribe(() =>
+                    dispatchMouseEventAtPositionImpure('mouseover', codeView, {
+                        line: 24,
+                        character: 6,
+                    })
+                )
+
+                expectObservable(highlightedRangeUpdates).toBe(outputDiagram, outputValues)
+            })
+        }
     })
 
     it('emits loading and then state on click events', () => {

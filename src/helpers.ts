@@ -21,7 +21,7 @@ export const propertyIsDefined = <T extends object, K extends keyof T>(key: K) =
 ): val is K extends any ? ({ [k in Exclude<keyof T, K>]: T[k] } & { [k in K]: NonNullable<T[k]> }) : never =>
     isDefined(val[key])
 
-export const isEmptyHover = (hover: HoverMerged | null): boolean =>
+const isEmptyHover = (hover: HoverMerged | null): boolean =>
     !hover ||
     !hover.contents ||
     (Array.isArray(hover.contents) && hover.contents.length === 0) ||
