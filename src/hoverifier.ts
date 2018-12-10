@@ -266,6 +266,9 @@ export const LOADER_DELAY = 1200
 /** The time in ms after the mouse has stopped moving in which to show the tooltip */
 export const TOOLTIP_DISPLAY_DELAY = 100
 
+/** The time in ms to debounce mouseover events. */
+export const MOUSEOVER_DELAY = 50
+
 /**
  * @template C Extra context for the hovered token.
  */
@@ -360,7 +363,7 @@ export function createHoverifier<C extends object>({
             target: event.target as HTMLElement,
             ...rest,
         })),
-        debounceTime(50),
+        debounceTime(MOUSEOVER_DELAY),
         // Do not consider mouseovers while overlay is pinned
         filter(() => !container.values.hoverOverlayIsFixed),
         switchMap(

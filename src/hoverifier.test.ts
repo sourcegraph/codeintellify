@@ -10,11 +10,12 @@ import {
     AdjustmentDirection,
     createHoverifier,
     LOADER_DELAY,
+    MOUSEOVER_DELAY,
     PositionAdjuster,
     TOOLTIP_DISPLAY_DELAY,
 } from './hoverifier'
 import { HoverOverlayProps } from './HoverOverlay'
-import { findPositionsFromEvents } from './positions'
+import { findPositionsFromEvents, SupportedMouseEvent } from './positions'
 import { CodeViewProps, DOM } from './testutils/dom'
 import { createHoverMerged, createStubHoverFetcher, createStubJumpURLFetcher } from './testutils/lsp'
 import { dispatchMouseEventAtPositionImpure } from './testutils/mouse'
@@ -102,6 +103,147 @@ describe('Hoverifier', () => {
                 // Click https://sourcegraph.sgdev.org/github.com/gorilla/mux@cb4698366aa625048f3b815af6a0dea8aef9280a/-/blob/mux.go#L24:6
                 cold(inputDiagram).subscribe(() =>
                     dispatchMouseEventAtPositionImpure('click', codeView, {
+                        line: 24,
+                        character: 6,
+                    })
+                )
+
+                expectObservable(hoverAndDefinitionUpdates).toBe(outputDiagram, outputValues)
+            })
+        }
+    })
+
+    it('debounces mousemove events before showing overlay', () => {
+        for (const codeView of testcases) {
+            const scheduler = new TestScheduler((a, b) => chai.assert.deepEqual(a, b))
+
+            const hover = {}
+            const defURL = 'def url'
+
+            scheduler.run(({ cold, expectObservable }) => {
+                const hoverifier = createHoverifier({
+                    closeButtonClicks: new Observable<MouseEvent>(),
+                    goToDefinitionClicks: new Observable<MouseEvent>(),
+                    hoverOverlayElements: of(null),
+                    hoverOverlayRerenders: EMPTY,
+                    fetchHover: createStubHoverFetcher(hover),
+                    fetchJumpURL: createStubJumpURLFetcher(defURL),
+                    pushHistory: noop,
+                    getReferencesURL: () => null,
+                })
+
+                const positionJumps = new Subject<{
+                    position: Position
+                    codeView: HTMLElement
+                    scrollElement: HTMLElement
+                }>()
+
+                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
+
+                const subscriptions = new Subscription()
+
+                subscriptions.add(hoverifier)
+                subscriptions.add(
+                    hoverifier.hoverify({
+                        dom: codeView,
+                        positionEvents,
+                        positionJumps,
+                        resolveContext: () => codeView.revSpec,
+                    })
+                )
+
+                const hoverAndDefinitionUpdates = hoverifier.hoverStateUpdates.pipe(
+                    filter(propertyIsDefined('hoverOverlayProps')),
+                    map(({ hoverOverlayProps }) => !!hoverOverlayProps),
+                    distinctUntilChanged(isEqual)
+                )
+
+                const mousemoveDelay = 25
+                const outputDiagram = `${TOOLTIP_DISPLAY_DELAY + mousemoveDelay}ms a`
+
+                const outputValues: { [key: string]: boolean } = {
+                    a: true,
+                }
+
+                // Mousemove on https://sourcegraph.sgdev.org/github.com/gorilla/mux@cb4698366aa625048f3b815af6a0dea8aef9280a/-/blob/mux.go#L24:6
+                cold(`a b ${mousemoveDelay - 2}ms c ${TOOLTIP_DISPLAY_DELAY - 1}ms`, {
+                    a: 'mouseover',
+                    b: 'mousemove',
+                    c: 'mousemove',
+                } as Record<string, SupportedMouseEvent>).subscribe(eventType =>
+                    dispatchMouseEventAtPositionImpure(eventType, codeView, {
+                        line: 24,
+                        character: 6,
+                    })
+                )
+
+                expectObservable(hoverAndDefinitionUpdates).toBe(outputDiagram, outputValues)
+            })
+        }
+    })
+
+    it('dedupes mouseover and mousemove event on same token', () => {
+        for (const codeView of testcases) {
+            const scheduler = new TestScheduler((a, b) => chai.assert.deepEqual(a, b))
+
+            const hover = {}
+            const defURL = 'def url'
+
+            scheduler.run(({ cold, expectObservable }) => {
+                const hoverifier = createHoverifier({
+                    closeButtonClicks: new Observable<MouseEvent>(),
+                    goToDefinitionClicks: new Observable<MouseEvent>(),
+                    hoverOverlayElements: of(null),
+                    hoverOverlayRerenders: EMPTY,
+                    fetchHover: createStubHoverFetcher(hover),
+                    fetchJumpURL: createStubJumpURLFetcher(defURL),
+                    pushHistory: noop,
+                    getReferencesURL: () => null,
+                })
+
+                const positionJumps = new Subject<{
+                    position: Position
+                    codeView: HTMLElement
+                    scrollElement: HTMLElement
+                }>()
+
+                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
+
+                const subscriptions = new Subscription()
+
+                subscriptions.add(hoverifier)
+                subscriptions.add(
+                    hoverifier.hoverify({
+                        dom: codeView,
+                        positionEvents,
+                        positionJumps,
+                        resolveContext: () => codeView.revSpec,
+                    })
+                )
+
+                const hoverAndDefinitionUpdates = hoverifier.hoverStateUpdates.pipe(
+                    filter(propertyIsDefined('hoverOverlayProps')),
+                    map(({ hoverOverlayProps }) => !!hoverOverlayProps),
+                    distinctUntilChanged(isEqual)
+                )
+
+                // Add 2 for 1 tick each for "c" and "d" below.
+                const outputDiagram = `${TOOLTIP_DISPLAY_DELAY + MOUSEOVER_DELAY + 2}ms a`
+
+                const outputValues: { [key: string]: boolean } = {
+                    a: true,
+                }
+
+                // Mouse on https://sourcegraph.sgdev.org/github.com/gorilla/mux@cb4698366aa625048f3b815af6a0dea8aef9280a/-/blob/mux.go#L24:6
+                cold(`a b ${MOUSEOVER_DELAY - 2}ms c d e`, {
+                    a: 'mouseover',
+                    b: 'mousemove',
+                    // Now perform repeated mousemove/mouseover events on the same token.
+                    c: 'mousemove',
+                    d: 'mouseover',
+                    e: 'mousemove',
+                } as Record<string, SupportedMouseEvent>).subscribe(eventType =>
+                    dispatchMouseEventAtPositionImpure(eventType, codeView, {
                         line: 24,
                         character: 6,
                     })
