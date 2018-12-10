@@ -8,7 +8,7 @@ interface Coordinates {
     y: number
 }
 
-export const createMouseEvent = (type: string) => (coords: Coordinates) => {
+export const createMouseEvent = (type: string, coords: Coordinates) => {
     const event = new MouseEvent(type, {
         clientX: coords.x,
         clientY: coords.y,
@@ -18,20 +18,22 @@ export const createMouseEvent = (type: string) => (coords: Coordinates) => {
     return event
 }
 
-export const createMouseMoveEvent = createMouseEvent('mousemove')
-export const createClickEvent = createMouseEvent('click')
-
 const invalidPosition = ({ line, character }: Position, message: string) =>
     `Invalid postion L${line}:${character}. ${message}. Remember, LSP Positions are 0-indexed.`
 
 /**
- * Click the given position in a code element. This is impure because the current hoverifier implementation
- * requires the click event to come from the already tokenized DOM elements. Ideally we would not rely on this at all.
+ * Dispatch a mouse event at the given position in a code element. This is impure because the current hoverifier
+ * implementation requires the click event to come from the already tokenized DOM elements. Ideally we would not
+ * rely on this at all.
  *
  * @param codeViewProps the codeViewProps props from the test cases.
- * @param position the position to click.
+ * @param position the position of the event.
  */
-export const clickPositionImpure = ({ codeView, getCodeElementFromLineNumber }: CodeViewProps, position: Position) => {
+export const dispatchMouseEventAtPositionImpure = (
+    eventType: 'click' | 'mouseover' | 'mousemove',
+    { codeView, getCodeElementFromLineNumber }: CodeViewProps,
+    position: Position
+) => {
     const line = getCodeElementFromLineNumber(codeView, position.line)
     if (!line) {
         throw new Error(invalidPosition(position, 'Line not found'))
@@ -52,7 +54,7 @@ export const clickPositionImpure = ({ codeView, getCodeElementFromLineNumber }: 
             const rect = line.getBoundingClientRect()
             const { top, height, left, width } = rect
 
-            const event = createClickEvent({
+            const event = createMouseEvent(eventType, {
                 x: left + width / 2,
                 y: top + height / 2,
             })
@@ -88,7 +90,7 @@ export const clickPosition = ({ codeView, getCodeElementFromLineNumber }: CodeVi
     const top = rect.top
     const height = rect.height
 
-    const event = createClickEvent({
+    const event = createMouseEvent('click', {
         x: left + width / 2,
         y: top + height / 2,
     })

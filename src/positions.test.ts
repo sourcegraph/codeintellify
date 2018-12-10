@@ -4,7 +4,7 @@ import { TestScheduler } from 'rxjs/testing'
 import { Position } from 'vscode-languageserver-types'
 
 import { CodeViewProps, DOM } from './testutils/dom'
-import { clickPositionImpure } from './testutils/mouse'
+import { dispatchMouseEventAtPositionImpure } from './testutils/mouse'
 
 import { propertyIsDefined } from './helpers'
 import { findPositionsFromEvents } from './positions'
@@ -48,7 +48,9 @@ describe('positions', () => {
                     map(({ position: { line, character } }) => ({ line, character }))
                 )
 
-                cold<Position>(diagram, positions).subscribe(position => clickPositionImpure(codeView, position))
+                cold<Position>(diagram, positions).subscribe(position =>
+                    dispatchMouseEventAtPositionImpure('click', codeView, position)
+                )
 
                 expectObservable(clickedTokens).toBe(diagram, tokens)
             })

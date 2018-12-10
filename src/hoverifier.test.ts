@@ -17,7 +17,7 @@ import { HoverOverlayProps } from './HoverOverlay'
 import { findPositionsFromEvents } from './positions'
 import { CodeViewProps, DOM } from './testutils/dom'
 import { createHoverMerged, createStubHoverFetcher, createStubJumpURLFetcher } from './testutils/lsp'
-import { clickPositionImpure } from './testutils/mouse'
+import { dispatchMouseEventAtPositionImpure } from './testutils/mouse'
 import { LOADING } from './types'
 
 describe('Hoverifier', () => {
@@ -104,7 +104,7 @@ describe('Hoverifier', () => {
 
                 // Click https://sourcegraph.sgdev.org/github.com/gorilla/mux@cb4698366aa625048f3b815af6a0dea8aef9280a/-/blob/mux.go#L24:6
                 cold(inputDiagram).subscribe(() =>
-                    clickPositionImpure(codeView, {
+                    dispatchMouseEventAtPositionImpure('click', codeView, {
                         line: 24,
                         character: 6,
                     })
@@ -186,7 +186,7 @@ describe('Hoverifier', () => {
                 }
 
                 cold(inputDiagram).subscribe(() =>
-                    clickPositionImpure(codeView, {
+                    dispatchMouseEventAtPositionImpure('click', codeView, {
                         line: 1,
                         character: 1,
                     })
