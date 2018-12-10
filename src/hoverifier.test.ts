@@ -98,6 +98,102 @@ describe('Hoverifier', () => {
         }
     })
 
+    it('pins the overlay without it disappearing temporarily on mouseover then click', () => {
+        for (const codeView of testcases) {
+            const scheduler = new TestScheduler((a, b) => chai.assert.deepEqual(a, b))
+
+            const hover = {}
+            const defURL = 'def url'
+            const delayTime = 10
+
+            scheduler.run(({ cold, expectObservable }) => {
+                const hoverifier = createHoverifier({
+                    closeButtonClicks: NEVER,
+                    goToDefinitionClicks: new Observable<MouseEvent>(),
+                    hoverOverlayElements: of(null),
+                    hoverOverlayRerenders: EMPTY,
+                    fetchHover: createStubHoverFetcher(hover, delayTime),
+                    fetchJumpURL: createStubJumpURLFetcher(defURL, delayTime),
+                    pushHistory: noop,
+                    getReferencesURL: () => null,
+                })
+
+                const positionJumps = new Subject<{
+                    position: Position
+                    codeView: HTMLElement
+                    scrollElement: HTMLElement
+                }>()
+
+                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
+
+                const subscriptions = new Subscription()
+
+                subscriptions.add(hoverifier)
+                subscriptions.add(
+                    hoverifier.hoverify({
+                        dom: codeView,
+                        positionEvents,
+                        positionJumps,
+                        resolveContext: () => codeView.revSpec,
+                    })
+                )
+
+                const hoverAndDefinitionUpdates = hoverifier.hoverStateUpdates.pipe(
+                    map(hoverState => !!hoverState.hoverOverlayProps),
+                    distinctUntilChanged(isEqual)
+                )
+
+                // If you need to debug this test, the following might help. Append this to the `outputDiagram`
+                // string below:
+                //
+                //   ` ${delayAfterMouseover - 1}ms c ${delayTime - 1}ms d`
+                //
+                // Also, add these properties to `outputValues`:
+                //
+                //   c: true, // the most important instant, right after the click to pin (must be true, meaning it doesn't disappear)
+                //   d: true,
+                //
+                // There should be no emissions at "c" or "d", so this will cause the test to fail. But those are
+                // the most likely instants where there would be an emission if pinning is causing a temporary
+                // disappearance of the overlay.
+                const delayAfterMouseover = 100
+                const outputDiagram = `${MOUSEOVER_DELAY}ms a ${delayTime - 1}ms b`
+                const outputValues: {
+                    [key: string]: boolean
+                } = {
+                    a: false,
+                    b: true,
+                }
+
+                // Mouseover https://sourcegraph.sgdev.org/github.com/gorilla/mux@cb4698366aa625048f3b815af6a0dea8aef9280a/-/blob/mux.go#L24:6
+                cold('a').subscribe(() =>
+                    dispatchMouseEventAtPositionImpure('mouseover', codeView, {
+                        line: 24,
+                        character: 6,
+                    })
+                )
+
+                // Click (to pin) https://sourcegraph.sgdev.org/github.com/gorilla/mux@cb4698366aa625048f3b815af6a0dea8aef9280a/-/blob/mux.go#L24:6
+                cold(`${MOUSEOVER_DELAY + delayTime + delayAfterMouseover}ms c`).subscribe(() =>
+                    dispatchMouseEventAtPositionImpure('click', codeView, {
+                        line: 24,
+                        character: 6,
+                    })
+                )
+
+                // Mouseover something else and ensure it remains pinned.
+                cold(`${MOUSEOVER_DELAY + delayTime + delayAfterMouseover + 100}ms d`).subscribe(() =>
+                    dispatchMouseEventAtPositionImpure('mouseover', codeView, {
+                        line: 25,
+                        character: 3,
+                    })
+                )
+
+                expectObservable(hoverAndDefinitionUpdates).toBe(outputDiagram, outputValues)
+            })
+        }
+    })
+
     it('emits loading and then state on click events', () => {
         for (const codeView of testcases) {
             const scheduler = new TestScheduler((a, b) => chai.assert.deepEqual(a, b))
