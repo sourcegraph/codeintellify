@@ -13,6 +13,7 @@ jobs:
     - stage: test
       script:
         - npm run prettier
+        - npm run typecheck
         - npm run tslint
         - npm run build
         - npm test -- --single-run --browsers ChromeHeadlessNoSandbox

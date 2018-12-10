@@ -16,6 +16,7 @@
     "commitmsg": "commitlint -e $GIT_PARAMS",
     "semantic-release": "semantic-release",
     "prettier": "prettier '**/{*.{js?(on),ts?(x),scss,yml},.*.js?(on),.*.yml}' --write --list-different",
+    "typecheck": "tsc -p tsconfig.json",
     "tslint": "tslint -c tslint.json -p tsconfig.json './src/*.ts?(x)' './testdata/*.ts?(x)' './*.ts?(x)'",
     "build": "npm run tsc && cpy 'src/**/*.scss' lib/",
     "tsc": "tsc -p tsconfig.dist.json",
