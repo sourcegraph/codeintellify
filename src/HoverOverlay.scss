@@ -15,7 +15,7 @@
         position: absolute;
         top: 0;
         right: 0;
-        padding: 0.2rem;
+        padding: 0.25rem;
         background: inherit;
         z-index: 1;
         border: none;
@@ -29,7 +29,7 @@
             border-top: 1px solid var(--border-color);
         }
         hr {
-            margin: 0.25rem -0.25rem;
+            margin: 0.5rem -0.5rem;
             background: var(--border-color);
         }
         p,
@@ -49,7 +49,7 @@
     }
 
     &__content {
-        padding: 0.25rem;
+        padding: 0.5rem;
         overflow-x: auto;
         word-wrap: normal;
         p:last-child {
