@@ -31,8 +31,10 @@ export const findPositionsFromEvents = (options: DOMFunctions) => (
 ): Observable<PositionEvent> =>
     merge(
         from(elements).pipe(
-            switchMap(element => fromEvent<MouseEvent>(element, 'mouseover')),
-            map(event => ({ event, eventType: 'mouseover' as 'mouseover' })),
+            switchMap(element =>
+                merge(fromEvent<MouseEvent>(element, 'mouseover'), fromEvent<MouseEvent>(element, 'mousemove'))
+            ),
+            map(event => ({ event, eventType: event.type as 'mouseover' | 'mousemove' })),
             filter(({ event }) => event.currentTarget !== null),
             map(({ event, ...rest }) => ({
                 event,
