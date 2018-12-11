@@ -9,7 +9,8 @@
     align-items: stretch;
     z-index: 100;
 
-    transition: opacity 100ms ease-in-out;
+    $animation-duration: 100ms;
+    transition: opacity $animation-duration ease-in-out;
 
     &__close-button {
         position: absolute;
@@ -19,6 +20,11 @@
         background: inherit;
         z-index: 1;
         border: none;
+        opacity: 0;
+        transition: opacity $animation-duration ease-in-out;
+    }
+    &:hover &__close-button {
+        opacity: 1;
     }
 
     &__row {
