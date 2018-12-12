@@ -42,7 +42,7 @@ import {
     getTokenAtPosition,
     HoveredToken,
 } from './token_position'
-import { HoverAttachment, isHoverAttachmentWithRange, isPosition, LineOrPositionOrRange, LOADING } from './types'
+import { HoverAttachment, isPosition, LineOrPositionOrRange, LOADING } from './types'
 
 export { HoveredToken }
 
@@ -602,7 +602,11 @@ export function createHoverifier<C extends object, D, A>({
                 switchMap(hoverObservable => hoverObservable),
                 switchMap(({ hoverOrError, position, adjustPosition, ...rest }) => {
                     let pos =
-                        isHoverAttachmentWithRange(hoverOrError) && position
+                        hoverOrError &&
+                        hoverOrError !== LOADING &&
+                        !isErrorLike(hoverOrError) &&
+                        hoverOrError.range &&
+                        position
                             ? { ...hoverOrError.range.start, ...position }
                             : position
 
