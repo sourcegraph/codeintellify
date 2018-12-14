@@ -615,7 +615,7 @@ export function createHoverifier<C extends object>({
                         return of({ hoverOrError, position: undefined as Position | undefined, ...rest })
                     }
 
-                    // LSP is 0-indexed, the code here is currently 1-indexed
+                    // The requested position is is 0-indexed; the code here is currently 1-indexed
                     const { line, character } = pos
                     pos = { line: line + 1, character: character + 1, ...pos }
 
@@ -642,7 +642,17 @@ export function createHoverifier<C extends object>({
                 let highlightedRange: Range | undefined
                 if (hoverOrError && !isErrorLike(hoverOrError) && hoverOrError !== LOADING) {
                     if (hoverOrError.range) {
-                        highlightedRange = hoverOrError.range
+                        // The result is 0-indexed; the code view is treated as 1-indexed.
+                        highlightedRange = {
+                            start: {
+                                line: hoverOrError.range.start.line + 1,
+                                character: hoverOrError.range.start.character + 1,
+                            },
+                            end: {
+                                line: hoverOrError.range.end.line + 1,
+                                character: hoverOrError.range.end.character + 1,
+                            },
+                        }
                     } else if (position) {
                         highlightedRange = { start: position, end: position }
                     }

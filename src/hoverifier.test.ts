@@ -36,6 +36,7 @@ describe('Hoverifier', () => {
 
             const delayTime = 100
             const hoverRange = { start: { line: 1, character: 2 }, end: { line: 3, character: 4 } }
+            const hoverRange1Indexed = { start: { line: 2, character: 3 }, end: { line: 4, character: 5 } }
 
             scheduler.run(({ cold, expectObservable }) => {
                 const hoverifier = createHoverifier({
@@ -82,7 +83,7 @@ describe('Hoverifier', () => {
                     [key: string]: Range | undefined
                 } = {
                     a: undefined, // highlightedRange is undefined when the hover is loading
-                    b: hoverRange,
+                    b: hoverRange1Indexed,
                 }
 
                 // Hover over https://sourcegraph.sgdev.org/github.com/gorilla/mux@cb4698366aa625048f3b815af6a0dea8aef9280a/-/blob/mux.go#L24:6
