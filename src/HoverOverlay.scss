@@ -18,11 +18,18 @@
         top: 0;
         right: 0;
         padding: 0.25rem;
-        background: inherit;
+        border-radius: 0;
+        background: transparent;
         z-index: 1;
         border: none;
         opacity: 0;
         transition: opacity $animation-duration ease-in-out;
+        &:focus {
+            outline: none; // override GitHub style
+        }
+        &:active {
+            box-shadow: none; // override GitHub style
+        }
     }
     &:hover &__close-button {
         opacity: 1;
