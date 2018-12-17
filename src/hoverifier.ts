@@ -29,7 +29,6 @@ import {
 import { Key } from 'ts-key-enum'
 import { Position, Range } from 'vscode-languageserver-types'
 import { asError, ErrorLike, isErrorLike } from './errors'
-import { isDefined } from './helpers'
 import { overlayUIHasContent, scrollIntoCenterIfNeeded } from './helpers'
 import { HoverOverlayProps, isJumpURL } from './HoverOverlay'
 import { calculateOverlayPosition } from './overlay_position'
@@ -437,22 +436,23 @@ export function createHoverifier<C extends object>({
         // It's important to do this before filtering otherwise navigating from
         // a position, to a line-only position, back to the first position would get ignored
         distinctUntilChanged((a, b) => isEqual(a, b)),
-        // Ignore undefined or partial positions (e.g. line only)
-        filter((jump): jump is typeof jump & { position: Position } => Position.is(jump.position)),
         map(({ position, codeView, dom, ...rest }) => {
-            const cell = dom.getCodeElementFromLineNumber(codeView, position.line, position.part)
-            if (!cell) {
-                return undefined
+            let cell: HTMLElement | null
+            let target: HTMLElement | undefined
+            let part: DiffPart | undefined
+            if (Position.is(position)) {
+                cell = dom.getCodeElementFromLineNumber(codeView, position.line, position.part)
+                if (cell) {
+                    target = findElementWithOffset(cell, position.character)
+                    if (target) {
+                        part = dom.getDiffCodePart && dom.getDiffCodePart(target)
+                    } else {
+                        console.warn('Could not find target for position in file', position)
+                    }
+                }
             }
-            const target = findElementWithOffset(cell, position.character)
-            if (!target) {
-                console.warn('Could not find target for position in file', position)
-                return undefined
-            }
-            const part = dom.getDiffCodePart && dom.getDiffCodePart(target)
             return { ...rest, eventType: 'jump' as 'jump', target, position: { ...position, part }, codeView, dom }
-        }),
-        filter(isDefined)
+        })
     )
 
     // REPOSITIONING
@@ -482,7 +482,7 @@ export function createHoverifier<C extends object>({
                     })
                 ),
                 switchMap(({ position, codeView, adjustPosition, resolveContext, ...rest }) => {
-                    if (!position || !adjustPosition) {
+                    if (!position || !Position.is(position) || !adjustPosition) {
                         return of({ position, codeView, ...rest })
                     }
 
@@ -500,19 +500,19 @@ export function createHoverifier<C extends object>({
                         }))
                     )
                 }),
-                map(({ target, position, codeView, dom, ...rest }) => {
-                    // We should ensure we have the correct dom element to place the overlay above.
-                    // It is possible that tokens span multiple elements meaning that its possible for the
-                    // hover overlay to be placed in the middle of a token.
-                    const token = position ? getTokenAtPosition(codeView, position, dom, position.part) : target
-
-                    return {
-                        target: token || target,
-                        ...rest,
-                    }
-                }),
-                map(({ hoverOverlayElement, relativeElement, target }) =>
-                    calculateOverlayPosition({ relativeElement, target, hoverOverlayElement })
+                map(({ target, position, codeView, dom, ...rest }) => ({
+                    // We should ensure we have the correct dom element to place the overlay above. It is possible
+                    // that tokens span multiple elements meaning that it's possible for the hover overlay to be
+                    // placed in the middle of a token.
+                    target:
+                        position && Position.is(position)
+                            ? getTokenAtPosition(codeView, position, dom, position.part)
+                            : target,
+                    ...rest,
+                })),
+                map(
+                    ({ hoverOverlayElement, relativeElement, target }) =>
+                        target ? calculateOverlayPosition({ relativeElement, target, hoverOverlayElement }) : undefined
                 )
             )
             .subscribe(hoverOverlayPosition => {

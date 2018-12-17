@@ -2,7 +2,7 @@ import { isEqual } from 'lodash'
 import { EMPTY, NEVER, Observable, of, Subject, Subscription } from 'rxjs'
 import { distinctUntilChanged, filter, map } from 'rxjs/operators'
 import { TestScheduler } from 'rxjs/testing'
-import { Position, Range } from 'vscode-languageserver-types'
+import { Range } from 'vscode-languageserver-types'
 
 import { noop } from 'lodash'
 import { propertyIsDefined } from './helpers'
@@ -12,6 +12,7 @@ import {
     LOADER_DELAY,
     MOUSEOVER_DELAY,
     PositionAdjuster,
+    PositionJump,
     TOOLTIP_DISPLAY_DELAY,
 } from './hoverifier'
 import { HoverOverlayProps } from './HoverOverlay'
@@ -50,11 +51,7 @@ describe('Hoverifier', () => {
                     getReferencesURL: () => null,
                 })
 
-                const positionJumps = new Subject<{
-                    position: Position
-                    codeView: HTMLElement
-                    scrollElement: HTMLElement
-                }>()
+                const positionJumps = new Subject<PositionJump>()
 
                 const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
 
@@ -119,11 +116,7 @@ describe('Hoverifier', () => {
                     getReferencesURL: () => null,
                 })
 
-                const positionJumps = new Subject<{
-                    position: Position
-                    codeView: HTMLElement
-                    scrollElement: HTMLElement
-                }>()
+                const positionJumps = new Subject<PositionJump>()
 
                 const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
 
@@ -195,6 +188,161 @@ describe('Hoverifier', () => {
         }
     })
 
+    describe('pinning', () => {
+        it('unpins upon clicking on a different position', () => {
+            for (const codeView of testcases) {
+                const scheduler = new TestScheduler((a, b) => chai.assert.deepEqual(a, b))
+
+                const delayTime = 10
+
+                scheduler.run(({ cold, expectObservable }) => {
+                    const hoverifier = createHoverifier({
+                        closeButtonClicks: NEVER,
+                        goToDefinitionClicks: new Observable<MouseEvent>(),
+                        hoverOverlayElements: of(null),
+                        hoverOverlayRerenders: EMPTY,
+                        // Only show on line 24, not line 25 (which is the 2nd click event below).
+                        fetchHover: position =>
+                            position.line === 24 ? createStubHoverFetcher({}, delayTime)(position) : of(null),
+                        fetchJumpURL: position =>
+                            position.line === 24 ? createStubJumpURLFetcher('def url', delayTime)(position) : of(null),
+                        pushHistory: noop,
+                        getReferencesURL: () => null,
+                    })
+
+                    const positionJumps = new Subject<PositionJump>()
+
+                    const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
+
+                    const subscriptions = new Subscription()
+
+                    subscriptions.add(hoverifier)
+                    subscriptions.add(
+                        hoverifier.hoverify({
+                            dom: codeView,
+                            positionEvents,
+                            positionJumps,
+                            resolveContext: () => codeView.revSpec,
+                        })
+                    )
+
+                    const isPinned = hoverifier.hoverStateUpdates.pipe(
+                        map(
+                            hoverState =>
+                                !!hoverState.hoverOverlayProps && !!hoverState.hoverOverlayProps.showCloseButton
+                        ),
+                        distinctUntilChanged()
+                    )
+
+                    const outputDiagram = `${delayTime}ms a-c`
+                    const outputValues: {
+                        [key: string]: boolean
+                    } = {
+                        a: true,
+                        c: false,
+                    }
+
+                    // Click (to pin) https://sourcegraph.sgdev.org/github.com/gorilla/mux@cb4698366aa625048f3b815af6a0dea8aef9280a/-/blob/mux.go#L24:6
+                    cold(`a`).subscribe(() => {
+                        dispatchMouseEventAtPositionImpure('click', codeView, {
+                            line: 24,
+                            character: 6,
+                        })
+                    })
+
+                    // Click to another position and ensure the hover is no longer pinned.
+                    cold(`${delayTime}ms --c`).subscribe(() =>
+                        positionJumps.next({
+                            codeView: codeView.codeView,
+                            scrollElement: codeView.container,
+                            position: { line: 1, character: 1 },
+                        })
+                    )
+
+                    expectObservable(isPinned).toBe(outputDiagram, outputValues)
+                })
+            }
+        })
+
+        it('unpins upon navigation to an invalid or undefined position (such as a file with no particular position)', () => {
+            for (const codeView of testcases) {
+                const scheduler = new TestScheduler((a, b) => chai.assert.deepEqual(a, b))
+
+                scheduler.run(({ cold, expectObservable }) => {
+                    const hoverifier = createHoverifier({
+                        closeButtonClicks: NEVER,
+                        goToDefinitionClicks: new Observable<MouseEvent>(),
+                        hoverOverlayElements: of(null),
+                        hoverOverlayRerenders: EMPTY,
+                        // Only show on line 24, not line 25 (which is the 2nd click event below).
+                        fetchHover: position =>
+                            position.line === 24 ? createStubHoverFetcher({})(position) : of(null),
+                        fetchJumpURL: position =>
+                            position.line === 24 ? createStubJumpURLFetcher('def url')(position) : of(null),
+                        pushHistory: noop,
+                        getReferencesURL: () => null,
+                    })
+
+                    const positionJumps = new Subject<PositionJump>()
+
+                    const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
+
+                    const subscriptions = new Subscription()
+
+                    subscriptions.add(hoverifier)
+                    subscriptions.add(
+                        hoverifier.hoverify({
+                            dom: codeView,
+                            positionEvents,
+                            positionJumps,
+                            resolveContext: () => codeView.revSpec,
+                        })
+                    )
+
+                    const isPinned = hoverifier.hoverStateUpdates.pipe(
+                        map(hoverState => {
+                            if (!hoverState.hoverOverlayProps) {
+                                return 'hidden'
+                            }
+                            if (hoverState.hoverOverlayProps.showCloseButton) {
+                                return 'pinned'
+                            }
+                            return 'visible'
+                        }),
+                        distinctUntilChanged()
+                    )
+
+                    const outputDiagram = `ab`
+                    const outputValues: {
+                        [key: string]: 'hidden' | 'pinned' | 'visible'
+                    } = {
+                        a: 'pinned',
+                        b: 'hidden',
+                    }
+
+                    // Click (to pin) https://sourcegraph.sgdev.org/github.com/gorilla/mux@cb4698366aa625048f3b815af6a0dea8aef9280a/-/blob/mux.go#L24:6
+                    cold(`a`).subscribe(() =>
+                        dispatchMouseEventAtPositionImpure('click', codeView, {
+                            line: 24,
+                            character: 6,
+                        })
+                    )
+
+                    // Click to another position and ensure the hover is no longer pinned.
+                    cold(`-b`).subscribe(() =>
+                        positionJumps.next({
+                            codeView: codeView.codeView,
+                            scrollElement: codeView.container,
+                            position: { line: undefined, character: undefined },
+                        })
+                    )
+
+                    expectObservable(isPinned).toBe(outputDiagram, outputValues)
+                })
+            }
+        })
+    })
+
     it('emits loading and then state on click events', () => {
         for (const codeView of testcases) {
             const scheduler = new TestScheduler((a, b) => chai.assert.deepEqual(a, b))
@@ -215,11 +363,7 @@ describe('Hoverifier', () => {
                     getReferencesURL: () => null,
                 })
 
-                const positionJumps = new Subject<{
-                    position: Position
-                    codeView: HTMLElement
-                    scrollElement: HTMLElement
-                }>()
+                const positionJumps = new Subject<PositionJump>()
 
                 const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
 
@@ -297,11 +441,7 @@ describe('Hoverifier', () => {
                     getReferencesURL: () => null,
                 })
 
-                const positionJumps = new Subject<{
-                    position: Position
-                    codeView: HTMLElement
-                    scrollElement: HTMLElement
-                }>()
+                const positionJumps = new Subject<PositionJump>()
 
                 const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
 
@@ -366,11 +506,7 @@ describe('Hoverifier', () => {
                     getReferencesURL: () => null,
                 })
 
-                const positionJumps = new Subject<{
-                    position: Position
-                    codeView: HTMLElement
-                    scrollElement: HTMLElement
-                }>()
+                const positionJumps = new Subject<PositionJump>()
 
                 const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
 
@@ -455,11 +591,7 @@ describe('Hoverifier', () => {
                     getReferencesURL: () => null,
                 })
 
-                const positionJumps = new Subject<{
-                    position: Position
-                    codeView: HTMLElement
-                    scrollElement: HTMLElement
-                }>()
+                const positionJumps = new Subject<PositionJump>()
 
                 const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
 
