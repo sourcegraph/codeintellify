@@ -105,7 +105,7 @@ export const renderMarkdown = (markdown: string): string => {
         allowedTags: [...sanitize.defaults.allowedTags, 'span', 'h4', 'a', 'p', 'strong', 'details', 'summary'],
         allowedAttributes: {
             span: ['class'],
-            code: ['class'],      
+            code: ['class'],
             a: ['href'],
         },
     })
