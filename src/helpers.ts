@@ -102,10 +102,11 @@ export const renderMarkdown = (markdown: string): string => {
         // Allow highligh.js styles, e.g.
         // <span class="hljs-keyword">
         // <code class="language-javascript">
-        allowedTags: [...sanitize.defaults.allowedTags, 'span'],
+        allowedTags: [...sanitize.defaults.allowedTags, 'span', 'details', 'summary'],
         allowedAttributes: {
             span: ['class'],
             code: ['class'],
+            a: ['href'],
         },
     })
 }
