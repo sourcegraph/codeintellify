@@ -106,7 +106,7 @@ export const renderMarkdown = (markdown: string): string => {
         allowedAttributes: {
             span: ['class'],
             code: ['class'],      
-            a: ['href']
+            a: ['href'],
         },
     })
 }
