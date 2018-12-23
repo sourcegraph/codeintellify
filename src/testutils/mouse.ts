@@ -19,7 +19,7 @@ export const createMouseEvent = (type: string, coords: Coordinates) => {
 }
 
 const invalidPosition = ({ line, character }: Position, message: string) =>
-    `Invalid postion L${line}:${character}. ${message}. Remember, LSP Positions are 0-indexed.`
+    `Invalid position L${line}:${character}. ${message}. Positions are 0-indexed.`
 
 /**
  * Dispatch a mouse event at the given position in a code element. This is impure because the current hoverifier
