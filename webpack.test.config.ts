@@ -12,13 +12,13 @@ const config: Configuration = {
                 exclude: /node_modules/,
             },
             {
-                test: /\.tsx?$/,
+                test: /\.ts$/,
                 use: 'awesome-typescript-loader',
                 exclude: /node_modules/,
             },
             {
-                test: /src\/.*\.tsx?$/,
-                exclude: /(node_modules|\.test\.tsx?$|\.d.ts$)/,
+                test: /src\/.*\.ts$/,
+                exclude: /(node_modules|\.test\.ts$|\.d.ts$)/,
                 loader: 'istanbul-instrumenter-loader',
                 include: path.resolve(__dirname, 'src'),
                 enforce: 'post',
@@ -29,7 +29,7 @@ const config: Configuration = {
         ],
     },
     resolve: {
-        extensions: ['.tsx', '.ts', '.js', '.html'],
+        extensions: ['.ts', '.js', '.html'],
     },
     output: {
         filename: '[name].js',

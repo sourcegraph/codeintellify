@@ -30,7 +30,6 @@ import {
 import { Key } from 'ts-key-enum'
 import { asError, ErrorLike, isErrorLike } from './errors'
 import { scrollIntoCenterIfNeeded } from './helpers'
-import { HoverOverlayProps } from './HoverOverlay'
 import { calculateOverlayPosition } from './overlay_position'
 import { DiffPart, PositionEvent, SupportedMouseEvent } from './positions'
 import { createObservableStateContainer } from './state'
@@ -42,7 +41,7 @@ import {
     getTokenAtPosition,
     HoveredToken,
 } from './token_position'
-import { HoverAttachment, isPosition, LineOrPositionOrRange, LOADING } from './types'
+import { HoverAttachment, HoverOverlayProps, isPosition, LineOrPositionOrRange, LOADING } from './types'
 
 export { HoveredToken }
 

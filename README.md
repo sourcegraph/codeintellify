@@ -6,7 +6,7 @@
 [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
 [![sourcegraph: search](https://img.shields.io/badge/sourcegraph-search-brightgreen.svg)](https://sourcegraph.com/github.com/sourcegraph/codeintellify)
 
-Adds code intelligence to code views on the web. Used in [Sourcegraph](https://sourcegraph.com).
+This library manages all of the inputs (mouse/keyboard events, location changes, hover information, and hover actions) necessary to display hover tooltips on with a code view. All together, this makes it easier to add code intelligence to code views on the web. Used in [Sourcegraph](https://sourcegraph.com).
 
 ## What it does
 
@@ -16,10 +16,12 @@ Adds code intelligence to code views on the web. Used in [Sourcegraph](https://s
 - When clicking a token, pins the tooltip to that token
 - Highlights the hovered token
 
+You need to provide your own UI component (referred to as the HoverOverlay) that actually displays this information and exposes these actions to the user.
+
 ## Usage
 
 - Call `createHoverifier()` to create a `Hoverifier` object (there should only be one on the page, to have only one HoverOverlay shown).
-- The Hoverifier exposes an Observable `hoverStateUpdates` that a consumer can subscribe to, which emits all data needed to render the `HoverOverlay` React component.
+- The Hoverifier exposes an Observable `hoverStateUpdates` that a consumer can subscribe to, which emits all data needed to render the HoverOverlay
 - For each code view on the page, call `hoverifier.hoverify()`, passing the position events coming from `findPositionsFromEvents()`.
 - `hoverify()` returns a `Subscription` that will "unhoverify" the code view again if unsubscribed from
 
