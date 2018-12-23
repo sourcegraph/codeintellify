@@ -12,12 +12,6 @@ export default (config: Config): void => {
                 included: true,
                 served: true,
             },
-            {
-                pattern: 'src/**/*.tsx',
-                watched: false,
-                included: true,
-                served: true,
-            },
         ],
         preprocessors: {
             'src/**/*.ts?(x)': ['webpack', 'sourcemap'],
@@ -28,7 +22,7 @@ export default (config: Config): void => {
 
         // karma-webpack doesn't change the file extensions so we just need to tell karma what these extensions mean.
         mime: {
-            'text/x-typescript': ['ts', 'tsx'],
+            'text/x-typescript': ['ts'],
         },
 
         webpack: webpackConfig,

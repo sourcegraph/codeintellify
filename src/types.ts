@@ -1,6 +1,35 @@
 import { Position, Range } from '@sourcegraph/extension-api-types'
+import { ErrorLike } from './errors'
+import { HoveredToken } from './token_position'
 
 export const LOADING: 'loading' = 'loading'
+
+/**
+ * @template C Extra context for the hovered token.
+ * @template D The type of the hover content data.
+ * @template A The type of an action.
+ */
+export interface HoverOverlayProps<C extends object, D, A> {
+    /** What to show as contents */
+    hoverOrError?: typeof LOADING | (HoverAttachment & D) | null | ErrorLike // TODO disallow null and undefined
+
+    /** The position of the tooltip (assigned to `style`) */
+    overlayPosition?: { left: number; top: number }
+
+    /**
+     * The hovered token (position and word).
+     * Used for the Find References buttons and for error messages
+     */
+    hoveredToken?: HoveredToken & C
+
+    /** Whether to show the close button for the hover overlay */
+    showCloseButton: boolean
+
+    /**
+     * Actions to display as buttons or links in the hover.
+     */
+    actionsOrError?: typeof LOADING | A[] | null | ErrorLike
+}
 
 /**
  * Describes the range in the document (usually a token) that the hover is attached to.

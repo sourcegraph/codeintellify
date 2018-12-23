@@ -31,9 +31,7 @@
   "dependencies": {
     "@sourcegraph/event-positions": "^1.0.0",
     "@sourcegraph/extension-api-types": "^1.0.1",
-    "@sourcegraph/react-loading-spinner": "0.0.7",
     "lodash": "^4.17.10",
-    "mdi-react": "^5.1.0",
     "rxjs": "^6.3.3",
     "ts-key-enum": "^2.0.0"
   },

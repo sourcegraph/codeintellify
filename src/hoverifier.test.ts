@@ -4,6 +4,7 @@ import { EMPTY, NEVER, Observable, of, Subject, Subscription } from 'rxjs'
 import { distinctUntilChanged, filter, map } from 'rxjs/operators'
 import { TestScheduler } from 'rxjs/testing'
 
+import { ErrorLike } from './errors'
 import { propertyIsDefined } from './helpers'
 import {
     AdjustmentDirection,
@@ -14,12 +15,11 @@ import {
     PositionJump,
     TOOLTIP_DISPLAY_DELAY,
 } from './hoverifier'
-import { HoverOverlayProps } from './HoverOverlay'
 import { findPositionsFromEvents, SupportedMouseEvent } from './positions'
 import { CodeViewProps, DOM } from './testutils/dom'
 import { createHoverAttachment, createStubActionsFetcher, createStubHoverFetcher } from './testutils/fixtures'
 import { dispatchMouseEventAtPositionImpure } from './testutils/mouse'
-import { LOADING } from './types'
+import { HoverAttachment, LOADING } from './types'
 
 describe('Hoverifier', () => {
     const dom = new DOM()
@@ -382,7 +382,10 @@ describe('Hoverifier', () => {
                     1}ms b`
 
                 const outputValues: {
-                    [key: string]: Pick<HoverOverlayProps<{}, {}, string>, 'hoverOrError' | 'actionsOrError'>
+                    [key: string]: {
+                        hoverOrError: typeof LOADING | (HoverAttachment) | null | ErrorLike
+                        actionsOrError: typeof LOADING | string[] | null | ErrorLike
+                    }
                 } = {
                     // No hover is shown if it would just consist of LOADING.
                     a: { hoverOrError: createHoverAttachment(hover), actionsOrError: LOADING },

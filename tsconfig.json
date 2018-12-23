@@ -9,7 +9,6 @@
     "outDir": "lib",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "jsx": "react",
     "lib": ["es2017", "dom", "dom.iterable"]
   }
 }
