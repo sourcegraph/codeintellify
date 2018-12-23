@@ -17,7 +17,7 @@ import {
 } from './hoverifier'
 import { findPositionsFromEvents, SupportedMouseEvent } from './positions'
 import { CodeViewProps, DOM } from './testutils/dom'
-import { createHoverAttachment, createStubActionsFetcher, createStubHoverFetcher } from './testutils/fixtures'
+import { createHoverAttachment, createStubActionsProvider, createStubHoverProvider } from './testutils/fixtures'
 import { dispatchMouseEventAtPositionImpure } from './testutils/mouse'
 import { HoverAttachment, LOADING } from './types'
 
@@ -43,8 +43,8 @@ describe('Hoverifier', () => {
                     closeButtonClicks: NEVER,
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
-                    fetchHover: createStubHoverFetcher({ range: hoverRange }, LOADER_DELAY + delayTime),
-                    fetchActions: () => of(null),
+                    getHover: createStubHoverProvider({ range: hoverRange }, LOADER_DELAY + delayTime),
+                    getActions: () => of(null),
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -104,8 +104,8 @@ describe('Hoverifier', () => {
                     closeButtonClicks: NEVER,
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
-                    fetchHover: createStubHoverFetcher(hover, delayTime),
-                    fetchActions: createStubActionsFetcher(['foo', 'bar'], delayTime),
+                    getHover: createStubHoverProvider(hover, delayTime),
+                    getActions: createStubActionsProvider(['foo', 'bar'], delayTime),
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -193,11 +193,11 @@ describe('Hoverifier', () => {
                         hoverOverlayElements: of(null),
                         hoverOverlayRerenders: EMPTY,
                         // Only show on line 24, not line 25 (which is the 2nd click event below).
-                        fetchHover: position =>
-                            position.line === 24 ? createStubHoverFetcher({}, delayTime)(position) : of(null),
-                        fetchActions: position =>
+                        getHover: position =>
+                            position.line === 24 ? createStubHoverProvider({}, delayTime)(position) : of(null),
+                        getActions: position =>
                             position.line === 24
-                                ? createStubActionsFetcher(['foo', 'bar'], delayTime)(position)
+                                ? createStubActionsProvider(['foo', 'bar'], delayTime)(position)
                                 : of(null),
                     })
 
@@ -265,10 +265,9 @@ describe('Hoverifier', () => {
                         hoverOverlayElements: of(null),
                         hoverOverlayRerenders: EMPTY,
                         // Only show on line 24, not line 25 (which is the 2nd click event below).
-                        fetchHover: position =>
-                            position.line === 24 ? createStubHoverFetcher({})(position) : of(null),
-                        fetchActions: position =>
-                            position.line === 24 ? createStubActionsFetcher(['foo', 'bar'])(position) : of(null),
+                        getHover: position => (position.line === 24 ? createStubHoverProvider({})(position) : of(null)),
+                        getActions: position =>
+                            position.line === 24 ? createStubActionsProvider(['foo', 'bar'])(position) : of(null),
                     })
 
                     const positionJumps = new Subject<PositionJump>()
@@ -345,8 +344,8 @@ describe('Hoverifier', () => {
                     closeButtonClicks: new Observable<MouseEvent>(),
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
-                    fetchHover: createStubHoverFetcher(hover, LOADER_DELAY + hoverDelayTime),
-                    fetchActions: createStubActionsFetcher(actions, LOADER_DELAY + actionsDelayTime),
+                    getHover: createStubHoverProvider(hover, LOADER_DELAY + hoverDelayTime),
+                    getActions: createStubActionsProvider(actions, LOADER_DELAY + actionsDelayTime),
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -416,8 +415,8 @@ describe('Hoverifier', () => {
                     closeButtonClicks: new Observable<MouseEvent>(),
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
-                    fetchHover: createStubHoverFetcher(hover),
-                    fetchActions: () => of(null),
+                    getHover: createStubHoverProvider(hover),
+                    getActions: () => of(null),
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -477,8 +476,8 @@ describe('Hoverifier', () => {
                     closeButtonClicks: new Observable<MouseEvent>(),
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
-                    fetchHover: createStubHoverFetcher(hover),
-                    fetchActions: () => of(null),
+                    getHover: createStubHoverProvider(hover),
+                    getActions: () => of(null),
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -533,7 +532,7 @@ describe('Hoverifier', () => {
     /**
      * This test ensures that the adjustPosition options is being called in the ways we expect. This test is actually not the best way to ensure the feature
      * works as expected. This is a good example of a bad side effect of how the main `hoverifier.ts` file is too tightly integrated with itself. Ideally, I'd be able to assert
-     * that the effected positions have actually been adjusted as intended but this is impossible with the current implementation. We can assert that the `HoverFetcher` and `ActionsFetcher`s
+     * that the effected positions have actually been adjusted as intended but this is impossible with the current implementation. We can assert that the `HoverProvider` and `ActionsProvider`s
      * have the adjusted positions (AdjustmentDirection.CodeViewToActual). However, we cannot reliably assert that the code "highlighting" the token has the position adjusted (AdjustmentDirection.ActualToCodeView).
      */
     /**
@@ -546,8 +545,8 @@ describe('Hoverifier', () => {
             scheduler.run(({ cold, expectObservable }) => {
                 const adjustmentDirections = new Subject<AdjustmentDirection>()
 
-                const fetchHover = createStubHoverFetcher({})
-                const fetchActions = createStubActionsFetcher(['foo', 'bar'])
+                const getHover = createStubHoverProvider({})
+                const getActions = createStubActionsProvider(['foo', 'bar'])
 
                 const adjustPosition: PositionAdjuster<{}> = ({ direction, position }) => {
                     adjustmentDirections.next(direction)
@@ -559,8 +558,8 @@ describe('Hoverifier', () => {
                     closeButtonClicks: new Observable<MouseEvent>(),
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
-                    fetchHover,
-                    fetchActions,
+                    getHover,
+                    getActions,
                 })
 
                 const positionJumps = new Subject<PositionJump>()

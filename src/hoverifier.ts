@@ -74,14 +74,14 @@ export interface HoverifierOptions<C extends object, D, A> {
     hoverOverlayElements: Subscribable<HTMLElement | null>
 
     /**
-     * Called to fetch the data to display in the hover.
+     * Called to get the data to display in the hover.
      */
-    fetchHover: HoverFetcher<C, D>
+    getHover: HoverProvider<C, D>
 
     /**
-     * Called to fetch the actions to display in the hover.
+     * Called to get the actions to display in the hover.
      */
-    fetchActions: ActionsFetcher<C, A>
+    getActions: ActionsProvider<C, A>
 }
 
 /**
@@ -150,8 +150,8 @@ export interface AdjustPositionProps<C extends object> {
 }
 
 /**
- * Function to adjust positions coming into and out of hoverifier. It can be used to correct the position used in HoverFetcher and
- * ActionsFetcher requests and the position of th etoken to highlight in the code view. This is useful for code hosts that convert whitespace.
+ * Function to adjust positions coming into and out of hoverifier. It can be used to correct the position used in HoverProvider and
+ * ActionsProvider requests and the position of the token to highlight in the code view. This is useful for code hosts that convert whitespace.
  *
  *
  * @template C Extra context for the hovered token.
@@ -293,7 +293,7 @@ export const MOUSEOVER_DELAY = 50
  * @template C Extra context for the hovered token.
  * @template D The type of the hover content data.
  */
-export type HoverFetcher<C extends object, D> = (
+export type HoverProvider<C extends object, D> = (
     position: HoveredToken & C
 ) => SubscribableOrPromise<(HoverAttachment & D) | null>
 
@@ -301,7 +301,7 @@ export type HoverFetcher<C extends object, D> = (
  * @template C Extra context for the hovered token.
  * @template A The type of an action.
  */
-export type ActionsFetcher<C extends object, A> = (position: HoveredToken & C) => SubscribableOrPromise<A[] | null>
+export type ActionsProvider<C extends object, A> = (position: HoveredToken & C) => SubscribableOrPromise<A[] | null>
 
 /**
  * Function responsible for resolving the position of a hovered token
@@ -319,8 +319,8 @@ export type ContextResolver<C extends object> = (hoveredToken: HoveredToken) => 
 export function createHoverifier<C extends object, D, A>({
     closeButtonClicks,
     hoverOverlayRerenders,
-    fetchHover,
-    fetchActions,
+    getHover,
+    getActions,
 }: HoverifierOptions<C, D, A>): Hoverifier<C, D, A> {
     // Internal state that is not exposed to the caller
     // Shared between all hoverified code views
@@ -568,21 +568,21 @@ export function createHoverifier<C extends object, D, A>({
             if (!position) {
                 return of({ hoverOrError: null, position: undefined, part: undefined, ...rest })
             }
-            // Fetch the hover for that position
-            const hoverFetch = from(fetchHover(position)).pipe(
+            // Get the hover for that position
+            const hover = from(getHover(position)).pipe(
                 catchError((error): [ErrorLike] => [asError(error)]),
                 share()
             )
-            // 1. Reset the hover content, so no old hover content is displayed at the new position while fetching
-            // 2. Show a loader if the hover fetch hasn't returned after 100ms
+            // 1. Reset the hover content, so no old hover content is displayed at the new position while getting
+            // 2. Show a loader if the hover hasn't returned after 100ms
             // 3. Show the hover once it returned
             return merge(
                 [undefined],
                 of(LOADING).pipe(
                     delay(LOADER_DELAY),
-                    takeUntil(hoverFetch)
+                    takeUntil(hover)
                 ),
-                hoverFetch
+                hover
             ).pipe(
                 map(hoverOrError => ({
                     ...rest,
@@ -685,16 +685,16 @@ export function createHoverifier<C extends object, D, A>({
      * This is a higher-order Observable (Observable that emits Observables).
      */
     const actionObservables = resolvedPositions.pipe(
-        // Fetch the actions for that position
+        // Get the actions for that position
         map(({ position }) => {
             if (!position) {
                 return of(null)
             }
-            return concat([LOADING], from(fetchActions(position)).pipe(catchError(error => [asError(error)])))
+            return concat([LOADING], from(getActions(position)).pipe(catchError(error => [asError(error)])))
         })
     )
 
-    // ACTIONS FETCH
+    // ACTIONS
     // On every new hover position, (pre)fetch actions and update the state
     subscription.add(
         actionObservables
@@ -710,7 +710,7 @@ export function createHoverifier<C extends object, D, A>({
     // if either the hover or the definition turn out non-empty, pin the tooltip.
     // If they both turn out empty, unpin it so we don't end up with an invisible tooltip.
     //
-    // zip together the corresponding hover and definition fetches
+    // zip together the corresponding hover and definition
     subscription.add(
         combineLatest(
             zip(hoverObservables, actionObservables),

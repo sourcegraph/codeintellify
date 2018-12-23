@@ -1,7 +1,7 @@
 import { of } from 'rxjs'
 import { delay } from 'rxjs/operators'
 
-import { ActionsFetcher, HoverFetcher } from '../hoverifier'
+import { ActionsProvider, HoverProvider } from '../hoverifier'
 import { HoverAttachment } from '../types'
 
 /**
@@ -18,21 +18,24 @@ export const createHoverAttachment = (hover: Partial<HoverAttachment> = {}): Hov
 })
 
 /**
- * Create a stubbed HoverFetcher
+ * Create a stubbed HoverProvider
  * @param hover optional values to be passed to createHoverAttachment
  * @param delayTime optionally delay the hover fetch
  */
-export function createStubHoverFetcher(hover: Partial<HoverAttachment> = {}, delayTime?: number): HoverFetcher<{}, {}> {
+export function createStubHoverProvider(
+    hover: Partial<HoverAttachment> = {},
+    delayTime?: number
+): HoverProvider<{}, {}> {
     return () => of(createHoverAttachment(hover)).pipe(delay(delayTime || 0))
 }
 
 /**
- * Create a stubbed ActionsFetcher
+ * Create a stubbed ActionsProvider
  *
  * @template A The type of an action.
  * @param actions optional value to emit as the actions
  * @param delayTime optionally delay the fetch
  */
-export function createStubActionsFetcher<A>(actions: A[], delayTime?: number): ActionsFetcher<{}, A> {
+export function createStubActionsProvider<A>(actions: A[], delayTime?: number): ActionsProvider<{}, A> {
     return () => of(actions).pipe(delay(delayTime || 0))
 }
