@@ -84,7 +84,7 @@ export function convertCodeElementIdempotent(element: HTMLElement): void {
  *
  * The browser extension works by registering a hover event listeners on the <td> element. When the user hovers over
  * "return" (in the first <span> node) the event target will be the <span> node. We can use the event target to determine which line
- * and which character offset on that line to use to fetch tooltip data. But when the user hovers over "Router"
+ * and which character offset on that line to use to get tooltip data. But when the user hovers over "Router"
  * (in the second text node) the event target will be the <td> node, which lacks the appropriate specificity to request
  * tooltip data. To circumvent this, all we need to do is wrap every free text node in a <span> tag.
  *
