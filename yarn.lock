@@ -385,7 +385,7 @@
     rxjs "^6.3.2"
     vscode-languageserver-types "^3.8.2"
 
-"@sourcegraph/extension-api-types@^1.0.1":
+"@sourcegraph/extension-api-types@^1.1.0":
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@sourcegraph/extension-api-types/-/extension-api-types-1.1.0.tgz#a947b1784c721e6e81988785e0a6fe6b9ebec7a3"
   integrity sha512-XSImr1Xcjvtq0OrKTUhQLd8RhFMAvsIzCEqYLZ99fI/+252SJowuOGMGe7vMp0XLZ5cZxswJcdYdTiM6XOOsZA==
