@@ -28,12 +28,12 @@ You need to provide your own UI component (referred to as the HoverOverlay) that
 ## Development
 
 ```sh
-npm install
-npm test
+yarn
+yarn test
 
 # Helpful options:
-npm test -- --single-run      # Don't rerun on changes
-npm test -- --browsers Chrome # Only run in Chrome
+yarn test -- --single-run      # Don't rerun on changes
+yarn test -- --browsers Chrome # Only run in Chrome
 ```
 
 Development is done by running tests. [Karma](https://github.com/karma-runner/karma) is used to run
@@ -45,7 +45,7 @@ You can run specific tests by [adding `.only` to `describe` or `it` calls](https
 ## Releases
 
 Releases are done automatically in CI when commits are merged into master by analyzing [Conventional Commit Messages](https://conventionalcommits.org/).
-After running `npm install`, commit messages will be linted automatically when committing.
+After running `yarn`, commit messages will be linted automatically when committing.
 You may have to rebase a branch before merging to ensure it has a proper commit history.
 
 ## Glossary
