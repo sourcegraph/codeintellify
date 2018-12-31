@@ -1,27 +1,26 @@
 language: node_js
 node_js: '10'
 cache:
-  directories:
-    - ~/.npm
+  yarn: true
 env:
   global:
     - FORCE_COLOR=1
 install:
-  - npm ci
+  - yarn --frozen-lockfile
 jobs:
   include:
     - stage: test
       script:
-        - npm run prettier
-        - npm run typecheck
-        - npm run tslint
-        - npm run build
-        - npm test -- --single-run --browsers ChromeHeadlessNoSandbox
+        - yarn run prettier
+        - yarn run typecheck
+        - yarn run tslint
+        - yarn run build
+        - yarn test -- --single-run --browsers ChromeHeadlessNoSandbox
         - bash <(curl -s https://codecov.io/bash)
     - stage: release
       script:
-        - npm run build
-        - npm run semantic-release
+        - yarn run build
+        - yarn run semantic-release
 stages:
   - test
   - name: release

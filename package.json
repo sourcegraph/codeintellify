@@ -17,7 +17,7 @@
     "prettier": "prettier '**/{*.{js?(on),ts?(x),scss,yml},.*.js?(on),.*.yml}' --write --list-different",
     "typecheck": "tsc -p tsconfig.json",
     "tslint": "tslint -c tslint.json -p tsconfig.json './src/*.ts?(x)' './testdata/*.ts?(x)' './*.ts?(x)'",
-    "build": "npm run tsc && cpy 'src/**/*.scss' lib/",
+    "build": "yarn run tsc && cpy 'src/**/*.scss' lib/",
     "tsc": "tsc -p tsconfig.dist.json",
     "test": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' karma start",
     "pretest": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' ts-node ./testdata/generate.ts"
@@ -51,7 +51,7 @@
     "@types/lodash": "^4.14.110",
     "@types/mocha": "^5.2.3",
     "@types/node": "^10.5.0",
-    "@types/react": "^16.7.13",
+    "@types/react": "16.4.7",
     "@types/sinon": "^5.0.1",
     "@types/webpack": "^4.4.4",
     "@types/webpack-env": "^1.13.6",
