@@ -29,7 +29,7 @@
   },
   "author": "Felix Becker <felix@sourcegraph.com>",
   "dependencies": {
-    "@sourcegraph/event-positions": "^1.0.0",
+    "@sourcegraph/event-positions": "^1.0.1",
     "@sourcegraph/extension-api-types": "^1.0.1",
     "lodash": "^4.17.10",
     "rxjs": "^6.3.3",
