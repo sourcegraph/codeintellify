@@ -376,16 +376,16 @@
     array-from "^2.1.1"
     lodash.get "^4.4.2"
 
-"@sourcegraph/event-positions@^1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@sourcegraph/event-positions/-/event-positions-1.0.0.tgz#0ed852ccb6d4b4074007b8bc18185ffb6ae7b775"
-  integrity sha512-MUTu6kkOcRINJTLNmYfdFAjkzhogU2tyJR5beFBj1nOe9AP+RKRekhO2xc0LS5YnsB4ZxgUthey+clSiMF+jlg==
+"@sourcegraph/event-positions@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@sourcegraph/event-positions/-/event-positions-1.0.1.tgz#aa83c38170275db4e696a6d5fc0f4d1e733713be"
+  integrity sha512-CTmFVVcw0C+z6DWpW2EiyeAqhC1mrcAndyKh+ZSriRu3r4ZL1/6JG6JQFSqydLp4PelXOh/p8GqtdDdQae83Vw==
   dependencies:
+    "@sourcegraph/extension-api-types" "^1.1.0"
     lodash "^4.17.10"
     rxjs "^6.3.2"
-    vscode-languageserver-types "^3.8.2"
 
-"@sourcegraph/extension-api-types@^1.0.1":
+"@sourcegraph/extension-api-types@^1.0.1", "@sourcegraph/extension-api-types@^1.1.0":
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@sourcegraph/extension-api-types/-/extension-api-types-1.1.0.tgz#a947b1784c721e6e81988785e0a6fe6b9ebec7a3"
   integrity sha512-XSImr1Xcjvtq0OrKTUhQLd8RhFMAvsIzCEqYLZ99fI/+252SJowuOGMGe7vMp0XLZ5cZxswJcdYdTiM6XOOsZA==
@@ -7697,11 +7697,6 @@ void-elements@^2.0.0:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/void-elements/-/void-elements-2.0.1.tgz#c066afb582bb1cb4128d60ea92392e94d5e9dbec"
   integrity sha1-wGavtYK7HLQSjWDqkjkulNXp2+w=
-
-vscode-languageserver-types@^3.8.2:
-  version "3.13.0"
-  resolved "https://registry.yarnpkg.com/vscode-languageserver-types/-/vscode-languageserver-types-3.13.0.tgz#b704b024cef059f7b326611c99b9c8753c0a18b4"
-  integrity sha512-BnJIxS+5+8UWiNKCP7W3g9FlE7fErFw0ofP5BXJe7c2tl0VeWh+nNHFbwAS2vmVC4a5kYxHBjRy0UeOtziemVA==
 
 watchpack@^1.5.0:
   version "1.6.0"
