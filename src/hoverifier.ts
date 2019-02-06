@@ -691,7 +691,8 @@ export function createHoverifier<C extends object, D, A>({
                 return of(null)
             }
             return concat([LOADING], from(getActions(position)).pipe(catchError(error => [asError(error)])))
-        })
+        }),
+        share()
     )
 
     // ACTIONS
