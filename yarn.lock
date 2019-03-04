@@ -376,21 +376,19 @@
     array-from "^2.1.1"
     lodash.get "^4.4.2"
 
-"@sourcegraph/event-positions@^1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@sourcegraph/event-positions/-/event-positions-1.0.1.tgz#aa83c38170275db4e696a6d5fc0f4d1e733713be"
-  integrity sha512-CTmFVVcw0C+z6DWpW2EiyeAqhC1mrcAndyKh+ZSriRu3r4ZL1/6JG6JQFSqydLp4PelXOh/p8GqtdDdQae83Vw==
+"@sourcegraph/event-positions@^1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@sourcegraph/event-positions/-/event-positions-1.0.2.tgz#4c8150d14bdd25c4a2d6b2e14d589948a98ae4fc"
+  integrity sha512-EAfB5fz1AvUGw3MfHqH+i0fki8NqHLUSxNPeqTf5tnjvOyh/93tLug3HSEHfqGhCOFYTEUpXEYZ1NRNBci+XvA==
   dependencies:
-    "@sourcegraph/extension-api-types" "^1.1.0"
+    "@sourcegraph/extension-api-types" "^2.0.0"
     lodash "^4.17.10"
     rxjs "^6.3.2"
 
-"@sourcegraph/extension-api-types@^1.0.1", "@sourcegraph/extension-api-types@^1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@sourcegraph/extension-api-types/-/extension-api-types-1.1.0.tgz#a947b1784c721e6e81988785e0a6fe6b9ebec7a3"
-  integrity sha512-XSImr1Xcjvtq0OrKTUhQLd8RhFMAvsIzCEqYLZ99fI/+252SJowuOGMGe7vMp0XLZ5cZxswJcdYdTiM6XOOsZA==
-  dependencies:
-    sourcegraph "*"
+"@sourcegraph/extension-api-types@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@sourcegraph/extension-api-types/-/extension-api-types-2.0.0.tgz#b38145521c0549b2be300df53bac48b648ccbc2d"
+  integrity sha512-Te7F1RQJLBH4C8wQ2xz0nPC2vpe13F80V+Yv+c3GySOoh4DcLNN4P5u51Kh4aZPqeS5DJ7CKvHyX2SM/1EBXNg==
 
 "@sourcegraph/prettierrc@^2.2.0":
   version "2.2.0"
@@ -6914,10 +6912,10 @@ source-map@^0.6.0, source-map@^0.6.1, source-map@~0.6.1:
   resolved "https://registry.yarnpkg.com/source-map/-/source-map-0.6.1.tgz#74722af32e9614e9c287a8d0bbde48b5e2f1a263"
   integrity sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==
 
-sourcegraph@*:
-  version "20.1.0"
-  resolved "https://registry.yarnpkg.com/sourcegraph/-/sourcegraph-20.1.0.tgz#9ba6c0e57107b1fe66c4299db32c7780094398cc"
-  integrity sha512-zbpDsFtExHQ04eJvQ2IIoi1rWrJU7Uhw4wXoy7V9Xpj/qMgbNnV4dev1kDg24y6F9vXM+jSONRrVcg/EO/UMag==
+sourcegraph@^22.0.0:
+  version "22.0.0"
+  resolved "https://registry.yarnpkg.com/sourcegraph/-/sourcegraph-22.0.0.tgz#b259929c31bf367f5160056698a881dc26eb36bd"
+  integrity sha512-cJHby0OPCM0y0BmRTKhY89D02f9koROluHMJGQGNE8q9CoIVbe1s6ctHCytz7bjY9mKtCpQMbtxYQhfIm5S4lg==
 
 spawn-error-forwarder@~1.0.0:
   version "1.0.0"
