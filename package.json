@@ -30,7 +30,7 @@
   "author": "Felix Becker <felix@sourcegraph.com>",
   "dependencies": {
     "@sourcegraph/event-positions": "^1.0.1",
-    "@sourcegraph/extension-api-types": "^1.0.1",
+    "@sourcegraph/extension-api-types": "^1.0.1 || ^2.0.0",
     "lodash": "^4.17.10",
     "rxjs": "^6.3.3",
     "ts-key-enum": "^2.0.0"
