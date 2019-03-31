@@ -167,12 +167,14 @@ export interface EventOptions<C extends object> {
     resolveContext: ContextResolver<C>
     adjustPosition?: PositionAdjuster<C>
     dom: DOMFunctions
+    codeViewId: symbol
 }
 
 /**
  * @template C Extra context for the hovered token.
  */
-export interface HoverifyOptions<C extends object> extends EventOptions<C> {
+export interface HoverifyOptions<C extends object>
+    extends Pick<EventOptions<C>, Exclude<keyof EventOptions<C>, 'codeViewId'>> {
     positionEvents: Subscribable<PositionEvent>
 
     /**
@@ -242,6 +244,11 @@ interface InternalHoverifierState<C extends object, D, A> {
      * Actions to display as buttons or links in the hover.
      */
     actionsOrError?: typeof LOADING | A[] | null | ErrorLike
+
+    /**
+     * A value that identifies the code view that triggered the current hover overlay.
+     */
+    codeViewId?: symbol
 }
 
 /**
@@ -559,6 +566,7 @@ export function createHoverifier<C extends object, D, A>({
             target: HTMLElement
             adjustPosition?: PositionAdjuster<C>
             codeView: HTMLElement
+            codeViewId: symbol
             hoverOrError?: typeof LOADING | (HoverAttachment & D) | ErrorLike | null
             position?: HoveredToken & C
             part?: DiffPart
@@ -633,7 +641,7 @@ export function createHoverifier<C extends object, D, A>({
                     return adjustingPosition.pipe(map(position => ({ position, hoverOrError, ...rest })))
                 })
             )
-            .subscribe(({ hoverOrError, position, codeView, dom, part }) => {
+            .subscribe(({ hoverOrError, position, codeView, codeViewId, dom, part }) => {
                 // Update the highlighted token if the hover result is successful. If the hover result specifies a
                 // range, use that; otherwise use the hover position (which will be expanded into a full token in
                 // getTokenAtPosition).
@@ -657,6 +665,7 @@ export function createHoverifier<C extends object, D, A>({
                 }
 
                 container.update({
+                    codeViewId,
                     hoverOrError,
                     highlightedRange,
                     // Reset the hover position, it's gonna be repositioned after the hover was rendered
@@ -741,6 +750,16 @@ export function createHoverifier<C extends object, D, A>({
             })
     )
 
+    const resetHover = () => {
+        container.update({
+            hoverOverlayIsFixed: false,
+            hoverOverlayPosition: undefined,
+            hoverOrError: undefined,
+            hoveredToken: undefined,
+            actionsOrError: undefined,
+        })
+    }
+
     // When the close button is clicked, unpin, hide and reset the hover
     subscription.add(
         merge(
@@ -748,13 +767,7 @@ export function createHoverifier<C extends object, D, A>({
             fromEvent<KeyboardEvent>(window, 'keydown').pipe(filter(event => event.key === Key.Escape))
         ).subscribe(event => {
             event.preventDefault()
-            container.update({
-                hoverOverlayIsFixed: false,
-                hoverOverlayPosition: undefined,
-                hoverOrError: undefined,
-                hoveredToken: undefined,
-                actionsOrError: undefined,
-            })
+            resetHover()
         })
     )
 
@@ -792,19 +805,24 @@ export function createHoverifier<C extends object, D, A>({
             distinctUntilChanged((a, b) => isEqual(a, b))
         ),
         hoverify({ positionEvents, positionJumps = EMPTY, ...eventOptions }: HoverifyOptions<C>): Subscription {
+            const codeViewId = Symbol('CodeView')
             const subscription = new Subscription()
-            const eventWithOptions = map((event: PositionEvent) => ({ ...event, ...eventOptions }))
             // Broadcast all events from this code view
             subscription.add(
                 from(positionEvents)
-                    .pipe(eventWithOptions)
+                    .pipe(map(event => ({ ...event, ...eventOptions, codeViewId })))
                     .subscribe(allPositionsFromEvents)
             )
             subscription.add(
                 from(positionJumps)
-                    .pipe(map(jump => ({ ...jump, ...eventOptions })))
+                    .pipe(map(jump => ({ ...jump, ...eventOptions, codeViewId })))
                     .subscribe(allPositionJumps)
             )
+            subscription.add(() => {
+                if (container.values.codeViewId === codeViewId) {
+                    resetHover()
+                }
+            })
             return subscription
         },
         unsubscribe(): void {
