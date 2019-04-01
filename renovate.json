@@ -1,11 +1,6 @@
 {
-  "extends": ["config:base"],
-  "timezone": "America/Los_Angeles",
-  "schedule": ["on the 1st through 7th day of the month"],
-  "lockFileMaintenance": {
-    "enabled": true,
-    "schedule": ["on the 1st through 7th day of the month"]
-  },
+  "extends": ["github>sourcegraph/renovate-config"],
+  "semanticCommits": true,
   "packageRules": [
     {
       "depTypeList": ["dependencies"],
@@ -15,6 +10,5 @@
       "depTypeList": ["devDependencies"],
       "rangeStrategy": "replace"
     }
-  ],
-  "prCreation": "not-pending"
+  ]
 }
