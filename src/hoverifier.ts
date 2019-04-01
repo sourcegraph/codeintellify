@@ -355,6 +355,12 @@ export function createHoverifier<C extends object, D, A>({
 
     const allPositionJumps = new Subject<PositionJump & EventOptions<C>>()
 
+    /**
+     * Whenever a Subscription returned by `hoverify()` is unsubscribed,
+     * emits the code view ID associated with it.
+     */
+    const allUnhoverifies = new Subject<symbol>()
+
     const subscription = new Subscription()
 
     /**
@@ -572,9 +578,9 @@ export function createHoverifier<C extends object, D, A>({
             part?: DiffPart
         }>
     > = resolvedPositions.pipe(
-        map(({ position, ...rest }) => {
+        map(({ position, codeViewId, ...rest }) => {
             if (!position) {
-                return of({ hoverOrError: null, position: undefined, part: undefined, ...rest })
+                return of({ hoverOrError: null, position: undefined, part: undefined, codeViewId, ...rest })
             }
             // Get the hover for that position
             const hover = from(getHover(position)).pipe(
@@ -594,10 +600,13 @@ export function createHoverifier<C extends object, D, A>({
             ).pipe(
                 map(hoverOrError => ({
                     ...rest,
+                    codeViewId,
                     position,
                     hoverOrError,
                     part: position.part,
-                }))
+                })),
+                // Do not emit anything after the code view this action came from got unhoverified
+                takeUntil(allUnhoverifies.pipe(filter(unhoverifiedCodeViewId => unhoverifiedCodeViewId === codeViewId)))
             )
         }),
         share()
@@ -695,11 +704,14 @@ export function createHoverifier<C extends object, D, A>({
      */
     const actionObservables = resolvedPositions.pipe(
         // Get the actions for that position
-        map(({ position }) => {
+        map(({ position, codeViewId }) => {
             if (!position) {
                 return of(null)
             }
-            return concat([LOADING], from(getActions(position)).pipe(catchError(error => [asError(error)])))
+            return concat([LOADING], from(getActions(position)).pipe(catchError(error => [asError(error)]))).pipe(
+                // Do not emit anything after the code view this action came from got unhoverified
+                takeUntil(allUnhoverifies.pipe(filter(unhoverifiedCodeViewId => unhoverifiedCodeViewId === codeViewId)))
+            )
         }),
         share()
     )
@@ -819,6 +831,8 @@ export function createHoverifier<C extends object, D, A>({
                     .subscribe(allPositionJumps)
             )
             subscription.add(() => {
+                // Make sure hover is hidden and associated subscriptions unsubscribed
+                allUnhoverifies.next(codeViewId)
                 if (container.values.codeViewId === codeViewId) {
                     resetHover()
                 }
