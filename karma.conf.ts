@@ -45,6 +45,11 @@ export default (config: Config): void => {
         mochaReporter: {
             showDiff: true,
         },
+        client: {
+            mocha: {
+                timeout: 6000,
+            },
+        },
         coverageIstanbulReporter: {
             reports: ['json'],
             fixWebpackSourcePaths: true,

@@ -1,9 +1,8 @@
 import { Range } from '@sourcegraph/extension-api-types'
 import { isEqual } from 'lodash'
 import { EMPTY, NEVER, Observable, of, Subject, Subscription } from 'rxjs'
-import { distinctUntilChanged, filter, map } from 'rxjs/operators'
+import { delay, distinctUntilChanged, filter, first, map } from 'rxjs/operators'
 import { TestScheduler } from 'rxjs/testing'
-
 import { ErrorLike } from './errors'
 import { propertyIsDefined } from './helpers'
 import {
@@ -20,6 +19,7 @@ import { CodeViewProps, DOM } from './testutils/dom'
 import { createHoverAttachment, createStubActionsProvider, createStubHoverProvider } from './testutils/fixtures'
 import { dispatchMouseEventAtPositionImpure } from './testutils/mouse'
 import { HoverAttachment, LOADING } from './types'
+const { assert } = chai
 
 describe('Hoverifier', () => {
     const dom = new DOM()
@@ -603,5 +603,96 @@ describe('Hoverifier', () => {
                 expectObservable(adjustmentDirections).toBe(outputDiagram, outputValues)
             })
         }
+    })
+
+    describe('unhoverify', () => {
+        it('hides the hover overlay when the code view is unhoverified', async () => {
+            for (const codeView of testcases) {
+                const hoverifier = createHoverifier({
+                    closeButtonClicks: NEVER,
+                    hoverOverlayElements: of(null),
+                    hoverOverlayRerenders: EMPTY,
+                    getHover: createStubHoverProvider(),
+                    getActions: () => of(null),
+                })
+                const positionJumps = new Subject<PositionJump>()
+                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
+
+                const codeViewSubscription = hoverifier.hoverify({
+                    dom: codeView,
+                    positionEvents,
+                    positionJumps,
+                    resolveContext: () => codeView.revSpec,
+                })
+
+                dispatchMouseEventAtPositionImpure('mouseover', codeView, {
+                    line: 24,
+                    character: 6,
+                })
+
+                await hoverifier.hoverStateUpdates
+                    .pipe(
+                        filter(state => !!state.hoverOverlayProps),
+                        first()
+                    )
+                    .toPromise()
+
+                codeViewSubscription.unsubscribe()
+
+                assert.strictEqual(hoverifier.hoverState.hoverOverlayProps, undefined)
+                await of(null)
+                    .pipe(delay(200))
+                    .toPromise()
+                assert.strictEqual(hoverifier.hoverState.hoverOverlayProps, undefined)
+            }
+        })
+        it('does not hide the hover overlay when a different code view is unhoverified', async () => {
+            for (const codeViewProps of testcases) {
+                const hoverifier = createHoverifier({
+                    closeButtonClicks: NEVER,
+                    hoverOverlayElements: of(null),
+                    hoverOverlayRerenders: EMPTY,
+                    getHover: createStubHoverProvider(),
+                    getActions: () => of(null),
+                })
+                const positionJumps = new Subject<PositionJump>()
+                const positionEvents = of(codeViewProps.codeView).pipe(findPositionsFromEvents(codeViewProps))
+
+                const codeViewSubscription = hoverifier.hoverify({
+                    dom: codeViewProps,
+                    positionEvents: NEVER,
+                    positionJumps: NEVER,
+                    resolveContext: () => {
+                        throw new Error('not called')
+                    },
+                })
+                hoverifier.hoverify({
+                    dom: codeViewProps,
+                    positionEvents,
+                    positionJumps,
+                    resolveContext: () => codeViewProps.revSpec,
+                })
+
+                dispatchMouseEventAtPositionImpure('mouseover', codeViewProps, {
+                    line: 24,
+                    character: 6,
+                })
+
+                await hoverifier.hoverStateUpdates
+                    .pipe(
+                        filter(state => !!state.hoverOverlayProps),
+                        first()
+                    )
+                    .toPromise()
+
+                codeViewSubscription.unsubscribe()
+
+                assert.isDefined(hoverifier.hoverState.hoverOverlayProps)
+                await of(null)
+                    .pipe(delay(200))
+                    .toPromise()
+                assert.isDefined(hoverifier.hoverState.hoverOverlayProps)
+            }
+        })
     })
 })
