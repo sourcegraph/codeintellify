@@ -612,8 +612,9 @@ describe('Hoverifier', () => {
                     closeButtonClicks: NEVER,
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
-                    getHover: createStubHoverProvider(),
-                    getActions: () => of(null),
+                    // It's important that getHover() and getActions() emit something
+                    getHover: createStubHoverProvider({}),
+                    getActions: () => of([{}]).pipe(delay(50)),
                 })
                 const positionJumps = new Subject<PositionJump>()
                 const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))

@@ -50,10 +50,12 @@ You may have to rebase a branch before merging to ensure it has a proper commit 
 
 ## Glossary
 
-| Term                | Definition                                                                                                                                                                                  |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Code view           | The DOM element that contains all the line elements                                                                                                                                         |
-| Line number element | The DOM element that contains the line number label for that line                                                                                                                           |
-| Code element        | The DOM element that contains the code for one line                                                                                                                                         |
-| Diff part           | The part of the diff, either base, head or both (if the line didn't change). Each line belongs to one diff part, and therefor to a different commit ID and potentially different file path. |
-| Hover overlay       | Also called tooltip                                                                                                                                                                         |
+| Term                | Definition                                                                                                                                                                                                    |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Code view           | The DOM element that contains all the line elements                                                                                                                                                           |
+| Line number element | The DOM element that contains the line number label for that line                                                                                                                                             |
+| Code element        | The DOM element that contains the code for one line                                                                                                                                                           |
+| Diff part           | The part of the diff, either base, head or both (if the line didn't change). Each line belongs to one diff part, and therefor to a different commit ID and potentially different file path.                   |
+| Hover overlay       | Also called tooltip                                                                                                                                                                                           |
+| hoverify            | To attach all the listeners needed to a code view so that it will display overlay on hovers and clicks.                                                                                                       |
+| unhoverify          | To unsubscribe from the Subscription returned by `hoverifier.hoverify()`. Removes all event listeners from the code view again and hides the hover overlay if it was triggered by the unhoverified code view. |
