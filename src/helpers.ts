@@ -1,5 +1,3 @@
-import * as React from 'react'
-
 /**
  * Returns true if `val` is not `null` or `undefined`
  */
@@ -33,14 +31,4 @@ export const scrollIntoCenterIfNeeded = (container: HTMLElement, content: HTMLEl
         const scrollTop = rowRect.top - contentRect.top - containerRect.height / 2 + rowRect.height / 2
         container.scrollTop = scrollTop
     }
-}
-
-/**
- * Converts a synthetic React event to a persisted, native Event object.
- *
- * @param event The synthetic React event object
- */
-export const toNativeEvent = <E extends React.SyntheticEvent<T>, T>(event: E): E['nativeEvent'] => {
-    event.persist()
-    return event.nativeEvent
 }
