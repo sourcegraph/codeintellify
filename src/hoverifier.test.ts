@@ -45,6 +45,7 @@ describe('Hoverifier', () => {
                     hoverOverlayRerenders: EMPTY,
                     getHover: createStubHoverProvider({ range: hoverRange }, LOADER_DELAY + delayTime),
                     getActions: () => of(null),
+                    pinningEnabled: true,
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -106,6 +107,7 @@ describe('Hoverifier', () => {
                     hoverOverlayRerenders: EMPTY,
                     getHover: createStubHoverProvider(hover, delayTime),
                     getActions: createStubActionsProvider(['foo', 'bar'], delayTime),
+                    pinningEnabled: true,
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -199,6 +201,7 @@ describe('Hoverifier', () => {
                             position.line === 24
                                 ? createStubActionsProvider(['foo', 'bar'], delayTime)(position)
                                 : of(null),
+                        pinningEnabled: true,
                     })
 
                     const positionJumps = new Subject<PositionJump>()
@@ -268,6 +271,7 @@ describe('Hoverifier', () => {
                         getHover: position => (position.line === 24 ? createStubHoverProvider({})(position) : of(null)),
                         getActions: position =>
                             position.line === 24 ? createStubActionsProvider(['foo', 'bar'])(position) : of(null),
+                        pinningEnabled: true,
                     })
 
                     const positionJumps = new Subject<PositionJump>()
@@ -346,6 +350,7 @@ describe('Hoverifier', () => {
                     hoverOverlayRerenders: EMPTY,
                     getHover: createStubHoverProvider(hover, LOADER_DELAY + hoverDelayTime),
                     getActions: createStubActionsProvider(actions, LOADER_DELAY + actionsDelayTime),
+                    pinningEnabled: true,
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -417,6 +422,7 @@ describe('Hoverifier', () => {
                     hoverOverlayRerenders: EMPTY,
                     getHover: createStubHoverProvider(hover),
                     getActions: () => of(null),
+                    pinningEnabled: true,
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -478,6 +484,7 @@ describe('Hoverifier', () => {
                     hoverOverlayRerenders: EMPTY,
                     getHover: createStubHoverProvider(hover),
                     getActions: () => of(null),
+                    pinningEnabled: true,
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -560,6 +567,7 @@ describe('Hoverifier', () => {
                     hoverOverlayRerenders: EMPTY,
                     getHover,
                     getActions,
+                    pinningEnabled: true,
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -615,6 +623,7 @@ describe('Hoverifier', () => {
                     // It's important that getHover() and getActions() emit something
                     getHover: createStubHoverProvider({}),
                     getActions: () => of([{}]).pipe(delay(50)),
+                    pinningEnabled: true,
                 })
                 const positionJumps = new Subject<PositionJump>()
                 const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
@@ -655,6 +664,7 @@ describe('Hoverifier', () => {
                     hoverOverlayRerenders: EMPTY,
                     getHover: createStubHoverProvider(),
                     getActions: () => of(null),
+                    pinningEnabled: true,
                 })
                 const positionJumps = new Subject<PositionJump>()
                 const positionEvents = of(codeViewProps.codeView).pipe(findPositionsFromEvents(codeViewProps))
