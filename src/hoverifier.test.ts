@@ -297,7 +297,7 @@ describe('Hoverifier', () => {
                 )
 
                 const hoverAndDefinitionUpdates = hoverifier.hoverStateUpdates.pipe(
-                    map(hoverState => hoverState.token && hoverState.token.textContent),
+                    map(hoverState => hoverState.hoveredTokenElement && hoverState.hoveredTokenElement.textContent),
                     distinctUntilChanged(isEqual)
                 )
 
