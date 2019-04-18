@@ -474,7 +474,11 @@ export function createHoverifier<C extends object, D, A>({
         share()
     )
 
-    /** Emits DOM elements at new positions found in the URL */
+    /**
+     * Emits DOM elements at new positions found in the URL. When pinning is
+     * disabled, this does not emit at all because the tooltip doesn't get
+     * pinned at the jump target.
+     */
     const jumpTargets = pinningEnabled
         ? allPositionJumps.pipe(
               // Only use line and character for comparison
