@@ -198,9 +198,9 @@ export interface HoverifyOptions<C extends object>
  */
 export interface HoverState<C extends object, D, A> {
     /**
-     * The hovered and highlighted HTML element.
+     * The currently hovered and highlighted HTML element.
      */
-    token?: HTMLElement
+    hoveredTokenElement?: HTMLElement
 
     /**
      * Actions for the current token.
@@ -231,7 +231,6 @@ export interface HoverState<C extends object, D, A> {
  * @template A The type of an action.
  */
 interface InternalHoverifierState<C extends object, D, A> {
-    token?: HTMLElement
     hoverOrError?: typeof LOADING | (HoverAttachment & D) | null | ErrorLike
 
     hoverOverlayIsFixed: boolean
@@ -241,6 +240,9 @@ interface InternalHoverifierState<C extends object, D, A> {
 
     /** The currently hovered token */
     hoveredToken?: HoveredToken & C
+
+    /** The currently hovered token HTML element */
+    hoveredTokenElement?: HTMLElement
 
     /**
      * The highlighted range, which is the range in the hoverOrError data or else the range of the hovered token.
@@ -290,7 +292,7 @@ const shouldRenderOverlay = (state: InternalHoverifierState<{}, {}, {}>): boolea
 const internalToExternalState = <C extends object, D, A>(
     internalState: InternalHoverifierState<C, D, A>
 ): HoverState<C, D, A> => ({
-    token: internalState.token,
+    hoveredTokenElement: internalState.hoveredTokenElement,
     actionsOrError: internalState.actionsOrError,
     selectedPosition: internalState.selectedPosition,
     highlightedRange: shouldRenderOverlay(internalState) ? internalState.highlightedRange : undefined,
@@ -351,7 +353,7 @@ export function createHoverifier<C extends object, D, A>({
     // Internal state that is not exposed to the caller
     // Shared between all hoverified code views
     const container = createObservableStateContainer<InternalHoverifierState<C, D, A>>({
-        token: undefined,
+        hoveredTokenElement: undefined,
         hoverOverlayIsFixed: false,
         hoveredToken: undefined,
         hoverOrError: undefined,
@@ -720,11 +722,11 @@ export function createHoverifier<C extends object, D, A>({
                     currentHighlighted.classList.remove('selection-highlight')
                 }
                 if (!highlightedRange) {
-                    container.update({ token: undefined })
+                    container.update({ hoveredTokenElement: undefined })
                     return
                 }
                 const token = getTokenAtPosition(codeView, highlightedRange.start, dom, part)
-                container.update({ token })
+                container.update({ hoveredTokenElement: token })
                 if (!token) {
                     return
                 }
