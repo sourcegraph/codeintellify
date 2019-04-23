@@ -45,6 +45,7 @@ describe('Hoverifier', () => {
                     hoverOverlayRerenders: EMPTY,
                     getHover: createStubHoverProvider({ range: hoverRange }, LOADER_DELAY + delayTime),
                     getActions: () => of(null),
+                    pinningEnabled: true,
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -106,6 +107,7 @@ describe('Hoverifier', () => {
                     hoverOverlayRerenders: EMPTY,
                     getHover: createStubHoverProvider(hover, delayTime),
                     getActions: createStubActionsProvider(['foo', 'bar'], delayTime),
+                    pinningEnabled: true,
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -180,6 +182,146 @@ describe('Hoverifier', () => {
         }
     })
 
+    it('does not pin the overlay on click when pinningEnabled is false', () => {
+        for (const codeView of testcases) {
+            const scheduler = new TestScheduler((a, b) => chai.assert.deepEqual(a, b))
+
+            const hover = {}
+            const delayTime = 10
+
+            scheduler.run(({ cold, expectObservable }) => {
+                const hoverifier = createHoverifier({
+                    closeButtonClicks: NEVER,
+                    hoverOverlayElements: of(null),
+                    hoverOverlayRerenders: EMPTY,
+                    getHover: createStubHoverProvider(hover, delayTime),
+                    getActions: createStubActionsProvider(['foo', 'bar'], delayTime),
+                    pinningEnabled: false,
+                })
+
+                const positionJumps = new Subject<PositionJump>()
+
+                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
+
+                const subscriptions = new Subscription()
+
+                subscriptions.add(hoverifier)
+                subscriptions.add(
+                    hoverifier.hoverify({
+                        dom: codeView,
+                        positionEvents,
+                        positionJumps,
+                        resolveContext: () => codeView.revSpec,
+                    })
+                )
+
+                const hoverAndDefinitionUpdates = hoverifier.hoverStateUpdates.pipe(
+                    map(hoverState => !!hoverState.hoverOverlayProps),
+                    distinctUntilChanged(isEqual)
+                )
+
+                const delayAfterMouseover = 100
+                const outputDiagram = `${MOUSEOVER_DELAY}ms a ${delayTime - 1}ms b ${MOUSEOVER_DELAY +
+                    delayAfterMouseover +
+                    100 -
+                    1}ms c ${delayTime - 1}ms d`
+                const outputValues: {
+                    [key: string]: boolean
+                } = {
+                    a: false,
+                    b: true,
+                    c: false,
+                    d: true,
+                }
+
+                // Mouseover https://sourcegraph.sgdev.org/github.com/gorilla/mux@cb4698366aa625048f3b815af6a0dea8aef9280a/-/blob/mux.go#L24:6
+                cold('a').subscribe(() =>
+                    dispatchMouseEventAtPositionImpure('mouseover', codeView, {
+                        line: 24,
+                        character: 6,
+                    })
+                )
+
+                // Click (should not get pinned) https://sourcegraph.sgdev.org/github.com/gorilla/mux@cb4698366aa625048f3b815af6a0dea8aef9280a/-/blob/mux.go#L24:6
+                cold(`${MOUSEOVER_DELAY + delayTime + delayAfterMouseover}ms c`).subscribe(() =>
+                    dispatchMouseEventAtPositionImpure('click', codeView, {
+                        line: 24,
+                        character: 6,
+                    })
+                )
+
+                // Mouseover something else and ensure it doesn't get pinned.
+                cold(`${MOUSEOVER_DELAY + delayTime + delayAfterMouseover + 100}ms d`).subscribe(() =>
+                    dispatchMouseEventAtPositionImpure('mouseover', codeView, {
+                        line: 25,
+                        character: 3,
+                    })
+                )
+
+                expectObservable(hoverAndDefinitionUpdates).toBe(outputDiagram, outputValues)
+            })
+        }
+    })
+
+    it('emits the currently hovered token', () => {
+        for (const codeView of testcases) {
+            const scheduler = new TestScheduler((a, b) => chai.assert.deepEqual(a, b))
+
+            const hover = {}
+            const delayTime = 10
+
+            scheduler.run(({ cold, expectObservable }) => {
+                const hoverifier = createHoverifier({
+                    closeButtonClicks: NEVER,
+                    hoverOverlayElements: of(null),
+                    hoverOverlayRerenders: EMPTY,
+                    getHover: createStubHoverProvider(hover, delayTime),
+                    getActions: createStubActionsProvider(['foo', 'bar'], delayTime),
+                    pinningEnabled: false,
+                })
+
+                const positionJumps = new Subject<PositionJump>()
+
+                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
+
+                const subscriptions = new Subscription()
+
+                subscriptions.add(hoverifier)
+                subscriptions.add(
+                    hoverifier.hoverify({
+                        dom: codeView,
+                        positionEvents,
+                        positionJumps,
+                        resolveContext: () => codeView.revSpec,
+                    })
+                )
+
+                const hoverAndDefinitionUpdates = hoverifier.hoverStateUpdates.pipe(
+                    map(hoverState => hoverState.hoveredTokenElement && hoverState.hoveredTokenElement.textContent),
+                    distinctUntilChanged(isEqual)
+                )
+
+                const outputDiagram = `${MOUSEOVER_DELAY}ms a ${delayTime - 1}ms b`
+                const outputValues: {
+                    [key: string]: string | undefined
+                } = {
+                    a: undefined,
+                    b: 'Router',
+                }
+
+                // Mouseover https://sourcegraph.sgdev.org/github.com/gorilla/mux@cb4698366aa625048f3b815af6a0dea8aef9280a/-/blob/mux.go#L24:6
+                cold('a').subscribe(() =>
+                    dispatchMouseEventAtPositionImpure('mouseover', codeView, {
+                        line: 48,
+                        character: 10,
+                    })
+                )
+
+                expectObservable(hoverAndDefinitionUpdates).toBe(outputDiagram, outputValues)
+            })
+        }
+    })
+
     describe('pinning', () => {
         it('unpins upon clicking on a different position', () => {
             for (const codeView of testcases) {
@@ -199,6 +341,7 @@ describe('Hoverifier', () => {
                             position.line === 24
                                 ? createStubActionsProvider(['foo', 'bar'], delayTime)(position)
                                 : of(null),
+                        pinningEnabled: true,
                     })
 
                     const positionJumps = new Subject<PositionJump>()
@@ -268,6 +411,7 @@ describe('Hoverifier', () => {
                         getHover: position => (position.line === 24 ? createStubHoverProvider({})(position) : of(null)),
                         getActions: position =>
                             position.line === 24 ? createStubActionsProvider(['foo', 'bar'])(position) : of(null),
+                        pinningEnabled: true,
                     })
 
                     const positionJumps = new Subject<PositionJump>()
@@ -346,6 +490,7 @@ describe('Hoverifier', () => {
                     hoverOverlayRerenders: EMPTY,
                     getHover: createStubHoverProvider(hover, LOADER_DELAY + hoverDelayTime),
                     getActions: createStubActionsProvider(actions, LOADER_DELAY + actionsDelayTime),
+                    pinningEnabled: true,
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -417,6 +562,7 @@ describe('Hoverifier', () => {
                     hoverOverlayRerenders: EMPTY,
                     getHover: createStubHoverProvider(hover),
                     getActions: () => of(null),
+                    pinningEnabled: true,
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -478,6 +624,7 @@ describe('Hoverifier', () => {
                     hoverOverlayRerenders: EMPTY,
                     getHover: createStubHoverProvider(hover),
                     getActions: () => of(null),
+                    pinningEnabled: true,
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -560,6 +707,7 @@ describe('Hoverifier', () => {
                     hoverOverlayRerenders: EMPTY,
                     getHover,
                     getActions,
+                    pinningEnabled: true,
                 })
 
                 const positionJumps = new Subject<PositionJump>()
@@ -615,6 +763,7 @@ describe('Hoverifier', () => {
                     // It's important that getHover() and getActions() emit something
                     getHover: createStubHoverProvider({}),
                     getActions: () => of([{}]).pipe(delay(50)),
+                    pinningEnabled: true,
                 })
                 const positionJumps = new Subject<PositionJump>()
                 const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
@@ -655,6 +804,7 @@ describe('Hoverifier', () => {
                     hoverOverlayRerenders: EMPTY,
                     getHover: createStubHoverProvider(),
                     getActions: () => of(null),
+                    pinningEnabled: true,
                 })
                 const positionJumps = new Subject<PositionJump>()
                 const positionEvents = of(codeViewProps.codeView).pipe(findPositionsFromEvents(codeViewProps))

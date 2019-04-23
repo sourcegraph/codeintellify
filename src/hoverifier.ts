@@ -82,6 +82,11 @@ export interface HoverifierOptions<C extends object, D, A> {
      * Called to get the actions to display in the hover.
      */
     getActions: ActionsProvider<C, A>
+
+    /**
+     * Whether or not hover tooltips can be pinned.
+     */
+    pinningEnabled: boolean
 }
 
 /**
@@ -193,6 +198,16 @@ export interface HoverifyOptions<C extends object>
  */
 export interface HoverState<C extends object, D, A> {
     /**
+     * The currently hovered and highlighted HTML element.
+     */
+    hoveredTokenElement?: HTMLElement
+
+    /**
+     * Actions for the current token.
+     */
+    actionsOrError?: typeof LOADING | A[] | null | ErrorLike
+
+    /**
      * The props to pass to `HoverOverlay`, or `undefined` if it should not be rendered.
      */
     hoverOverlayProps?: Pick<HoverOverlayProps<C, D, A>, Exclude<keyof HoverOverlayProps<C, D, A>, 'actionComponent'>>
@@ -225,6 +240,9 @@ interface InternalHoverifierState<C extends object, D, A> {
 
     /** The currently hovered token */
     hoveredToken?: HoveredToken & C
+
+    /** The currently hovered token HTML element */
+    hoveredTokenElement?: HTMLElement
 
     /**
      * The highlighted range, which is the range in the hoverOrError data or else the range of the hovered token.
@@ -274,6 +292,8 @@ const shouldRenderOverlay = (state: InternalHoverifierState<{}, {}, {}>): boolea
 const internalToExternalState = <C extends object, D, A>(
     internalState: InternalHoverifierState<C, D, A>
 ): HoverState<C, D, A> => ({
+    hoveredTokenElement: internalState.hoveredTokenElement,
+    actionsOrError: internalState.actionsOrError,
     selectedPosition: internalState.selectedPosition,
     highlightedRange: shouldRenderOverlay(internalState) ? internalState.highlightedRange : undefined,
     hoverOverlayProps: shouldRenderOverlay(internalState)
@@ -328,10 +348,12 @@ export function createHoverifier<C extends object, D, A>({
     hoverOverlayRerenders,
     getHover,
     getActions,
+    pinningEnabled,
 }: HoverifierOptions<C, D, A>): Hoverifier<C, D, A> {
     // Internal state that is not exposed to the caller
     // Shared between all hoverified code views
     const container = createObservableStateContainer<InternalHoverifierState<C, D, A>>({
+        hoveredTokenElement: undefined,
         hoverOverlayIsFixed: false,
         hoveredToken: undefined,
         hoverOrError: undefined,
@@ -452,32 +474,48 @@ export function createHoverifier<C extends object, D, A>({
         share()
     )
 
-    /** Emits DOM elements at new positions found in the URL */
-    const jumpTargets = allPositionJumps.pipe(
-        // Only use line and character for comparison
-        map(({ position: { line, character, part }, ...rest }) => ({ position: { line, character, part }, ...rest })),
-        // Ignore same values
-        // It's important to do this before filtering otherwise navigating from
-        // a position, to a line-only position, back to the first position would get ignored
-        distinctUntilChanged((a, b) => isEqual(a, b)),
-        map(({ position, codeView, dom, ...rest }) => {
-            let cell: HTMLElement | null
-            let target: HTMLElement | undefined
-            let part: DiffPart | undefined
-            if (isPosition(position)) {
-                cell = dom.getCodeElementFromLineNumber(codeView, position.line, position.part)
-                if (cell) {
-                    target = findElementWithOffset(cell, position.character)
-                    if (target) {
-                        part = dom.getDiffCodePart && dom.getDiffCodePart(target)
-                    } else {
-                        console.warn('Could not find target for position in file', position)
-                    }
-                }
-            }
-            return { ...rest, eventType: 'jump' as 'jump', target, position: { ...position, part }, codeView, dom }
-        })
-    )
+    /**
+     * Emits DOM elements at new positions found in the URL. When pinning is
+     * disabled, this does not emit at all because the tooltip doesn't get
+     * pinned at the jump target.
+     */
+    const jumpTargets = pinningEnabled
+        ? allPositionJumps.pipe(
+              // Only use line and character for comparison
+              map(({ position: { line, character, part }, ...rest }) => ({
+                  position: { line, character, part },
+                  ...rest,
+              })),
+              // Ignore same values
+              // It's important to do this before filtering otherwise navigating from
+              // a position, to a line-only position, back to the first position would get ignored
+              distinctUntilChanged((a, b) => isEqual(a, b)),
+              map(({ position, codeView, dom, ...rest }) => {
+                  let cell: HTMLElement | null
+                  let target: HTMLElement | undefined
+                  let part: DiffPart | undefined
+                  if (isPosition(position)) {
+                      cell = dom.getCodeElementFromLineNumber(codeView, position.line, position.part)
+                      if (cell) {
+                          target = findElementWithOffset(cell, position.character)
+                          if (target) {
+                              part = dom.getDiffCodePart && dom.getDiffCodePart(target)
+                          } else {
+                              console.warn('Could not find target for position in file', position)
+                          }
+                      }
+                  }
+                  return {
+                      ...rest,
+                      eventType: 'jump' as 'jump',
+                      target,
+                      position: { ...position, part },
+                      codeView,
+                      dom,
+                  }
+              })
+          )
+        : EMPTY
 
     // REPOSITIONING
     // On every componentDidUpdate (after the component was rerendered, e.g. from a hover state update) resposition
@@ -688,9 +726,11 @@ export function createHoverifier<C extends object, D, A>({
                     currentHighlighted.classList.remove('selection-highlight')
                 }
                 if (!highlightedRange) {
+                    container.update({ hoveredTokenElement: undefined })
                     return
                 }
                 const token = getTokenAtPosition(codeView, highlightedRange.start, dom, part)
+                container.update({ hoveredTokenElement: token })
                 if (!token) {
                     return
                 }
@@ -727,40 +767,42 @@ export function createHoverifier<C extends object, D, A>({
             })
     )
 
-    // DEFERRED HOVER OVERLAY PINNING
-    // If the new position came from a click or the URL,
-    // if either the hover or the definition turn out non-empty, pin the tooltip.
-    // If they both turn out empty, unpin it so we don't end up with an invisible tooltip.
-    //
-    // zip together the corresponding hover and definition
-    subscription.add(
-        combineLatest(
-            zip(hoverObservables, actionObservables),
-            resolvedPositionEvents.pipe(map(({ eventType }) => eventType))
-        )
-            .pipe(
-                switchMap(([[hoverObservable, actionObservable], eventType]) => {
-                    // If the position was triggered by a mouseover, never pin
-                    if (eventType !== 'click' && eventType !== 'jump') {
-                        return [false]
-                    }
-                    // combine the latest values for them, so we have access to both values
-                    // and can reevaluate our pinning decision whenever one of the two updates,
-                    // independent of the order in which they emit
-                    return combineLatest(hoverObservable, actionObservable).pipe(
-                        map(([{ hoverOrError }, actionsOrError]) =>
-                            // In the time between the click/jump and the loader being displayed,
-                            // pin the hover overlay so mouseover events get ignored
-                            // If the hover comes back empty (and the definition) it will get unpinned again
-                            Boolean(hoverOrError === undefined || (actionsOrError && !isErrorLike(actionsOrError)))
-                        )
-                    )
-                })
+    if (pinningEnabled) {
+        // DEFERRED HOVER OVERLAY PINNING
+        // If the new position came from a click or the URL,
+        // if either the hover or the definition turn out non-empty, pin the tooltip.
+        // If they both turn out empty, unpin it so we don't end up with an invisible tooltip.
+        //
+        // zip together the corresponding hover and definition
+        subscription.add(
+            combineLatest(
+                zip(hoverObservables, actionObservables),
+                resolvedPositionEvents.pipe(map(({ eventType }) => eventType))
             )
-            .subscribe(hoverOverlayIsFixed => {
-                container.update({ hoverOverlayIsFixed })
-            })
-    )
+                .pipe(
+                    switchMap(([[hoverObservable, actionObservable], eventType]) => {
+                        // If the position was triggered by a mouseover, never pin
+                        if (eventType !== 'click' && eventType !== 'jump') {
+                            return [false]
+                        }
+                        // combine the latest values for them, so we have access to both values
+                        // and can reevaluate our pinning decision whenever one of the two updates,
+                        // independent of the order in which they emit
+                        return combineLatest(hoverObservable, actionObservable).pipe(
+                            map(([{ hoverOrError }, actionsOrError]) =>
+                                // In the time between the click/jump and the loader being displayed,
+                                // pin the hover overlay so mouseover events get ignored
+                                // If the hover comes back empty (and the definition) it will get unpinned again
+                                Boolean(hoverOrError === undefined || (actionsOrError && !isErrorLike(actionsOrError)))
+                            )
+                        )
+                    })
+                )
+                .subscribe(hoverOverlayIsFixed => {
+                    container.update({ hoverOverlayIsFixed })
+                })
+        )
+    }
 
     const resetHover = () => {
         container.update({

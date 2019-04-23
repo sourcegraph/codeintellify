@@ -12,7 +12,7 @@ export const createHoverAttachment = (hover: Partial<HoverAttachment> = {}): Hov
     range: hover.range
         ? hover.range
         : {
-              start: { line: 24, character: 5 },
+              start: { line: 24, character: 10 },
               end: { line: 24, character: 14 },
           },
 })
