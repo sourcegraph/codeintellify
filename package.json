@@ -42,7 +42,7 @@
     "@sourcegraph/tsconfig": "^4.0.0",
     "@sourcegraph/tslint-config": "^13.0.0",
     "@types/chai": "^4.1.4",
-    "@types/fs-extra": "^5.0.3",
+    "@types/fs-extra": "^7.0.0",
     "@types/karma": "^3.0.0",
     "@types/karma-webpack": "^2.0.4",
     "@types/lodash": "^4.14.110",
