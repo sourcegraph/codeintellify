@@ -54,7 +54,7 @@
     "awesome-typescript-loader": "^5.2.0",
     "chai": "^4.1.2",
     "cpy-cli": "^2.0.0",
-    "esm": "^3.0.55",
+    "esm": "^3.2.25",
     "fs-extra": "^7.0.0",
     "husky": "^2.4.0",
     "istanbul-instrumenter-loader": "^3.0.1",
