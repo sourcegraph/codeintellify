@@ -46,7 +46,7 @@
     "@types/karma": "3.0.3",
     "@types/karma-webpack": "2.0.5",
     "@types/lodash": "4.14.134",
-    "@types/mocha": "5.2.5",
+    "@types/mocha": "5.2.7",
     "@types/node": "10.9.4",
     "@types/sinon": "7.0.11",
     "@types/webpack": "4.4.11",
