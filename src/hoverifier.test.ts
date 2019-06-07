@@ -50,7 +50,7 @@ describe('Hoverifier', () => {
 
                 const positionJumps = new Subject<PositionJump>()
 
-                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
+                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents({ domFunctions: codeView }))
 
                 const subscriptions = new Subscription()
 
@@ -112,7 +112,7 @@ describe('Hoverifier', () => {
 
                 const positionJumps = new Subject<PositionJump>()
 
-                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
+                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents({ domFunctions: codeView }))
 
                 const subscriptions = new Subscription()
 
@@ -201,7 +201,7 @@ describe('Hoverifier', () => {
 
                 const positionJumps = new Subject<PositionJump>()
 
-                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
+                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents({ domFunctions: codeView }))
 
                 const subscriptions = new Subscription()
 
@@ -282,7 +282,7 @@ describe('Hoverifier', () => {
 
                 const positionJumps = new Subject<PositionJump>()
 
-                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
+                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents({ domFunctions: codeView }))
 
                 const subscriptions = new Subscription()
 
@@ -346,7 +346,9 @@ describe('Hoverifier', () => {
 
                     const positionJumps = new Subject<PositionJump>()
 
-                    const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
+                    const positionEvents = of(codeView.codeView).pipe(
+                        findPositionsFromEvents({ domFunctions: codeView })
+                    )
 
                     const subscriptions = new Subscription()
 
@@ -416,7 +418,9 @@ describe('Hoverifier', () => {
 
                     const positionJumps = new Subject<PositionJump>()
 
-                    const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
+                    const positionEvents = of(codeView.codeView).pipe(
+                        findPositionsFromEvents({ domFunctions: codeView })
+                    )
 
                     const subscriptions = new Subscription()
 
@@ -495,7 +499,7 @@ describe('Hoverifier', () => {
 
                 const positionJumps = new Subject<PositionJump>()
 
-                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
+                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents({ domFunctions: codeView }))
 
                 const subscriptions = new Subscription()
 
@@ -567,7 +571,7 @@ describe('Hoverifier', () => {
 
                 const positionJumps = new Subject<PositionJump>()
 
-                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
+                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents({ domFunctions: codeView }))
 
                 const subscriptions = new Subscription()
 
@@ -629,7 +633,7 @@ describe('Hoverifier', () => {
 
                 const positionJumps = new Subject<PositionJump>()
 
-                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
+                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents({ domFunctions: codeView }))
 
                 const subscriptions = new Subscription()
 
@@ -712,7 +716,7 @@ describe('Hoverifier', () => {
 
                 const positionJumps = new Subject<PositionJump>()
 
-                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
+                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents({ domFunctions: codeView }))
 
                 const subscriptions = new Subscription()
 
@@ -766,7 +770,7 @@ describe('Hoverifier', () => {
                     pinningEnabled: true,
                 })
                 const positionJumps = new Subject<PositionJump>()
-                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents(codeView))
+                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents({ domFunctions: codeView }))
 
                 const codeViewSubscription = hoverifier.hoverify({
                     dom: codeView,
@@ -807,7 +811,9 @@ describe('Hoverifier', () => {
                     pinningEnabled: true,
                 })
                 const positionJumps = new Subject<PositionJump>()
-                const positionEvents = of(codeViewProps.codeView).pipe(findPositionsFromEvents(codeViewProps))
+                const positionEvents = of(codeViewProps.codeView).pipe(
+                    findPositionsFromEvents({ domFunctions: codeViewProps })
+                )
 
                 const codeViewSubscription = hoverifier.hoverify({
                     dom: codeViewProps,

@@ -43,7 +43,7 @@ describe('positions', () => {
                 }
 
                 const clickedTokens = of(codeView.codeView).pipe(
-                    findPositionsFromEvents(codeView),
+                    findPositionsFromEvents({ domFunctions: codeView }),
                     filter(propertyIsDefined('position')),
                     map(({ position: { line, character } }) => ({ line, character }))
                 )
