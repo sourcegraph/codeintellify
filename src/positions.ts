@@ -28,7 +28,7 @@ export interface PositionEvent {
 export { DOMFunctions, DiffPart }
 export const findPositionsFromEvents = ({
     domFunctions,
-    tokenize = false,
+    tokenize = true,
 }: {
     domFunctions: DOMFunctions
     tokenize?: boolean
