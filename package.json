@@ -44,7 +44,7 @@
     "@types/chai": "4.1.4",
     "@types/fs-extra": "7.0.0",
     "@types/karma": "3.0.3",
-    "@types/karma-webpack": "2.0.5",
+    "@types/karma-webpack": "2.0.7",
     "@types/lodash": "4.14.134",
     "@types/mocha": "5.2.5",
     "@types/node": "10.9.4",
