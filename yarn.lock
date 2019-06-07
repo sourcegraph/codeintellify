@@ -428,10 +428,10 @@
   dependencies:
     "@types/node" "*"
 
-"@types/karma-webpack@2.0.5":
-  version "2.0.5"
-  resolved "https://registry.yarnpkg.com/@types/karma-webpack/-/karma-webpack-2.0.5.tgz#580d1b230dd5b61e2aca1029ffcc24283390f61a"
-  integrity sha512-pXLqzi64wkpVkouRFNLMuraDgK4Yhw2GhGC7Au/q3Fd+PP/Jl+osgRviXML1p2Zp2u2e9sa1EV0JDdl29lRqqg==
+"@types/karma-webpack@2.0.7":
+  version "2.0.7"
+  resolved "https://registry.yarnpkg.com/@types/karma-webpack/-/karma-webpack-2.0.7.tgz#967e7971d8bc3d8da31110f44556842eca3aed85"
+  integrity sha512-8v5+OVjFO+j8YUdbv3cIYIfZJHH2VvUSNqJXDaxnr5sFgv4neMI7D812GFclU2dcjdzicX/qEzfk69ha21453A==
   dependencies:
     "@types/karma" "*"
     "@types/webpack" "*"
