@@ -4237,10 +4237,10 @@ karma-sourcemap-loader@^0.3.7:
   dependencies:
     graceful-fs "^4.1.2"
 
-karma-webpack@^3.0.0:
-  version "3.0.4"
-  resolved "https://registry.yarnpkg.com/karma-webpack/-/karma-webpack-3.0.4.tgz#c16b57d6b20afc00de11b04865b902015844ab34"
-  integrity sha512-9lAvQCqfXrHHgEMuw8BPF8Nb7r1hdu55kdOEoBqeILvFuFTV6x1CdjxP7JTwMBuwTQW7UPpE0/K/ff+Eh3gd6g==
+karma-webpack@^3.0.5:
+  version "3.0.5"
+  resolved "https://registry.yarnpkg.com/karma-webpack/-/karma-webpack-3.0.5.tgz#1ff1e3a690fb73ae95ee95f9ab58f341cfc7b40f"
+  integrity sha512-nRudGJWstvVuA6Tbju9tyGUfXTtI1UXMXoRHVmM2/78D0q6s/Ye2IC157PKNDC15PWFGR0mVIRtWLAdcfsRJoA==
   dependencies:
     async "^2.0.0"
     babel-runtime "^6.0.0"
