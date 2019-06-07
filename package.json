@@ -79,7 +79,7 @@
     "tslint": "^5.10.0",
     "typescript": "^3.5.1",
     "webpack": "^4.13.0",
-    "webpack-cli": "^3.0.8"
+    "webpack-cli": "^3.3.3"
   },
   "husky": {
     "hooks": {
