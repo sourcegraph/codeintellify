@@ -389,7 +389,12 @@ export function createHoverifier<C extends object, D, A>({
      * click events on the code element, ignoring click events caused by the user selecting text.
      * Selecting text should not mess with the hover, hover pinning nor the URL.
      */
-    const codeClicksWithoutSelections = allCodeClicks.pipe(filter(() => window.getSelection().toString() === ''))
+    const codeClicksWithoutSelections = allCodeClicks.pipe(
+        filter(() => {
+            const selection = window.getSelection()
+            return selection === null || selection.toString() === ''
+        })
+    )
 
     // Mouse is moving, don't show the tooltip
     subscription.add(
