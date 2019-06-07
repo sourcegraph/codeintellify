@@ -4,7 +4,7 @@ import { filter, map } from 'rxjs/operators'
 import { TestScheduler } from 'rxjs/testing'
 
 import { CodeViewProps, DOM } from './testutils/dom'
-import { dispatchMouseEventAtPositionImpure, createMouseEvent } from './testutils/mouse'
+import { createMouseEvent, dispatchMouseEventAtPositionImpure } from './testutils/mouse'
 
 import { propertyIsDefined } from './helpers'
 import { findPositionsFromEvents } from './positions'
