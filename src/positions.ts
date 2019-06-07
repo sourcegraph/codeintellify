@@ -31,7 +31,7 @@ export const findPositionsFromEvents = ({
     tokenize = false,
 }: {
     domFunctions: DOMFunctions
-    tokenize: boolean
+    tokenize?: boolean
 }) => (elements: Subscribable<HTMLElement>): Observable<PositionEvent> =>
     merge(
         from(elements).pipe(
