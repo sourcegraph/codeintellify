@@ -26,9 +26,13 @@ export interface PositionEvent {
 }
 
 export { DOMFunctions, DiffPart }
-export const findPositionsFromEvents = (options: DOMFunctions) => (
-    elements: Subscribable<HTMLElement>
-): Observable<PositionEvent> =>
+export const findPositionsFromEvents = ({
+    domFunctions,
+    tokenize = true,
+}: {
+    domFunctions: DOMFunctions
+    tokenize?: boolean
+}) => (elements: Subscribable<HTMLElement>): Observable<PositionEvent> =>
     merge(
         from(elements).pipe(
             switchMap(element =>
@@ -46,7 +50,10 @@ export const findPositionsFromEvents = (options: DOMFunctions) => (
             // If not done for this cell, wrap the tokens in this cell to enable finding the precise positioning.
             // This may be possible in other ways (looking at mouse position and rendering characters), but it works
             tap(({ target }) => {
-                const code = options.getCodeElementFromTarget(target)
+                if (!tokenize) {
+                    return
+                }
+                const code = domFunctions.getCodeElementFromTarget(target)
                 if (code) {
                     convertCodeElementIdempotent(code)
                 }
@@ -72,7 +79,7 @@ export const findPositionsFromEvents = (options: DOMFunctions) => (
     ).pipe(
         // Find out the position that was hovered over
         map(({ target, codeView, ...rest }) => {
-            const hoveredToken = locateTarget(target, options)
+            const hoveredToken = locateTarget(target, domFunctions)
             const position = isPosition(hoveredToken) ? hoveredToken : undefined
             return { position, codeView, ...rest }
         })

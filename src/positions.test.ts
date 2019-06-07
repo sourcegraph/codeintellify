@@ -4,7 +4,7 @@ import { filter, map } from 'rxjs/operators'
 import { TestScheduler } from 'rxjs/testing'
 
 import { CodeViewProps, DOM } from './testutils/dom'
-import { dispatchMouseEventAtPositionImpure } from './testutils/mouse'
+import { createMouseEvent, dispatchMouseEventAtPositionImpure } from './testutils/mouse'
 
 import { propertyIsDefined } from './helpers'
 import { findPositionsFromEvents } from './positions'
@@ -43,7 +43,7 @@ describe('positions', () => {
                 }
 
                 const clickedTokens = of(codeView.codeView).pipe(
-                    findPositionsFromEvents(codeView),
+                    findPositionsFromEvents({ domFunctions: codeView }),
                     filter(propertyIsDefined('position')),
                     map(({ position: { line, character } }) => ({ line, character }))
                 )
@@ -56,4 +56,29 @@ describe('positions', () => {
             })
         }
     })
+
+    for (const tokenize of [false, true]) {
+        for (const codeView of testcases) {
+            it((tokenize ? 'tokenizes' : 'does not tokenize') + ` the DOM when tokenize: ${tokenize}`, () => {
+                of(codeView.codeView)
+                    .pipe(findPositionsFromEvents({ domFunctions: codeView, tokenize }))
+                    .subscribe()
+
+                const htmlBefore = codeView.getCodeElementFromLineNumber(codeView.codeView, 5)!.outerHTML
+                codeView.getCodeElementFromLineNumber(codeView.codeView, 5)!.dispatchEvent(
+                    createMouseEvent('mouseover', {
+                        x: 0,
+                        y: 0,
+                    })
+                )
+                const htmlAfter = codeView.getCodeElementFromLineNumber(codeView.codeView, 5)!.outerHTML
+
+                if (tokenize) {
+                    chai.expect(htmlBefore).to.not.equal(htmlAfter)
+                } else {
+                    chai.expect(htmlBefore).to.equal(htmlAfter)
+                }
+            })
+        }
+    }
 })
