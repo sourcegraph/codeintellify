@@ -384,10 +384,10 @@
   resolved "https://registry.yarnpkg.com/@sourcegraph/extension-api-types/-/extension-api-types-2.0.0.tgz#b38145521c0549b2be300df53bac48b648ccbc2d"
   integrity sha512-Te7F1RQJLBH4C8wQ2xz0nPC2vpe13F80V+Yv+c3GySOoh4DcLNN4P5u51Kh4aZPqeS5DJ7CKvHyX2SM/1EBXNg==
 
-"@sourcegraph/prettierrc@^2.2.0":
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/@sourcegraph/prettierrc/-/prettierrc-2.2.0.tgz#af4a6fcd465b0a39a07ffbd8f2d3414d01e603e8"
-  integrity sha512-kRdHxdAppxYnN7qAQjNTyuG05pjYHFtEUquZauXVXBeaGB4sye3uSkb8wgi34jeaUHG/gWp2f5hQgCCBMizjjA==
+"@sourcegraph/prettierrc@^3.0.1":
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/@sourcegraph/prettierrc/-/prettierrc-3.0.1.tgz#e1db0046dca3c5e770d0f2ac68bbd794fee37138"
+  integrity sha512-Xyfsk2zLbtJXjgzPC5Q91AdoZ9YECB7Z5pyUCoYb36zqClBRkN2F/VoT+04pLqBf9xsr9uKfJoaf/WGGngLlVg==
 
 "@sourcegraph/tsconfig@^4.0.0":
   version "4.0.0"
