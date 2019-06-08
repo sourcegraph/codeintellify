@@ -87,6 +87,11 @@ export interface HoverifierOptions<C extends object, D, A> {
      * Whether or not hover tooltips can be pinned.
      */
     pinningEnabled: boolean
+
+    /**
+     * Whether or not code views need to be tokenized. Defaults to true.
+     */
+    tokenize?: boolean
 }
 
 /**
@@ -349,6 +354,7 @@ export function createHoverifier<C extends object, D, A>({
     getHover,
     getActions,
     pinningEnabled,
+    tokenize = true,
 }: HoverifierOptions<C, D, A>): Hoverifier<C, D, A> {
     // Internal state that is not exposed to the caller
     // Shared between all hoverified code views
@@ -502,7 +508,7 @@ export function createHoverifier<C extends object, D, A>({
                   if (isPosition(position)) {
                       cell = dom.getCodeElementFromLineNumber(codeView, position.line, position.part)
                       if (cell) {
-                          target = findElementWithOffset(cell, position.character)
+                          target = findElementWithOffset(cell, position.character, tokenize)
                           if (target) {
                               part = dom.getDiffCodePart && dom.getDiffCodePart(target)
                           } else {
@@ -573,7 +579,7 @@ export function createHoverifier<C extends object, D, A>({
                     // placed in the middle of a token.
                     target:
                         position && isPosition(position)
-                            ? getTokenAtPosition(codeView, position, dom, position.part)
+                            ? getTokenAtPosition(codeView, position, dom, position.part, tokenize)
                             : target,
                     ...rest,
                 })),
@@ -734,7 +740,7 @@ export function createHoverifier<C extends object, D, A>({
                     container.update({ hoveredTokenElement: undefined })
                     return
                 }
-                const token = getTokenAtPosition(codeView, highlightedRange.start, dom, part)
+                const token = getTokenAtPosition(codeView, highlightedRange.start, dom, part, tokenize)
                 container.update({ hoveredTokenElement: token })
                 if (!token) {
                     return
@@ -838,8 +844,10 @@ export function createHoverifier<C extends object, D, A>({
                 selectedPosition: position,
             })
             const codeElements = getCodeElementsInRange({ codeView, position, getCodeElementFromLineNumber })
-            for (const { element } of codeElements) {
-                convertNode(element)
+            if (tokenize) {
+                for (const { element } of codeElements) {
+                    convertNode(element)
+                }
             }
             // Scroll into view
             if (codeElements.length > 0) {

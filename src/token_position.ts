@@ -252,9 +252,15 @@ export const getTextNodes = (node: Node): Node[] => {
  * @param codeElement the element containing syntax highlighted code
  * @param offset character offset (1-indexed)
  */
-export function findElementWithOffset(codeElement: HTMLElement, offset: number): HTMLElement | undefined {
-    // Without being converted first, finding the position is inaccurate
-    convertCodeElementIdempotent(codeElement)
+export function findElementWithOffset(
+    codeElement: HTMLElement,
+    offset: number,
+    tokenize = true
+): HTMLElement | undefined {
+    if (tokenize) {
+        // Without being converted first, finding the position is inaccurate
+        convertCodeElementIdempotent(codeElement)
+    }
 
     const textNodes = getTextNodes(codeElement)
 
@@ -475,7 +481,8 @@ export const getTokenAtPosition = (
         getCodeElementFromLineNumber,
         isFirstCharacterDiffIndicator,
     }: Pick<DOMFunctions, 'getCodeElementFromLineNumber' | 'isFirstCharacterDiffIndicator'>,
-    part?: DiffPart
+    part?: DiffPart,
+    tokenize = true,
 ): HTMLElement | undefined => {
     const codeElement = getCodeElementFromLineNumber(codeView, line, part)
     if (!codeElement) {
@@ -486,5 +493,5 @@ export const getTokenAtPosition = (
         character++
     }
 
-    return findElementWithOffset(codeElement, character)
+    return findElementWithOffset(codeElement, character, tokenize)
 }
