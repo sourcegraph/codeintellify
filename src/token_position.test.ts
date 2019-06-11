@@ -89,7 +89,7 @@ describe('token_positions', () => {
     })
 
     describe('findElementWithOffset()', () => {
-        it('finds the correct token', () => {
+        it('finds the correct token (with tokenization)', () => {
             const content = `${tabChar}if rv := contextGet(r, routeKey); rv != nil {`
 
             const elems = [
@@ -115,6 +115,40 @@ describe('token_positions', () => {
 
             for (const { offset, token } of elems) {
                 const tokenElem = findElementWithOffset(elem, offset)
+
+                expect(tokenElem).to.not.equal(undefined)
+
+                expect(tokenElem!.textContent).to.equal(token)
+            }
+        })
+
+        it('finds the correct token (without tokenization)', () => {
+            const content = `<span role="presentation" style="padding-right: 0.1px;"><span class="cm-tab" role="presentation" cm-text="	">    </span><span class="cm-keyword">if</span> <span class="cm-variable">rv</span> :<span class="cm-operator">=</span> <span class="cm-variable">contextGet</span>(<span class="cm-variable">r</span>, <span class="cm-variable">varsKey</span>); <span class="cm-variable">rv</span> <span class="cm-operator">!=</span> <span class="cm-atom">nil</span> {</span>`
+
+            // Each offset is 3 more than the corresponding offset in the
+            // tokenized test above because this test case comes from Bitbucket
+            // where tabs are converted to spaces.
+            //
+            // The '(' and ' ' tokens are absent from this test because, on
+            // Bitbucket, punctuation characters are not wrapped in tags and the
+            // current offset-finding logic can't determine the offset for such
+            // tokens. One way to fix that is to use the CodeMirror API
+            // directly.
+            const elems = [
+                {
+                    offset: 14,
+                    token: 'contextGet',
+                },
+                {
+                    offset: 5,
+                    token: 'if',
+                },
+            ]
+
+            const elem = dom.createElementFromString(content)
+
+            for (const { offset, token } of elems) {
+                const tokenElem = findElementWithOffset(elem, offset, false)
 
                 expect(tokenElem).to.not.equal(undefined)
 
