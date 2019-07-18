@@ -482,7 +482,7 @@ export const getTokenAtPosition = (
         isFirstCharacterDiffIndicator,
     }: Pick<DOMFunctions, 'getCodeElementFromLineNumber' | 'isFirstCharacterDiffIndicator'>,
     part?: DiffPart,
-    tokenize = true,
+    tokenize = true
 ): HTMLElement | undefined => {
     const codeElement = getCodeElementFromLineNumber(codeView, line, part)
     if (!codeElement) {

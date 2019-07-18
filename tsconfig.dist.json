@@ -5,8 +5,8 @@
     "declaration": true,
     "declarationMap": true,
     "inlineSourceMap": true,
-    "inlineSources": true
+    "inlineSources": true,
   },
   "include": ["src/**/*"],
-  "exclude": ["src/**/*.test.ts", "src/testutils"]
+  "exclude": ["src/**/*.test.ts", "src/testutils"],
 }
