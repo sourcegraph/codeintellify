@@ -433,25 +433,24 @@ export function createHoverifier<C extends object, D, A>({
         debounceTime(MOUSEOVER_DELAY),
         // Do not consider mouseovers while overlay is pinned
         filter(() => !container.values.hoverOverlayIsFixed),
-        switchMap(
-            ({ adjustPosition, codeView, resolveContext, position, ...rest }) =>
-                adjustPosition && position
-                    ? from(
-                          adjustPosition({
-                              codeView,
-                              position: { ...position, ...resolveContext(position) },
-                              direction: AdjustmentDirection.CodeViewToActual,
-                          })
-                      ).pipe(
-                          map(({ line, character }) => ({
-                              codeView,
-                              resolveContext,
-                              position: { ...position, line, character },
-                              adjustPosition,
-                              ...rest,
-                          }))
-                      )
-                    : of({ adjustPosition, codeView, resolveContext, position, ...rest })
+        switchMap(({ adjustPosition, codeView, resolveContext, position, ...rest }) =>
+            adjustPosition && position
+                ? from(
+                      adjustPosition({
+                          codeView,
+                          position: { ...position, ...resolveContext(position) },
+                          direction: AdjustmentDirection.CodeViewToActual,
+                      })
+                  ).pipe(
+                      map(({ line, character }) => ({
+                          codeView,
+                          resolveContext,
+                          position: { ...position, line, character },
+                          adjustPosition,
+                          ...rest,
+                      }))
+                  )
+                : of({ adjustPosition, codeView, resolveContext, position, ...rest })
         ),
         share()
     )
@@ -462,25 +461,24 @@ export function createHoverifier<C extends object, D, A>({
             target: event.target as HTMLElement,
             ...rest,
         })),
-        switchMap(
-            ({ adjustPosition, codeView, resolveContext, position, ...rest }) =>
-                adjustPosition && position
-                    ? from(
-                          adjustPosition({
-                              codeView,
-                              position: { ...position, ...resolveContext(position) },
-                              direction: AdjustmentDirection.CodeViewToActual,
-                          })
-                      ).pipe(
-                          map(({ line, character }) => ({
-                              codeView,
-                              resolveContext,
-                              position: { ...position, line, character },
-                              adjustPosition,
-                              ...rest,
-                          }))
-                      )
-                    : of({ adjustPosition, codeView, resolveContext, position, ...rest })
+        switchMap(({ adjustPosition, codeView, resolveContext, position, ...rest }) =>
+            adjustPosition && position
+                ? from(
+                      adjustPosition({
+                          codeView,
+                          position: { ...position, ...resolveContext(position) },
+                          direction: AdjustmentDirection.CodeViewToActual,
+                      })
+                  ).pipe(
+                      map(({ line, character }) => ({
+                          codeView,
+                          resolveContext,
+                          position: { ...position, line, character },
+                          adjustPosition,
+                          ...rest,
+                      }))
+                  )
+                : of({ adjustPosition, codeView, resolveContext, position, ...rest })
         ),
         share()
     )
@@ -583,9 +581,8 @@ export function createHoverifier<C extends object, D, A>({
                             : target,
                     ...rest,
                 })),
-                map(
-                    ({ hoverOverlayElement, relativeElement, target }) =>
-                        target ? calculateOverlayPosition({ relativeElement, target, hoverOverlayElement }) : undefined
+                map(({ hoverOverlayElement, relativeElement, target }) =>
+                    target ? calculateOverlayPosition({ relativeElement, target, hoverOverlayElement }) : undefined
                 )
             )
             .subscribe(hoverOverlayPosition => {

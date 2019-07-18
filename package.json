@@ -15,6 +15,7 @@
   "scripts": {
     "semantic-release": "semantic-release",
     "prettier": "prettier '**/{*.{js?(on),ts?(x),scss,yml},.*.js?(on),.*.yml}' --write --list-different",
+    "prettier-check": "npm run prettier -- --write=false",
     "typecheck": "tsc -p tsconfig.json",
     "tslint": "tslint -c tslint.json -p tsconfig.json './src/*.ts?(x)' './testdata/*.ts?(x)' './*.ts?(x)'",
     "build": "yarn run tsc && cpy 'src/**/*.scss' lib/",

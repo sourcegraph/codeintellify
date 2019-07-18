@@ -11,7 +11,7 @@ jobs:
   include:
     - stage: test
       script:
-        - yarn run prettier
+        - yarn run prettier-check
         - yarn run typecheck
         - yarn run tslint
         - yarn run build
