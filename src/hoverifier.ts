@@ -756,7 +756,10 @@ export function createHoverifier<C extends object, D, A>({
             if (!position) {
                 return of(null)
             }
-            return concat([LOADING], from(getActions(position)).pipe(catchError(error => [asError(error)]))).pipe(
+            return concat(
+                [LOADING],
+                from(getActions(position)).pipe(catchError((error): [ErrorLike] => [asError(error)]))
+            ).pipe(
                 // Do not emit anything after the code view this action came from got unhoverified
                 takeUntil(allUnhoverifies.pipe(filter(unhoverifiedCodeViewId => unhoverifiedCodeViewId === codeViewId)))
             )
@@ -801,7 +804,12 @@ export function createHoverifier<C extends object, D, A>({
                                 // In the time between the click/jump and the loader being displayed,
                                 // pin the hover overlay so mouseover events get ignored
                                 // If the hover comes back empty (and the definition) it will get unpinned again
-                                Boolean(hoverOrError === undefined || (actionsOrError && !isErrorLike(actionsOrError)))
+                                Boolean(
+                                    hoverOrError === undefined ||
+                                        (actionsOrError &&
+                                            !(Array.isArray(actionsOrError) && actionsOrError.length === 0) &&
+                                            !isErrorLike(actionsOrError))
+                                )
                             )
                         )
                     })
