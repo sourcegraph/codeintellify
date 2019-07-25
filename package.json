@@ -41,7 +41,7 @@
     "@commitlint/config-conventional": "^8.0.0",
     "@sourcegraph/prettierrc": "^3.0.1",
     "@sourcegraph/tsconfig": "^4.0.0",
-    "@sourcegraph/tslint-config": "^13.3.0",
+    "@sourcegraph/tslint-config": "^13.4.0",
     "@types/chai": "4.1.7",
     "@types/fs-extra": "7.0.0",
     "@types/karma": "3.0.3",
