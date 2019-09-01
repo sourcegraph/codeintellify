@@ -77,7 +77,7 @@
     "sinon": "^7.4.1",
     "sourcegraph": "^23.0.1",
     "ts-node": "^8.2.0",
-    "tslint": "^5.18.0",
+    "tslint": "^5.19.0",
     "typescript": "^3.5.1",
     "webpack": "^4.33.0",
     "webpack-cli": "^3.3.3"
