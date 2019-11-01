@@ -42,7 +42,7 @@
     "@sourcegraph/prettierrc": "^3.0.1",
     "@sourcegraph/tsconfig": "^4.0.0",
     "@sourcegraph/tslint-config": "^13.4.0",
-    "@types/chai": "4.2.3",
+    "@types/chai": "4.2.4",
     "@types/fs-extra": "7.0.0",
     "@types/karma": "3.0.3",
     "@types/karma-webpack": "2.0.7",
