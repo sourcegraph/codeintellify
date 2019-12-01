@@ -44,7 +44,7 @@
     "@sourcegraph/tslint-config": "^13.4.0",
     "@types/chai": "4.2.4",
     "@types/fs-extra": "7.0.0",
-    "@types/karma": "3.0.3",
+    "@types/karma": "3.0.4",
     "@types/karma-webpack": "2.0.7",
     "@types/lodash": "4.14.145",
     "@types/mocha": "5.2.7",
