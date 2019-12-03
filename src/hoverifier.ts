@@ -1,12 +1,14 @@
 import { Position, Range } from '@sourcegraph/extension-api-types'
 import { isEqual } from 'lodash'
 import {
+    animationFrameScheduler,
     combineLatest,
     concat,
     EMPTY,
     from,
     fromEvent,
     merge,
+    NEVER,
     Observable,
     of,
     Subject,
@@ -22,6 +24,7 @@ import {
     distinctUntilChanged,
     filter,
     map,
+    observeOn,
     share,
     switchMap,
     takeUntil,
@@ -29,7 +32,7 @@ import {
 } from 'rxjs/operators'
 import { Key } from 'ts-key-enum'
 import { asError, ErrorLike, isErrorLike } from './errors'
-import { scrollIntoCenterIfNeeded } from './helpers'
+import { elementOverlaps, scrollIntoCenterIfNeeded } from './helpers'
 import { calculateOverlayPosition } from './overlay_position'
 import { DiffPart, PositionEvent, SupportedMouseEvent } from './positions'
 import { createObservableStateContainer } from './state'
@@ -186,6 +189,15 @@ export interface EventOptions<C extends object> {
 export interface HoverifyOptions<C extends object>
     extends Pick<EventOptions<C>, Exclude<keyof EventOptions<C>, 'codeViewId'>> {
     positionEvents: Subscribable<PositionEvent>
+
+    /**
+     * An array of elements used to hide the hover overlay if any of them
+     * overlap with the hovered token. Overlapping is checked in reaction to scroll events.
+     *
+     * scrollBoundaries are typically elements with a lower z-index than the hover overlay
+     * but a higher z-index than the code view, such as a sticky file header.
+     */
+    scrollBoundaries?: HTMLElement[]
 
     /**
      * Emit on this Observable to trigger the overlay on a position in this code view.
@@ -868,6 +880,14 @@ export function createHoverifier<C extends object, D, A>({
         })
     )
 
+    /**
+     * An Observable of scroll events on the document.
+     */
+    const scrollEvents = fromEvent(document, 'scroll').pipe(
+        observeOn(animationFrameScheduler),
+        share()
+    )
+
     return {
         get hoverState(): Readonly<HoverState<C, D, A>> {
             return internalToExternalState(container.values)
@@ -876,7 +896,12 @@ export function createHoverifier<C extends object, D, A>({
             map(internalToExternalState),
             distinctUntilChanged((a, b) => isEqual(a, b))
         ),
-        hoverify({ positionEvents, positionJumps = EMPTY, ...eventOptions }: HoverifyOptions<C>): Subscription {
+        hoverify({
+            positionEvents,
+            positionJumps = EMPTY,
+            scrollBoundaries,
+            ...eventOptions
+        }: HoverifyOptions<C>): Subscription {
             const codeViewId = Symbol('CodeView')
             const subscription = new Subscription()
             // Broadcast all events from this code view
@@ -897,6 +922,29 @@ export function createHoverifier<C extends object, D, A>({
                     resetHover()
                 }
             })
+            if (scrollBoundaries && scrollBoundaries.length > 0) {
+                // When the hovered token is in this code view, listen to scroll events,
+                // and reset the hover if the hovered token overlaps with any of the scrollBoundaries.
+                subscription.add(
+                    container.updates
+                        .pipe(
+                            distinctUntilChanged(
+                                ({ hoveredTokenElement: e1 }, { hoveredTokenElement: e2 }) => e1 === e2
+                            ),
+                            switchMap(({ codeViewId: id, hoveredTokenElement }) => {
+                                if (id !== codeViewId || !hoveredTokenElement) {
+                                    return NEVER
+                                }
+                                return scrollEvents.pipe(
+                                    filter(() => scrollBoundaries.some(elementOverlaps(hoveredTokenElement)))
+                                )
+                            })
+                        )
+                        .subscribe(() => {
+                            resetHover()
+                        })
+                )
+            }
             return subscription
         },
         unsubscribe(): void {
