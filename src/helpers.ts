@@ -31,3 +31,17 @@ export const scrollIntoCenterIfNeeded = (container: HTMLElement, content: HTMLEl
         container.scrollTop = scrollTop
     }
 }
+
+/**
+ * Returns a curried function that returns `true` if `e1` and `e2` overlap.
+ */
+export const elementOverlaps = (e1: HTMLElement) => (e2: HTMLElement): boolean => {
+    const e1Rect = e1.getBoundingClientRect()
+    const e2Rect = e2.getBoundingClientRect()
+    return !(
+        e1Rect.right < e2Rect.left ||
+        e1Rect.left > e2Rect.right ||
+        e1Rect.bottom < e2Rect.top ||
+        e1Rect.top > e2Rect.bottom
+    )
+}

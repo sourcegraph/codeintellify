@@ -19,6 +19,7 @@ export function generateGithubCodeTable(lines: string[]): string {
       </style>
       <div class="container">
           <div class="file">
+              <div class="file-header sticky-file-header"></div>
               <div itemprop="text" class="blob-wrapper data">
                   <table><tbody>${code}</tbody></table>
               </div>

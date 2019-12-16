@@ -10,6 +10,21 @@
   color: #24292e;
 }
 
+.github-testcase .sticky-file-header {
+    position: sticky;
+    z-index: 6;
+    top: 0px;
+}
+
+.github-testcase .file-header {
+    height: 60px;
+    padding: 5px 10px;
+    background-color: #fafbfc;
+    border-bottom: 1px solid #e1e4e8;
+    border-top-left-radius: 2px;
+    border-top-right-radius: 2px;
+}
+
 .github-testcase .container {
   width: 980px;
   margin-right: auto;

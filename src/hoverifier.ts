@@ -1,6 +1,7 @@
 import { Position, Range } from '@sourcegraph/extension-api-types'
 import { isEqual } from 'lodash'
 import {
+    animationFrameScheduler,
     combineLatest,
     concat,
     EMPTY,
@@ -21,7 +22,10 @@ import {
     delay,
     distinctUntilChanged,
     filter,
+    first,
     map,
+    mapTo,
+    observeOn,
     share,
     switchMap,
     takeUntil,
@@ -29,7 +33,7 @@ import {
 } from 'rxjs/operators'
 import { Key } from 'ts-key-enum'
 import { asError, ErrorLike, isErrorLike } from './errors'
-import { scrollIntoCenterIfNeeded } from './helpers'
+import { elementOverlaps, scrollIntoCenterIfNeeded } from './helpers'
 import { calculateOverlayPosition } from './overlay_position'
 import { DiffPart, PositionEvent, SupportedMouseEvent } from './positions'
 import { createObservableStateContainer } from './state'
@@ -178,6 +182,15 @@ export interface EventOptions<C extends object> {
     adjustPosition?: PositionAdjuster<C>
     dom: DOMFunctions
     codeViewId: symbol
+
+    /**
+     * An array of elements used to hide the hover overlay if any of them
+     * overlap with the hovered token. Overlapping is checked in reaction to scroll events.
+     *
+     * scrollBoundaries are typically elements with a lower z-index than the hover overlay
+     * but a higher z-index than the code view, such as a sticky file header.
+     */
+    scrollBoundaries?: HTMLElement[]
 }
 
 /**
@@ -608,6 +621,84 @@ export function createHoverifier<C extends object, D, A>({
     )
 
     /**
+     * An Observable of scroll events on the document.
+     */
+    const scrollEvents = fromEvent(document, 'scroll').pipe(
+        observeOn(animationFrameScheduler),
+        share()
+    )
+
+    /**
+     * Returns the highlighted range for the given hover result and position.
+     *
+     * Returns `undefined` if the hover result is not successful.
+     *
+     * Uses the range specified by the hover result if present, or `position` oherwise,
+     * which will be expanded into a full token in getTokenAtPosition().
+     */
+    const getHighlightedRange = ({
+        hoverOrError,
+        position,
+    }: {
+        hoverOrError?: typeof LOADING | (HoverAttachment & D) | ErrorLike | null
+        position: Position | undefined
+    }): Range | undefined => {
+        if (hoverOrError && !isErrorLike(hoverOrError) && hoverOrError !== LOADING) {
+            if (hoverOrError.range) {
+                // The result is 0-indexed; the code view is treated as 1-indexed.
+                return {
+                    start: {
+                        line: hoverOrError.range.start.line + 1,
+                        character: hoverOrError.range.start.character + 1,
+                    },
+                    end: {
+                        line: hoverOrError.range.end.line + 1,
+                        character: hoverOrError.range.end.character + 1,
+                    },
+                }
+            }
+            if (position) {
+                return { start: position, end: position }
+            }
+        }
+        return undefined
+    }
+
+    /**
+     * Returns an Observable that emits the hover result immediately,
+     * and will emit a result resetting the hover when the hoveredTokenElement intersects
+     * with the scrollBoundaries.
+     */
+    const resetOnBoundaryIntersection = ({
+        hoveredTokenElement,
+        scrollBoundaries,
+        ...rest
+    }: Omit<InternalHoverifierState<C, D, A>, 'mouseIsMoving' | 'hoverOverlayIsFixed'> &
+        Omit<EventOptions<C>, 'resolveContext' | 'dom'> & { codeView: HTMLElement }): Observable<
+        Omit<InternalHoverifierState<C, D, A>, 'mouseIsMoving' | 'hoverOverlayIsFixed'> & { codeView: HTMLElement }
+    > => {
+        const result = of({ hoveredTokenElement, ...rest })
+        if (!hoveredTokenElement || !scrollBoundaries) {
+            return result
+        }
+        return merge(
+            result,
+            scrollEvents.pipe(
+                filter(() => scrollBoundaries.some(elementOverlaps(hoveredTokenElement))),
+                first(),
+                mapTo({
+                    ...rest,
+                    hoveredTokenElement,
+                    hoverOverlayIsFixed: false,
+                    hoverOrError: undefined,
+                    hoveredToken: undefined,
+                    actionsOrError: undefined,
+                })
+            )
+        )
+    }
+
+    /**
      * For every position, emits an Observable with new values for the `hoverOrError` state.
      * This is a higher-order Observable (Observable that emits Observables).
      */
@@ -619,6 +710,7 @@ export function createHoverifier<C extends object, D, A>({
             adjustPosition?: PositionAdjuster<C>
             codeView: HTMLElement
             codeViewId: symbol
+            scrollBoundaries?: HTMLElement[]
             hoverOrError?: typeof LOADING | (HoverAttachment & D) | ErrorLike | null
             position?: HoveredToken & C
             part?: DiffPart
@@ -662,7 +754,7 @@ export function createHoverifier<C extends object, D, A>({
         hoverObservables
             .pipe(
                 switchMap(hoverObservable => hoverObservable),
-                switchMap(({ hoverOrError, position, adjustPosition, ...rest }) => {
+                switchMap(({ hoverOrError, position, adjustPosition, codeView, part, ...rest }) => {
                     let pos =
                         hoverOrError &&
                         hoverOrError !== LOADING &&
@@ -673,7 +765,13 @@ export function createHoverifier<C extends object, D, A>({
                             : position
 
                     if (!pos) {
-                        return of({ hoverOrError, position: undefined as Position | undefined, ...rest })
+                        return of({
+                            hoverOrError,
+                            codeView,
+                            part,
+                            position: undefined as Position | undefined,
+                            ...rest,
+                        })
                     }
 
                     // The requested position is is 0-indexed; the code here is currently 1-indexed
@@ -683,66 +781,51 @@ export function createHoverifier<C extends object, D, A>({
                     const adjustingPosition = adjustPosition
                         ? from(
                               adjustPosition({
-                                  codeView: rest.codeView,
+                                  codeView,
                                   direction: AdjustmentDirection.ActualToCodeView,
                                   position: {
                                       ...pos,
-                                      part: rest.part,
+                                      part,
                                   },
                               })
                           )
                         : of(pos)
 
-                    return adjustingPosition.pipe(map(position => ({ position, hoverOrError, ...rest })))
+                    return adjustingPosition.pipe(
+                        map(position => ({ position, hoverOrError, codeView, part, ...rest }))
+                    )
+                }),
+                switchMap(({ scrollBoundaries, hoverOrError, position, codeView, codeViewId, dom, part }) => {
+                    const highlightedRange = getHighlightedRange({ hoverOrError, position })
+                    const hoveredTokenElement = highlightedRange
+                        ? getTokenAtPosition(codeView, highlightedRange.start, dom, part, tokenize)
+                        : undefined
+                    return resetOnBoundaryIntersection({
+                        scrollBoundaries,
+                        codeViewId,
+                        codeView,
+                        highlightedRange,
+                        hoverOrError,
+                        hoveredTokenElement,
+                        hoverOverlayPosition: undefined,
+                    })
                 })
             )
-            .subscribe(({ hoverOrError, position, codeView, codeViewId, dom, part }) => {
-                // Update the highlighted token if the hover result is successful. If the hover result specifies a
-                // range, use that; otherwise use the hover position (which will be expanded into a full token in
-                // getTokenAtPosition).
-                let highlightedRange: Range | undefined
-                if (hoverOrError && !isErrorLike(hoverOrError) && hoverOrError !== LOADING) {
-                    if (hoverOrError.range) {
-                        // The result is 0-indexed; the code view is treated as 1-indexed.
-                        highlightedRange = {
-                            start: {
-                                line: hoverOrError.range.start.line + 1,
-                                character: hoverOrError.range.start.character + 1,
-                            },
-                            end: {
-                                line: hoverOrError.range.end.line + 1,
-                                character: hoverOrError.range.end.character + 1,
-                            },
-                        }
-                    } else if (position) {
-                        highlightedRange = { start: position, end: position }
-                    }
-                }
-
+            .subscribe(({ codeView, highlightedRange, hoveredTokenElement, ...rest }) => {
                 container.update({
-                    codeViewId,
-                    hoverOrError,
                     highlightedRange,
-                    // Reset the hover position, it's gonna be repositioned after the hover was rendered
-                    hoverOverlayPosition: undefined,
+                    hoveredTokenElement,
+                    ...rest,
                 })
-
                 // Ensure the previously highlighted range is not highlighted and the new highlightedRange (if any)
                 // is highlighted.
                 const currentHighlighted = codeView.querySelector('.selection-highlight')
                 if (currentHighlighted) {
                     currentHighlighted.classList.remove('selection-highlight')
                 }
-                if (!highlightedRange) {
-                    container.update({ hoveredTokenElement: undefined })
-                    return
+                if (hoveredTokenElement) {
+                    hoveredTokenElement.classList.add('selection-highlight')
                 }
-                const token = getTokenAtPosition(codeView, highlightedRange.start, dom, part, tokenize)
-                container.update({ hoveredTokenElement: token })
-                if (!token) {
-                    return
-                }
-                token.classList.add('selection-highlight')
             })
     )
 

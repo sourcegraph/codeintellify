@@ -1,10 +1,10 @@
 import { Range } from '@sourcegraph/extension-api-types'
 import { isEqual } from 'lodash'
 import { EMPTY, NEVER, Observable, of, Subject, Subscription } from 'rxjs'
-import { delay, distinctUntilChanged, filter, first, map } from 'rxjs/operators'
+import { delay, distinctUntilChanged, filter, first, map, takeWhile } from 'rxjs/operators'
 import { TestScheduler } from 'rxjs/testing'
 import { ErrorLike } from './errors'
-import { propertyIsDefined } from './helpers'
+import { isDefined, propertyIsDefined } from './helpers'
 import {
     AdjustmentDirection,
     createHoverifier,
@@ -28,6 +28,13 @@ describe('Hoverifier', () => {
     let testcases: CodeViewProps[] = []
     before(() => {
         testcases = dom.createCodeViews()
+    })
+
+    let subscriptions = new Subscription()
+
+    afterEach(() => {
+        subscriptions.unsubscribe()
+        subscriptions = new Subscription()
     })
 
     it('highlights token when hover is fetched (not before)', () => {
@@ -320,6 +327,55 @@ describe('Hoverifier', () => {
                 expectObservable(hoverAndDefinitionUpdates).toBe(outputDiagram, outputValues)
             })
         }
+    })
+
+    it('hides the hover overlay when the hovered token intersects with a scrollBoundary', async () => {
+        const gitHubCodeView = testcases[1]
+        const hoverifier = createHoverifier({
+            closeButtonClicks: NEVER,
+            hoverOverlayElements: of(null),
+            hoverOverlayRerenders: EMPTY,
+            getHover: createStubHoverProvider({
+                range: {
+                    start: { line: 4, character: 9 },
+                    end: { line: 4, character: 9 },
+                },
+            }),
+            getActions: createStubActionsProvider(['foo', 'bar']),
+            pinningEnabled: true,
+        })
+        subscriptions.add(hoverifier)
+        subscriptions.add(
+            hoverifier.hoverify({
+                dom: gitHubCodeView,
+                positionEvents: of(gitHubCodeView.codeView).pipe(
+                    findPositionsFromEvents({ domFunctions: gitHubCodeView })
+                ),
+                positionJumps: new Subject<PositionJump>(),
+                resolveContext: () => gitHubCodeView.revSpec,
+                scrollBoundaries: [gitHubCodeView.codeView.querySelector<HTMLElement>('.sticky-file-header')!],
+            })
+        )
+
+        gitHubCodeView.codeView.scrollIntoView()
+
+        // Click https://sourcegraph.sgdev.org/github.com/gorilla/mux@cb4698366aa625048f3b815af6a0dea8aef9280a/-/blob/mux.go#L5:9
+        // and wait for the hovered token to be defined.
+        const hasHoveredToken = hoverifier.hoverStateUpdates
+            .pipe(takeWhile(({ hoveredTokenElement }) => !isDefined(hoveredTokenElement)))
+            .toPromise()
+        dispatchMouseEventAtPositionImpure('click', gitHubCodeView, {
+            line: 5,
+            character: 9,
+        })
+        await hasHoveredToken
+
+        // Scroll down: the hover overlay should get hidden.
+        const hoverIsHidden = hoverifier.hoverStateUpdates
+            .pipe(takeWhile(({ hoverOverlayProps }) => isDefined(hoverOverlayProps)))
+            .toPromise()
+        gitHubCodeView.getCodeElementFromLineNumber(gitHubCodeView.codeView, 2)!.scrollIntoView({ behavior: 'smooth' })
+        await hoverIsHidden
     })
 
     describe('pinning', () => {
