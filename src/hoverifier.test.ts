@@ -587,7 +587,7 @@ describe('Hoverifier', () => {
 
                 const outputValues: {
                     [key: string]: {
-                        hoverOrError: typeof LOADING | (HoverAttachment) | null | ErrorLike
+                        hoverOrError: typeof LOADING | HoverAttachment | null | ErrorLike
                         actionsOrError: typeof LOADING | string[] | null | ErrorLike
                     }
                 } = {
