@@ -109,7 +109,7 @@ export function convertNode(parentNode: HTMLElement): void {
         const isLastNode = i === parentNode.childNodes.length - 1
 
         if (node.nodeType === Node.TEXT_NODE) {
-            let nodeText = node.textContent || ''
+            let nodeText = node.textContent ?? ''
             if (nodeText === '') {
                 continue
             }
@@ -160,7 +160,7 @@ const enum TokenType {
  * @param node The node containing the token.
  */
 function getTokenType(node: Node): TokenType {
-    const text = node.textContent || ''
+    const text = node.textContent ?? ''
     if (text.length === 0) {
         return TokenType.Other
     }
@@ -271,7 +271,7 @@ export function findElementWithOffset(
     // Find the text node that is at the given offset.
     let targetNode: Node | undefined
     for (const [i, node] of textNodes.entries()) {
-        const text = node.textContent || ''
+        const text = node.textContent ?? ''
         if (offsetStep <= offset && offsetStep + text.length > offset) {
             targetNode = node
             nodeIndex = i
@@ -392,7 +392,7 @@ export function locateTarget(
         return { line }
     }
 
-    const part = getDiffCodePart && getDiffCodePart(codeElement)
+    const part = getDiffCodePart?.(codeElement)
     let ignoreFirstCharacter = !!isFirstCharacterDiffIndicator && isFirstCharacterDiffIndicator(codeElement)
 
     let character = 1
@@ -489,7 +489,7 @@ export const getTokenAtPosition = (
         return undefined
     }
     // On diff pages, account for the +/- indicator
-    if (isFirstCharacterDiffIndicator && isFirstCharacterDiffIndicator(codeElement)) {
+    if (isFirstCharacterDiffIndicator?.(codeElement)) {
         character++
     }
 
