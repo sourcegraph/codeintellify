@@ -623,10 +623,7 @@ export function createHoverifier<C extends object, D, A>({
     /**
      * An Observable of scroll events on the document.
      */
-    const scrollEvents = fromEvent(document, 'scroll').pipe(
-        observeOn(animationFrameScheduler),
-        share()
-    )
+    const scrollEvents = fromEvent(document, 'scroll').pipe(observeOn(animationFrameScheduler), share())
 
     /**
      * Returns the highlighted range for the given hover result and position.
@@ -674,9 +671,10 @@ export function createHoverifier<C extends object, D, A>({
         scrollBoundaries,
         ...rest
     }: Omit<InternalHoverifierState<C, D, A>, 'mouseIsMoving' | 'hoverOverlayIsFixed'> &
-        Omit<EventOptions<C>, 'resolveContext' | 'dom'> & { codeView: HTMLElement }): Observable<
-        Omit<InternalHoverifierState<C, D, A>, 'mouseIsMoving' | 'hoverOverlayIsFixed'> & { codeView: HTMLElement }
-    > => {
+        Omit<EventOptions<C>, 'resolveContext' | 'dom'> & { codeView: HTMLElement }): Observable<Omit<
+        InternalHoverifierState<C, D, A>,
+        'mouseIsMoving' | 'hoverOverlayIsFixed'
+    > & { codeView: HTMLElement }> => {
         const result = of({ hoveredTokenElement, ...rest })
         if (!hoveredTokenElement || !scrollBoundaries) {
             return result
@@ -702,20 +700,18 @@ export function createHoverifier<C extends object, D, A>({
      * For every position, emits an Observable with new values for the `hoverOrError` state.
      * This is a higher-order Observable (Observable that emits Observables).
      */
-    const hoverObservables: Observable<
-        Observable<{
-            eventType: SupportedMouseEvent | 'jump'
-            dom: DOMFunctions
-            target: HTMLElement
-            adjustPosition?: PositionAdjuster<C>
-            codeView: HTMLElement
-            codeViewId: symbol
-            scrollBoundaries?: HTMLElement[]
-            hoverOrError?: typeof LOADING | (HoverAttachment & D) | ErrorLike | null
-            position?: HoveredToken & C
-            part?: DiffPart
-        }>
-    > = resolvedPositions.pipe(
+    const hoverObservables: Observable<Observable<{
+        eventType: SupportedMouseEvent | 'jump'
+        dom: DOMFunctions
+        target: HTMLElement
+        adjustPosition?: PositionAdjuster<C>
+        codeView: HTMLElement
+        codeViewId: symbol
+        scrollBoundaries?: HTMLElement[]
+        hoverOrError?: typeof LOADING | (HoverAttachment & D) | ErrorLike | null
+        position?: HoveredToken & C
+        part?: DiffPart
+    }>> = resolvedPositions.pipe(
         map(({ position, codeViewId, ...rest }) => {
             if (!position) {
                 return of({ hoverOrError: null, position: undefined, part: undefined, codeViewId, ...rest })
@@ -728,14 +724,7 @@ export function createHoverifier<C extends object, D, A>({
             // 1. Reset the hover content, so no old hover content is displayed at the new position while getting
             // 2. Show a loader if the hover hasn't returned after 100ms
             // 3. Show the hover once it returned
-            return merge(
-                [undefined],
-                of(LOADING).pipe(
-                    delay(LOADER_DELAY),
-                    takeUntil(hover)
-                ),
-                hover
-            ).pipe(
+            return merge([undefined], of(LOADING).pipe(delay(LOADER_DELAY), takeUntil(hover)), hover).pipe(
                 map(hoverOrError => ({
                     ...rest,
                     codeViewId,

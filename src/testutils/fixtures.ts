@@ -26,7 +26,7 @@ export function createStubHoverProvider(
     hover: Partial<HoverAttachment> = {},
     delayTime?: number
 ): HoverProvider<{}, {}> {
-    return () => of(createHoverAttachment(hover)).pipe(delay(delayTime || 0))
+    return () => of(createHoverAttachment(hover)).pipe(delay(delayTime ?? 0))
 }
 
 /**
@@ -37,5 +37,5 @@ export function createStubHoverProvider(
  * @param delayTime optionally delay the fetch
  */
 export function createStubActionsProvider<A>(actions: A[], delayTime?: number): ActionsProvider<{}, A> {
-    return () => of(actions).pipe(delay(delayTime || 0))
+    return () => of(actions).pipe(delay(delayTime ?? 0))
 }

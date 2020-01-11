@@ -304,11 +304,14 @@ describe('token_positions', () => {
                 position: { line: 2, endLine: 4 },
                 getCodeElementFromLineNumber: (codeView, line) => codeView.children[line - 1] as HTMLElement,
             })
-            assert.deepStrictEqual(codeElements.map(({ line, element }) => ({ line, content: element.textContent })), [
-                { line: 2, content: 'Line 2' },
-                { line: 3, content: 'Line 3' },
-                { line: 4, content: 'Line 4' },
-            ])
+            assert.deepStrictEqual(
+                codeElements.map(({ line, element }) => ({ line, content: element.textContent })),
+                [
+                    { line: 2, content: 'Line 2' },
+                    { line: 3, content: 'Line 3' },
+                    { line: 4, content: 'Line 4' },
+                ]
+            )
         })
 
         it('returns all code elements within a given range on a diff code view')

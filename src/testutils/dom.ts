@@ -187,7 +187,7 @@ const createSourcegraphCodeView = (): CodeViewProps => {
  */
 export class DOM {
     /** The inserted nodes. We save them so that we can remove them on cleanup. */
-    private nodes = new Set<Element>()
+    private readonly nodes = new Set<Element>()
 
     /**
      * Creates and inserts the generated test cases into the DOM
@@ -211,7 +211,7 @@ export class DOM {
     public createElementFromString(html: string): HTMLDivElement {
         const element = createElementFromString(html)
         this.insert(element)
-        return element as HTMLDivElement
+        return element
     }
 
     /**
