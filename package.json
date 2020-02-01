@@ -51,7 +51,7 @@
     "@types/node": "12.12.21",
     "@types/sinon": "7.0.13",
     "@types/webpack": "4.4.32",
-    "@types/webpack-env": "1.15.0",
+    "@types/webpack-env": "1.15.1",
     "awesome-typescript-loader": "^5.2.1",
     "chai": "^4.2.0",
     "cpy-cli": "^2.0.0",
