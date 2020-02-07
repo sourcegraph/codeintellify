@@ -383,10 +383,10 @@
   resolved "https://registry.yarnpkg.com/@sinonjs/text-encoding/-/text-encoding-0.7.1.tgz#8da5c6530915653f3a1f38fd5f101d8c3f8079c5"
   integrity sha512-+iTbntw2IZPb/anVDbypzfQa+ay64MW0Zo8aJ8gZPWMMK6/OubMVb6lUPMagqjOPnmtauXnFCACVl3O7ogjeqQ==
 
-"@sourcegraph/event-positions@^1.0.3":
-  version "1.0.3"
-  resolved "https://registry.npmjs.org/@sourcegraph/event-positions/-/event-positions-1.0.3.tgz#89e57c96cc3367509ddfba5b738725f2d7451c23"
-  integrity sha512-+dn3VZVjYl02vpNtQMoWegSWL32If/8/m7o9E4nOvbwmYdzwkJ+1MvsyD7SNqzWQesMZclDGV+1W6pTD7rdXmw==
+"@sourcegraph/event-positions@^1.0.4":
+  version "1.0.4"
+  resolved "https://registry.npmjs.org/@sourcegraph/event-positions/-/event-positions-1.0.4.tgz#031541374b725cfb0cbefaa07add020b1a119a60"
+  integrity sha512-mrWIEpC9UuAZwExMQlRfLaLLwC9x8WQMAOEYFHGEdXCzXEHqaZu22aR8PtrQEMtwia6eIzvZl6uYp0gDDGLo2g==
   dependencies:
     "@sourcegraph/extension-api-types" "^2.0.0"
     lodash "^4.17.10"
