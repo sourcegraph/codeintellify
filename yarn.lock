@@ -6984,10 +6984,10 @@ source-map@^0.6.0, source-map@^0.6.1, source-map@~0.6.1:
   resolved "https://registry.yarnpkg.com/source-map/-/source-map-0.6.1.tgz#74722af32e9614e9c287a8d0bbde48b5e2f1a263"
   integrity sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==
 
-sourcegraph@^23.0.1:
-  version "23.0.1"
-  resolved "https://registry.yarnpkg.com/sourcegraph/-/sourcegraph-23.0.1.tgz#715fcf4129a6d94bc3bfd2740d9c706ae6357ffe"
-  integrity sha512-4We7zqhOagOVxNFdS6/xT/Crhb0Arw/9ytGBu8JuHfjo5yjMtcUYt22kZyu2TaPHXwyPW9muUi1eKSFA6Qg4lw==
+sourcegraph@^24.0.0:
+  version "24.0.0"
+  resolved "https://registry.yarnpkg.com/sourcegraph/-/sourcegraph-24.0.0.tgz#2a2a2ba0f84e77bb2676d441b0b6c3e334466b49"
+  integrity sha512-SQtLGJ0mvCm2vQV5ABNDNXuGWqCL4rdkFWy1EAbGeDk5NrbY/KCfH6rH/4ZTl0YVyL5mYO5squMcdxjHJX2axw==
 
 spawn-error-forwarder@~1.0.0:
   version "1.0.0"

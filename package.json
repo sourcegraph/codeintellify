@@ -75,7 +75,7 @@
     "rimraf": "^3.0.1",
     "semantic-release": "^15.6.3",
     "sinon": "^8.1.1",
-    "sourcegraph": "^23.0.1",
+    "sourcegraph": "^24.0.0",
     "ts-node": "^8.2.0",
     "tslint": "^5.20.1",
     "typescript": "^3.7.4",
