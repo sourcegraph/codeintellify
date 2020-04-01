@@ -1,10 +1,10 @@
 export interface ErrorLike {
     message: string
-    code?: string
+    name?: string
 }
 
 export const isErrorLike = (val: any): val is ErrorLike =>
-    !!val && typeof val === 'object' && (!!val.stack || 'message' in val || 'code' in val) && !('__typename' in val)
+    typeof val === 'object' && val !== null && ('message' in val || 'stack' in val) && !('__typename' in val)
 
 /**
  * Ensures a value is a proper Error, copying all properties if needed
