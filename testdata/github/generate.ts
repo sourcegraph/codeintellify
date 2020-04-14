@@ -1,4 +1,4 @@
-import * as fs from 'fs-extra'
+import * as fs from 'fs'
 import * as path from 'path'
 
 export function generateGithubCodeTable(lines: string[]): string {
@@ -11,7 +11,7 @@ export function generateGithubCodeTable(lines: string[]): string {
         )
         .join('\n')
 
-    const styles = fs.readFileSync(path.join(__dirname, 'styles.css')).toString()
+    const styles = fs.readFileSync(path.join(__dirname, 'styles.css'), 'utf-8')
 
     return `<div class="github-testcase">
       <style>
