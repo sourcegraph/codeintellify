@@ -59,7 +59,7 @@
     "fs-extra": "^8.0.1",
     "husky": "^4.2.1",
     "istanbul-instrumenter-loader": "^3.0.1",
-    "karma": "^4.4.1",
+    "karma": "^5.0.1",
     "karma-chai": "^0.1.0",
     "karma-chrome-launcher": "^2.2.0",
     "karma-coverage-istanbul-reporter": "^2.0.5",
