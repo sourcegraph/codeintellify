@@ -18,8 +18,8 @@
     "prettier-check": "npm run prettier -- --write=false",
     "typecheck": "tsc -p tsconfig.json",
     "tslint": "tslint -c tslint.json -p tsconfig.json './src/*.ts?(x)' './testdata/*.ts?(x)' './*.ts?(x)'",
-    "build": "yarn run tsc && cpy 'src/**/*.scss' lib/",
-    "tsc": "tsc -p tsconfig.dist.json",
+    "build": "tsc -p tsconfig.dist.json",
+    "watch": "yarn run build --watch",
     "test": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' karma start",
     "pretest": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' ts-node ./testdata/generate.ts"
   },
@@ -53,7 +53,6 @@
     "@types/webpack-env": "1.15.1",
     "awesome-typescript-loader": "^5.2.1",
     "chai": "^4.2.0",
-    "cpy-cli": "^2.0.0",
     "esm": "^3.2.25",
     "husky": "^4.2.1",
     "istanbul-instrumenter-loader": "^3.0.1",
