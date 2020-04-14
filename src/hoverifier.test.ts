@@ -228,10 +228,9 @@ describe('Hoverifier', () => {
                 )
 
                 const delayAfterMouseover = 100
-                const outputDiagram = `${MOUSEOVER_DELAY}ms a ${delayTime - 1}ms b ${MOUSEOVER_DELAY +
-                    delayAfterMouseover +
-                    100 -
-                    1}ms c ${delayTime - 1}ms d`
+                const outputDiagram = `${MOUSEOVER_DELAY}ms a ${delayTime - 1}ms b ${
+                    MOUSEOVER_DELAY + delayAfterMouseover + 100 - 1
+                }ms c ${delayTime - 1}ms d`
                 const outputValues: {
                     [key: string]: boolean
                 } = {
@@ -581,9 +580,9 @@ describe('Hoverifier', () => {
                 const inputDiagram = 'a'
 
                 // Subtract 1ms before "b" because "a" takes up 1ms.
-                const outputDiagram = `${LOADER_DELAY}ms ${hoverDelayTime}ms a ${actionsDelayTime -
-                    hoverDelayTime -
-                    1}ms b`
+                const outputDiagram = `${LOADER_DELAY}ms ${hoverDelayTime}ms a ${
+                    actionsDelayTime - hoverDelayTime - 1
+                }ms b`
 
                 const outputValues: {
                     [key: string]: {
@@ -850,9 +849,7 @@ describe('Hoverifier', () => {
                 codeViewSubscription.unsubscribe()
 
                 assert.strictEqual(hoverifier.hoverState.hoverOverlayProps, undefined)
-                await of(null)
-                    .pipe(delay(200))
-                    .toPromise()
+                await of(null).pipe(delay(200)).toPromise()
                 assert.strictEqual(hoverifier.hoverState.hoverOverlayProps, undefined)
             }
         })
@@ -901,9 +898,7 @@ describe('Hoverifier', () => {
                 codeViewSubscription.unsubscribe()
 
                 assert.isDefined(hoverifier.hoverState.hoverOverlayProps)
-                await of(null)
-                    .pipe(delay(200))
-                    .toPromise()
+                await of(null).pipe(delay(200)).toPromise()
                 assert.isDefined(hoverifier.hoverState.hoverOverlayProps)
             }
         })

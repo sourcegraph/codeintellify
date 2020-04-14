@@ -671,10 +671,9 @@ export function createHoverifier<C extends object, D, A>({
         scrollBoundaries,
         ...rest
     }: Omit<InternalHoverifierState<C, D, A>, 'mouseIsMoving' | 'hoverOverlayIsFixed'> &
-        Omit<EventOptions<C>, 'resolveContext' | 'dom'> & { codeView: HTMLElement }): Observable<Omit<
-        InternalHoverifierState<C, D, A>,
-        'mouseIsMoving' | 'hoverOverlayIsFixed'
-    > & { codeView: HTMLElement }> => {
+        Omit<EventOptions<C>, 'resolveContext' | 'dom'> & { codeView: HTMLElement }): Observable<
+        Omit<InternalHoverifierState<C, D, A>, 'mouseIsMoving' | 'hoverOverlayIsFixed'> & { codeView: HTMLElement }
+    > => {
         const result = of({ hoveredTokenElement, ...rest })
         if (!hoveredTokenElement || !scrollBoundaries) {
             return result
