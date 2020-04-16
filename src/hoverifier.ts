@@ -529,7 +529,7 @@ export function createHoverifier<C extends object, D, A>({
                   }
                   return {
                       ...rest,
-                      eventType: 'jump' as 'jump',
+                      eventType: 'jump' as const,
                       target,
                       position: { ...position, part },
                       codeView,
@@ -891,7 +891,7 @@ export function createHoverifier<C extends object, D, A>({
         )
     }
 
-    const resetHover = () => {
+    const resetHover = (): void => {
         container.update({
             hoverOverlayIsFixed: false,
             hoverOverlayPosition: undefined,

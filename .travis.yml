@@ -13,7 +13,7 @@ jobs:
       script:
         - yarn run prettier-check
         - yarn run typecheck
-        - yarn run tslint
+        - yarn run eslint
         - yarn run build
         - yarn test -- --single-run --browsers ChromeHeadlessNoSandbox
         - bash <(curl -s https://codecov.io/bash)

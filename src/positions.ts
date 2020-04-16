@@ -61,7 +61,7 @@ export const findPositionsFromEvents = ({
         ),
         from(elements).pipe(
             switchMap(element => fromEvent<MouseEvent>(element, 'click')),
-            map(event => ({ event, eventType: 'click' as 'click' })),
+            map(event => ({ event, eventType: 'click' as const })),
             // ignore click events caused by the user selecting text.
             // Selecting text should not mess with the hover, hover pinning nor the URL.
             filter(() => {

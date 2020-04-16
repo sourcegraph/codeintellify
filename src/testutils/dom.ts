@@ -191,6 +191,7 @@ export class DOM {
 
     /**
      * Creates and inserts the generated test cases into the DOM
+     *
      * @returns the CodeViewProps for the test cases added to the DOM.
      */
     public createCodeViews(): CodeViewProps[] {
@@ -205,6 +206,7 @@ export class DOM {
 
     /**
      * Creates a div with some arbitrary content.
+     *
      * @param html the content of the element you wish to create.
      * @returns the created div.
      */

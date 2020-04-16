@@ -1,5 +1,5 @@
 {
-  "extends": "./node_modules/@sourcegraph/tsconfig/tsconfig.json",
+  "extends": "@sourcegraph/tsconfig",
   "compilerOptions": {
     "target": "es2018",
     "module": "es2015",
@@ -11,4 +11,5 @@
     "esModuleInterop": true,
     "lib": ["es2017", "dom", "dom.iterable"],
   },
+  "include": ["**/*"],
 }

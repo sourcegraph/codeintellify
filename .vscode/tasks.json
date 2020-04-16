@@ -14,5 +14,12 @@
         "runOn": "folderOpen",
       },
     },
+    {
+      "type": "npm",
+      "script": "eslint",
+      "problemMatcher": ["$eslint-stylish"],
+      "label": "ESLint",
+      "detail": "Lint whole project with ESLint",
+    },
   ],
 }

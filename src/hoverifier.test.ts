@@ -434,7 +434,7 @@ describe('Hoverifier', () => {
                     }
 
                     // Click (to pin) https://sourcegraph.sgdev.org/github.com/gorilla/mux@cb4698366aa625048f3b815af6a0dea8aef9280a/-/blob/mux.go#L24:6
-                    cold(`a`).subscribe(() => {
+                    cold('a').subscribe(() => {
                         dispatchMouseEventAtPositionImpure('click', codeView, {
                             line: 24,
                             character: 6,
@@ -502,7 +502,7 @@ describe('Hoverifier', () => {
                         distinctUntilChanged()
                     )
 
-                    const outputDiagram = `ab`
+                    const outputDiagram = 'ab'
                     const outputValues: {
                         [key: string]: 'hidden' | 'pinned' | 'visible'
                     } = {
@@ -511,7 +511,7 @@ describe('Hoverifier', () => {
                     }
 
                     // Click (to pin) https://sourcegraph.sgdev.org/github.com/gorilla/mux@cb4698366aa625048f3b815af6a0dea8aef9280a/-/blob/mux.go#L24:6
-                    cold(`a`).subscribe(() =>
+                    cold('a').subscribe(() =>
                         dispatchMouseEventAtPositionImpure('click', codeView, {
                             line: 24,
                             character: 6,
@@ -519,7 +519,7 @@ describe('Hoverifier', () => {
                     )
 
                     // Click to another position and ensure the hover is no longer pinned.
-                    cold(`-b`).subscribe(() =>
+                    cold('-b').subscribe(() =>
                         positionJumps.next({
                             codeView: codeView.codeView,
                             scrollElement: codeView.container,
@@ -716,14 +716,17 @@ describe('Hoverifier', () => {
                 }
 
                 // Mouse on https://sourcegraph.sgdev.org/github.com/gorilla/mux@cb4698366aa625048f3b815af6a0dea8aef9280a/-/blob/mux.go#L24:6
-                cold(`a b ${MOUSEOVER_DELAY - 2}ms c d e`, {
-                    a: 'mouseover',
-                    b: 'mousemove',
-                    // Now perform repeated mousemove/mouseover events on the same token.
-                    c: 'mousemove',
-                    d: 'mouseover',
-                    e: 'mousemove',
-                } as Record<string, SupportedMouseEvent>).subscribe(eventType =>
+                cold(
+                    `a b ${MOUSEOVER_DELAY - 2}ms c d e`,
+                    ((): Record<string, SupportedMouseEvent> => ({
+                        a: 'mouseover',
+                        b: 'mousemove',
+                        // Now perform repeated mousemove/mouseover events on the same token.
+                        c: 'mousemove',
+                        d: 'mouseover',
+                        e: 'mousemove',
+                    }))()
+                ).subscribe(eventType =>
                     dispatchMouseEventAtPositionImpure(eventType, codeView, {
                         line: 24,
                         character: 6,

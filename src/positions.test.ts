@@ -59,7 +59,7 @@ describe('positions', () => {
 
     for (const tokenize of [false, true]) {
         for (const codeView of testcases) {
-            it((tokenize ? 'tokenizes' : 'does not tokenize') + ` the DOM when tokenize: ${tokenize}`, () => {
+            it((tokenize ? 'tokenizes' : 'does not tokenize') + ` the DOM when tokenize: ${String(tokenize)}`, () => {
                 of(codeView.codeView)
                     .pipe(findPositionsFromEvents({ domFunctions: codeView, tokenize }))
                     .subscribe()

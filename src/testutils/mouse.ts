@@ -8,7 +8,7 @@ interface Coordinates {
     y: number
 }
 
-export const createMouseEvent = (type: string, coords: Coordinates) => {
+export const createMouseEvent = (type: string, coords: Coordinates): MouseEvent => {
     const event = new MouseEvent(type, {
         clientX: coords.x,
         clientY: coords.y,
@@ -18,7 +18,7 @@ export const createMouseEvent = (type: string, coords: Coordinates) => {
     return event
 }
 
-const invalidPosition = ({ line, character }: Position, message: string) =>
+const invalidPosition = ({ line, character }: Position, message: string): string =>
     `Invalid position L${line}:${character}. ${message}. Positions are 0-indexed.`
 
 /**
@@ -26,6 +26,7 @@ const invalidPosition = ({ line, character }: Position, message: string) =>
  * implementation requires the click event to come from the already tokenized DOM elements. Ideally we would not
  * rely on this at all.
  *
+ * @param eventType The type of event to dispatch.
  * @param codeViewProps the codeViewProps props from the test cases.
  * @param position the position of the event.
  */
@@ -33,7 +34,7 @@ export const dispatchMouseEventAtPositionImpure = (
     eventType: 'click' | 'mouseover' | 'mousemove',
     { codeView, getCodeElementFromLineNumber }: CodeViewProps,
     position: Position
-) => {
+): void => {
     const line = getCodeElementFromLineNumber(codeView, position.line)
     if (!line) {
         throw new Error(invalidPosition(position, 'Line not found'))
@@ -74,7 +75,7 @@ export const dispatchMouseEventAtPositionImpure = (
  * @param codeViewProps the CodeViewProps from the generated test cases
  * @param position the 0-indexed position to click
  */
-export const clickPosition = ({ codeView, getCodeElementFromLineNumber }: CodeViewProps, position: Position) => {
+export const clickPosition = ({ codeView, getCodeElementFromLineNumber }: CodeViewProps, position: Position): void => {
     const line = getCodeElementFromLineNumber(codeView, position.line)
     if (!line) {
         throw new Error(invalidPosition(position, 'Line not found'))

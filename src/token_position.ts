@@ -10,6 +10,7 @@ import { LineOrPositionOrRange } from './types'
 export interface DOMFunctions {
     /**
      * Get the element containing the code for a line from an event target.
+     *
      * @param target is the event target.
      * @returns the element containing the code for a line or null if it can't be found. For example, the second <td> inside a <tr> on Sourcegraph and Github.
      */
@@ -27,6 +28,7 @@ export interface DOMFunctions {
     /**
      * Gets the line number for a given element containing code for a line.
      * When this function is called, it will be passed the result of either `getCodeElementFromTarget` or `getCodeElementFromLineNumber`.
+     *
      * @param codeElement The element containing code for a line.
      * @returns The line number.
      */
@@ -55,7 +57,7 @@ export interface DOMFunctions {
  * Like `convertNode`, but idempotent.
  * The CSS class `annotated` is used to check if the cell is already converted.
  *
- * @param cell The code `<td>` to convert.
+ * @param element The code `<td>` to convert.
  */
 export function convertCodeElementIdempotent(element: HTMLElement): void {
     if (element && !element.classList.contains('annotated')) {
@@ -197,6 +199,7 @@ function isSameTokenType(tokenType: TokenType, node: Node): boolean {
  * consumeNextToken parses the text content of a text node and returns the next "distinct"
  * code token. It handles edge case #1 from convertNode(). The tokenization scheme is
  * heuristic-based and uses simple regular expressions.
+ *
  * @param txt Aribitrary text to tokenize.
  */
 function consumeNextToken(txt: string): string {
@@ -365,6 +368,7 @@ export interface HoveredToken {
  * It works by traversing the DOM until the HTMLElement's TD ancestor. Once the ancestor is found, we traverse the DOM again
  * (this time the opposite direction) counting characters until the original target is found.
  * Returns undefined if line/char cannot be determined for the provided target.
+ *
  * @param target The element to compute line & character offset for.
  * @param ignoreFirstChar Whether to ignore the first character on a line when computing character offset.
  */
@@ -402,13 +406,11 @@ export function locateTarget(
         if (root === target) {
             return true
         }
-        // tslint:disable-next-line
-        for (let i = 0; i < root.childNodes.length; ++i) {
-            const child = root.childNodes[i] as HTMLElement
+        for (const child of root.childNodes) {
             if (child === target) {
                 return true
             }
-            if (child.children === undefined) {
+            if (!(child instanceof HTMLElement)) {
                 character += child.textContent!.length
                 continue
             }
@@ -417,7 +419,7 @@ export function locateTarget(
                 return true
             }
             if (child.children.length === 0) {
-                // Child is not the original target, but has no chidren to recurse on. Add to character offset.
+                // Child is not the original target, but has no children to recurse on. Add to character offset.
                 character += (child.textContent as string).length // TODO(john): I think this needs to be escaped before we add its length...
                 if (ignoreFirstCharacter) {
                     character -= 1
