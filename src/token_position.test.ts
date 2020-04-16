@@ -123,7 +123,8 @@ describe('token_positions', () => {
         })
 
         it('finds the correct token (without tokenization)', () => {
-            const content = `<span role="presentation" style="padding-right: 0.1px;"><span class="cm-tab" role="presentation" cm-text="	">    </span><span class="cm-keyword">if</span> <span class="cm-variable">rv</span> :<span class="cm-operator">=</span> <span class="cm-variable">contextGet</span>(<span class="cm-variable">r</span>, <span class="cm-variable">varsKey</span>); <span class="cm-variable">rv</span> <span class="cm-operator">!=</span> <span class="cm-atom">nil</span> {</span>`
+            const content =
+                '<span role="presentation" style="padding-right: 0.1px;"><span class="cm-tab" role="presentation" cm-text="	">    </span><span class="cm-keyword">if</span> <span class="cm-variable">rv</span> :<span class="cm-operator">=</span> <span class="cm-variable">contextGet</span>(<span class="cm-variable">r</span>, <span class="cm-variable">varsKey</span>); <span class="cm-variable">rv</span> <span class="cm-operator">!=</span> <span class="cm-atom">nil</span> {</span>'
 
             // Each offset is 3 more than the corresponding offset in the
             // tokenized test above because this test case comes from Bitbucket

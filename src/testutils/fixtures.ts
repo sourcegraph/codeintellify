@@ -6,6 +6,7 @@ import { HoverAttachment } from '../types'
 
 /**
  * Create a stubbed HoverAttachment object.
+ *
  * @param hover optional values for the HoverAttachment object. If none is provided, we'll output defaults.
  */
 export const createHoverAttachment = (hover: Partial<HoverAttachment> = {}): HoverAttachment => ({
@@ -19,6 +20,7 @@ export const createHoverAttachment = (hover: Partial<HoverAttachment> = {}): Hov
 
 /**
  * Create a stubbed HoverProvider
+ *
  * @param hover optional values to be passed to createHoverAttachment
  * @param delayTime optionally delay the hover fetch
  */
