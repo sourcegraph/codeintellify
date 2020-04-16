@@ -64,7 +64,7 @@ export const emitLoading = <TResult, TEmpty>(
             filter(([{ isLoading, result }]) => isLoading && isEqual(result, emptyResultValue)),
             mapTo(LOADING)
         ),
-        // Show the provider results (and no more loader) once the source emitted the first result
+        // Show the provider results (and no more loader) once the source emitted the first result or is no longer loading.
         sharedSource.pipe(
             filter(({ isLoading, result }) => !isLoading || !isEqual(result, emptyResultValue)),
             map(({ result }) => result)

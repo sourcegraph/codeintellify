@@ -1,13 +1,15 @@
 import { TestScheduler } from 'rxjs/testing'
 import { emitLoading, LOADING, MaybeLoadingResult } from './loading'
 
-const inputAlphabet: Record<'l' | 'e' | 'r', MaybeLoadingResult<number | null>> = {
+const inputAlphabet: Record<'l' | 'e' | 'i' | 'r', MaybeLoadingResult<number | null>> = {
     // loading
     l: { isLoading: true, result: null },
     // empty
     e: { isLoading: false, result: null },
+    // intermediate result
+    i: { isLoading: true, result: 1 },
     // result
-    r: { isLoading: false, result: 1 },
+    r: { isLoading: false, result: 2 },
 }
 
 const outputAlphabet = {
@@ -17,6 +19,8 @@ const outputAlphabet = {
     e: null,
     // loading
     l: LOADING,
+    // intermediate result
+    i: inputAlphabet.i.result,
     // result
     r: inputAlphabet.r.result,
 }
@@ -62,6 +66,20 @@ describe('emitLoading()', () => {
         scheduler.run(({ cold, expectObservable }) => {
             const source = cold('l 400ms e', inputAlphabet)
             expectObservable(source.pipe(emitLoading(300, null))).toBe('u 299ms l 100ms e', outputAlphabet)
+        })
+    })
+    it('emits intermediate results before the loader delay', () => {
+        const scheduler = new TestScheduler((a, b) => chai.assert.deepEqual(a, b))
+        scheduler.run(({ cold, expectObservable }) => {
+            const source = cold('l 10ms i 10ms r', inputAlphabet)
+            expectObservable(source.pipe(emitLoading(300, null))).toBe('u 10ms i 10ms r', outputAlphabet)
+        })
+    })
+    it('emits intermediate results after the loader delay and showing a loader', () => {
+        const scheduler = new TestScheduler((a, b) => chai.assert.deepEqual(a, b))
+        scheduler.run(({ cold, expectObservable }) => {
+            const source = cold('l 400ms i 10ms r', inputAlphabet)
+            expectObservable(source.pipe(emitLoading(300, null))).toBe('u 299ms l 100ms i 10ms r', outputAlphabet)
         })
     })
 })
