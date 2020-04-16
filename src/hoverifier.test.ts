@@ -18,7 +18,9 @@ import { findPositionsFromEvents, SupportedMouseEvent } from './positions'
 import { CodeViewProps, DOM } from './testutils/dom'
 import { createHoverAttachment, createStubActionsProvider, createStubHoverProvider } from './testutils/fixtures'
 import { dispatchMouseEventAtPositionImpure } from './testutils/mouse'
-import { HoverAttachment, LOADING } from './types'
+import { HoverAttachment } from './types'
+import { LOADING } from './loading'
+
 const { assert } = chai
 
 describe('Hoverifier', () => {
@@ -391,7 +393,9 @@ describe('Hoverifier', () => {
                         hoverOverlayRerenders: EMPTY,
                         // Only show on line 24, not line 25 (which is the 2nd click event below).
                         getHover: position =>
-                            position.line === 24 ? createStubHoverProvider({}, delayTime)(position) : of(null),
+                            position.line === 24
+                                ? createStubHoverProvider({}, delayTime)(position)
+                                : of({ isLoading: false, result: null }),
                         getActions: position =>
                             position.line === 24
                                 ? createStubActionsProvider(['foo', 'bar'], delayTime)(position)
@@ -465,7 +469,10 @@ describe('Hoverifier', () => {
                         hoverOverlayElements: of(null),
                         hoverOverlayRerenders: EMPTY,
                         // Only show on line 24, not line 25 (which is the 2nd click event below).
-                        getHover: position => (position.line === 24 ? createStubHoverProvider({})(position) : of(null)),
+                        getHover: position =>
+                            position.line === 24
+                                ? createStubHoverProvider({})(position)
+                                : of({ isLoading: false, result: null }),
                         getActions: position =>
                             position.line === 24 ? createStubActionsProvider(['foo', 'bar'])(position) : of(null),
                         pinningEnabled: true,

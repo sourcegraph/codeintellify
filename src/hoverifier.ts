@@ -19,7 +19,6 @@ import {
 import {
     catchError,
     debounceTime,
-    delay,
     distinctUntilChanged,
     filter,
     first,
@@ -33,7 +32,7 @@ import {
 } from 'rxjs/operators'
 import { Key } from 'ts-key-enum'
 import { asError, ErrorLike, isErrorLike } from './errors'
-import { elementOverlaps, scrollIntoCenterIfNeeded } from './helpers'
+import { elementOverlaps, scrollIntoCenterIfNeeded, toMaybeLoadingProviderResult } from './helpers'
 import { calculateOverlayPosition } from './overlay_position'
 import { DiffPart, PositionEvent, SupportedMouseEvent } from './positions'
 import { createObservableStateContainer } from './state'
@@ -45,7 +44,8 @@ import {
     getTokenAtPosition,
     HoveredToken,
 } from './token_position'
-import { HoverAttachment, HoverOverlayProps, isPosition, LineOrPositionOrRange, LOADING } from './types'
+import { HoverAttachment, HoverOverlayProps, isPosition, LineOrPositionOrRange } from './types'
+import { emitLoading, MaybeLoadingResult, LOADING } from './loading'
 
 export { HoveredToken }
 
@@ -335,12 +335,16 @@ export const TOOLTIP_DISPLAY_DELAY = 100
 export const MOUSEOVER_DELAY = 50
 
 /**
+ * Function that returns a Subscribable of the hover result to be shown.
+ * It may emit on the Observable to update the content and must indicate when it starts and stopped loading new content.
+ * It should emit a `null` result if the token has no hover content (e.g. whitespace, punctuation).
+ *
  * @template C Extra context for the hovered token.
  * @template D The type of the hover content data.
  */
 export type HoverProvider<C extends object, D> = (
     position: HoveredToken & C
-) => SubscribableOrPromise<(HoverAttachment & D) | null>
+) => Subscribable<MaybeLoadingResult<(HoverAttachment & D) | null>> | PromiseLike<(HoverAttachment & D) | null>
 
 /**
  * @template C Extra context for the hovered token.
@@ -716,21 +720,10 @@ export function createHoverifier<C extends object, D, A>({
                 return of({ hoverOrError: null, position: undefined, part: undefined, codeViewId, ...rest })
             }
             // Get the hover for that position
-            const hover = from(getHover(position)).pipe(
-                catchError((error): [ErrorLike] => [asError(error)]),
-                share()
-            )
-            // 1. Reset the hover content, so no old hover content is displayed at the new position while getting
-            // 2. Show a loader if the hover hasn't returned after 100ms
-            // 3. Show the hover once it returned
-            return merge([undefined], of(LOADING).pipe(delay(LOADER_DELAY), takeUntil(hover)), hover).pipe(
-                map(hoverOrError => ({
-                    ...rest,
-                    codeViewId,
-                    position,
-                    hoverOrError,
-                    part: position.part,
-                })),
+            return toMaybeLoadingProviderResult(getHover(position)).pipe(
+                catchError((error): [MaybeLoadingResult<ErrorLike>] => [{ isLoading: false, result: asError(error) }]),
+                emitLoading<(HoverAttachment & D) | ErrorLike, null>(LOADER_DELAY, null),
+                map(hoverOrError => ({ ...rest, codeViewId, position, hoverOrError, part: position.part })),
                 // Do not emit anything after the code view this action came from got unhoverified
                 takeUntil(allUnhoverifies.pipe(filter(unhoverifiedCodeViewId => unhoverifiedCodeViewId === codeViewId)))
             )
@@ -852,15 +845,15 @@ export function createHoverifier<C extends object, D, A>({
     if (pinningEnabled) {
         // DEFERRED HOVER OVERLAY PINNING
         // If the new position came from a click or the URL,
-        // if either the hover or the definition turn out non-empty, pin the tooltip.
+        // and either the hover or the definition turn out non-empty, pin the tooltip.
         // If they both turn out empty, unpin it so we don't end up with an invisible tooltip.
         //
         // zip together the corresponding hover and definition
         subscription.add(
-            combineLatest(
+            combineLatest([
                 zip(hoverObservables, actionObservables),
-                resolvedPositionEvents.pipe(map(({ eventType }) => eventType))
-            )
+                resolvedPositionEvents.pipe(map(({ eventType }) => eventType)),
+            ])
                 .pipe(
                     switchMap(([[hoverObservable, actionObservable], eventType]) => {
                         // If the position was triggered by a mouseover, never pin
@@ -870,7 +863,7 @@ export function createHoverifier<C extends object, D, A>({
                         // combine the latest values for them, so we have access to both values
                         // and can reevaluate our pinning decision whenever one of the two updates,
                         // independent of the order in which they emit
-                        return combineLatest(hoverObservable, actionObservable).pipe(
+                        return combineLatest([hoverObservable, actionObservable]).pipe(
                             map(([{ hoverOrError }, actionsOrError]) =>
                                 // In the time between the click/jump and the loader being displayed,
                                 // pin the hover overlay so mouseover events get ignored
