@@ -335,8 +335,9 @@ export const TOOLTIP_DISPLAY_DELAY = 100
 export const MOUSEOVER_DELAY = 50
 
 /**
- * Function that returns a Subscribable of the hover result to be shown.
- * It may emit on the Observable to update the content and must indicate when it starts and stopped loading new content.
+ * Function that returns a Subscribable or PromiseLike of the hover result to be shown.
+ * If a Subscribable is returned, it may emit more than once to update the content,
+ * and must indicate when it starts and stopped loading new content.
  * It should emit a `null` result if the token has no hover content (e.g. whitespace, punctuation).
  *
  * @template C Extra context for the hovered token.

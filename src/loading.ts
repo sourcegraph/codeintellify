@@ -22,11 +22,11 @@ export interface MaybeLoadingResult<T> {
 }
 
 /**
- * Handles input of MaybeLoadingResult (which contains both results and loading states) and returns a sequence of clear
+ * Maps a stream of MaybeLoadingResult (which contains both results and loading states) to a stream of clear
  * instructions on when to show a loader, results or nothing.
  *
- * @param loaderDelay After how many milliseconds of no results a loader should be shown.
- * @param emptyResultValue The value that represents no results. This will be emitted, and also deep-compared to with `isEqual()`. Example: `null`, `[]`
+ * @param loaderDelay The delay, in milliseconds, after which a loader should be shown if no results have been emitted.
+ * @param emptyResultValue The value that represents the absence of results. This will be emitted, and also deep-compared to with `isEqual()`. Example: `null`, `[]`
  *
  * @template TResult The type of the provider result (without `TEmpty`).
  * @template TEmpty The type of the empty value, e.g. `null` or `[]`.
