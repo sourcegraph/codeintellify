@@ -1,5 +1,5 @@
 import { OperatorFunction, merge, combineLatest, of } from 'rxjs'
-import { share, startWith, map, filter, mapTo, delay, endWith, scan } from 'rxjs/operators'
+import { share, startWith, map, filter, mapTo, delay, endWith, scan, takeUntil, last } from 'rxjs/operators'
 import { isEqual } from 'lodash'
 
 export const LOADING = 'loading' as const
@@ -58,7 +58,11 @@ export const emitLoading = <TResult, TEmpty>(
             ),
             // Make sure LOADER_DELAY has passed since this token has been hovered
             // (no matter if the source has emitted already)
-            of(null).pipe(delay(loaderDelay)),
+            of(null).pipe(
+                delay(loaderDelay),
+                // Stop and ignore the timer when the source Observable completes
+                takeUntil(sharedSource.pipe(last(null, null)))
+            ),
         ]).pipe(
             // Show the loader when the provider is loading and has no result yet
             filter(([{ isLoading, result }]) => isLoading && isEqual(result, emptyResultValue)),

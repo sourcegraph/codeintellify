@@ -42,6 +42,34 @@ describe('emitLoading()', () => {
             expectObservable(source.pipe(emitLoading(300, null))).toBe('u 299ms l 99ms r', outputAlphabet)
         })
     })
+    it('emits an empty result if the source completes without a result', () => {
+        const scheduler = new TestScheduler(deepStrictEqual)
+        scheduler.run(({ cold, expectObservable }) => {
+            const source = cold('400ms |', inputAlphabet)
+            expectObservable(source.pipe(emitLoading(300, null))).toBe('u 299ms l 99ms (e|)', outputAlphabet)
+        })
+    })
+    it('emits an empty result if the source completes without a result before the loader delay', () => {
+        const scheduler = new TestScheduler(deepStrictEqual)
+        scheduler.run(({ cold, expectObservable }) => {
+            const source = cold('10ms |', inputAlphabet)
+            expectObservable(source.pipe(emitLoading(300, null))).toBe('u 9ms (e|)', outputAlphabet)
+        })
+    })
+    it('emits an empty result if the source completes after an empty loading result', () => {
+        const scheduler = new TestScheduler(deepStrictEqual)
+        scheduler.run(({ cold, expectObservable }) => {
+            const source = cold('l 400ms |', inputAlphabet)
+            expectObservable(source.pipe(emitLoading(300, null))).toBe('u 299ms l 100ms (e|)', outputAlphabet)
+        })
+    })
+    it('emits the last result if the source completes after an intermediate non-empty loading result', () => {
+        const scheduler = new TestScheduler(deepStrictEqual)
+        scheduler.run(({ cold, expectObservable }) => {
+            const source = cold('-i-|', inputAlphabet)
+            expectObservable(source.pipe(emitLoading(300, null))).toBe('ui-(i|)', outputAlphabet)
+        })
+    })
     it('emits a loader if the source has not emitted a result after the loader delay', () => {
         const scheduler = new TestScheduler(deepStrictEqual)
         scheduler.run(({ cold, expectObservable }) => {
