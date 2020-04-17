@@ -69,7 +69,7 @@
     "karma-webpack": "^4.0.2",
     "mocha": "^6.1.4",
     "prettier": "^2.0.4",
-    "raw-loader": "^3.0.0",
+    "raw-loader": "^4.0.1",
     "semantic-release": "^17.0.6",
     "sinon": "^8.1.1",
     "sourcegraph": "^23.0.1",
