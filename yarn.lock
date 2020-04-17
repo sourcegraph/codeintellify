@@ -1812,6 +1812,14 @@ chalk@^1.1.3:
     strip-ansi "^3.0.0"
     supports-color "^2.0.0"
 
+chalk@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/chalk/-/chalk-3.0.0.tgz#3f73c2bf526591f574cc492c51e2456349f844e4"
+  integrity sha512-4D3B6Wf41KOYRFdszmDqMCGq5VV/uMAB273JILmO+3jAlh8X4qDtdtgCR3fxtbLEMzSx22QdhnDcJvu2u1fVwg==
+  dependencies:
+    ansi-styles "^4.1.0"
+    supports-color "^7.1.0"
+
 chalk@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/chalk/-/chalk-4.0.0.tgz#6e98081ed2d17faab615eb52ac66ec1fe6209e72"
@@ -8031,10 +8039,10 @@ source-map@^0.7.3:
   resolved "https://registry.yarnpkg.com/source-map/-/source-map-0.7.3.tgz#5302f8169031735226544092e64981f751750383"
   integrity sha512-CkCj6giN3S+n9qrYiBTX5gystlENnRW5jZeNLHpe6aue+SrHcG5VYwujhW9s4dY31mEGsxBDrHR6oI69fTXsaQ==
 
-sourcegraph@^23.0.1:
-  version "23.0.1"
-  resolved "https://registry.yarnpkg.com/sourcegraph/-/sourcegraph-23.0.1.tgz#715fcf4129a6d94bc3bfd2740d9c706ae6357ffe"
-  integrity sha512-4We7zqhOagOVxNFdS6/xT/Crhb0Arw/9ytGBu8JuHfjo5yjMtcUYt22kZyu2TaPHXwyPW9muUi1eKSFA6Qg4lw==
+sourcegraph@^24.0.0:
+  version "24.0.0"
+  resolved "https://registry.yarnpkg.com/sourcegraph/-/sourcegraph-24.0.0.tgz#2a2a2ba0f84e77bb2676d441b0b6c3e334466b49"
+  integrity sha512-SQtLGJ0mvCm2vQV5ABNDNXuGWqCL4rdkFWy1EAbGeDk5NrbY/KCfH6rH/4ZTl0YVyL5mYO5squMcdxjHJX2axw==
 
 spawn-error-forwarder@~1.0.0:
   version "1.0.0"
