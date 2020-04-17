@@ -1,3 +1,24 @@
+import { MaybeLoadingResult } from './loading'
+import { Subscribable } from 'sourcegraph'
+import { Observable, from } from 'rxjs'
+import { isObject } from 'lodash'
+import { map } from 'rxjs/operators'
+
+/**
+ * Checks if the given value is thenable.
+ */
+const isPromiseLike = (value: unknown): value is PromiseLike<unknown> =>
+    isObject(value) && typeof (value as PromiseLike<unknown>).then === 'function'
+
+/**
+ * Converts a provider result, which can be a continuously-updating, maybe-loading Subscribable, or a Promise for a
+ * single result, to the same type.
+ */
+export const toMaybeLoadingProviderResult = <T>(
+    value: Subscribable<MaybeLoadingResult<T>> | PromiseLike<T>
+): Observable<MaybeLoadingResult<T>> =>
+    isPromiseLike(value) ? from(value).pipe(map(result => ({ isLoading: false, result }))) : from(value)
+
 /**
  * Returns true if `val` is not `null` or `undefined`
  */

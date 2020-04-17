@@ -30,6 +30,7 @@ const config: Configuration = {
     },
     resolve: {
         extensions: ['.ts', '.js', '.html'],
+        mainFields: ['es2015', 'module', 'browser', 'main'],
     },
     output: {
         filename: '[name].js',

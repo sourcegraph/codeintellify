@@ -3,6 +3,7 @@ import { delay } from 'rxjs/operators'
 
 import { ActionsProvider, HoverProvider } from '../hoverifier'
 import { HoverAttachment } from '../types'
+import { MaybeLoadingResult } from '../loading'
 
 /**
  * Create a stubbed HoverAttachment object.
@@ -28,7 +29,10 @@ export function createStubHoverProvider(
     hover: Partial<HoverAttachment> = {},
     delayTime?: number
 ): HoverProvider<{}, {}> {
-    return () => of(createHoverAttachment(hover)).pipe(delay(delayTime ?? 0))
+    return () =>
+        of<MaybeLoadingResult<{}>>({ isLoading: false, result: createHoverAttachment(hover) }).pipe(
+            delay(delayTime ?? 0)
+        )
 }
 
 /**
