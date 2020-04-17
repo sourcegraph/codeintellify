@@ -70,6 +70,14 @@ describe('emitLoading()', () => {
             expectObservable(source.pipe(emitLoading(300, null))).toBe('ui-(i|)', outputAlphabet)
         })
     })
+    it('errors if the source errors', () => {
+        const scheduler = new TestScheduler(deepStrictEqual)
+        scheduler.run(({ cold, expectObservable }) => {
+            const error = new Error('test')
+            const source = cold('10ms #', inputAlphabet, error)
+            expectObservable(source.pipe(emitLoading(300, null))).toBe('u 9ms #', outputAlphabet, error)
+        })
+    })
     it('emits a loader if the source has not emitted a result after the loader delay', () => {
         const scheduler = new TestScheduler(deepStrictEqual)
         scheduler.run(({ cold, expectObservable }) => {
