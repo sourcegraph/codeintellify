@@ -211,7 +211,7 @@ export interface HoverifyOptions<C extends object>
  * Output that contains the information needed to render the HoverOverlay.
  *
  * @template C Extra context for the hovered token.
- *  * @template D The type of the hover content data.
+ * @template D The type of the hover content data.
  * @template A The type of an action.
  */
 export interface HoverState<C extends object, D, A> {
