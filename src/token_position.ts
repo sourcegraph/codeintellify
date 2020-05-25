@@ -4,8 +4,6 @@ import { LineOrPositionOrRange } from './types'
 /**
  * A collection of methods needed to tell codeintellify how to look at the DOM. These are required for
  * ensuring that we don't rely on any sort of specific DOM structure.
- *
- *
  */
 export interface DOMFunctions {
     /**
@@ -70,19 +68,21 @@ export function convertCodeElementIdempotent(element: HTMLElement): void {
  * convertNode modifies a DOM node so that we can identify precisely token a user has clicked or hovered over.
  * On a code view, source code is typically wrapped in a HTML table cell. It may look like this:
  *
- *     <td id="LC18" class="blob-code blob-code-inner js-file-line">
- *        <#textnode>\t</#textnode>
- *        <span class="pl-k">return</span>
- *        <#textnode>&amp;Router{namedRoutes: </#textnode>
- *        <span class="pl-c1">make</span>
- *        <#textnode>(</#textnode>
- *        <span class="pl-k">map</span>
- *        <#textnode>[</#textnode>
- *        <span class="pl-k">string</span>
- *        <#textnode>]*Route), KeepContext: </#textnode>
- *        <span class="pl-c1">false</span>
- *        <#textnode>}</#textnode>
- *     </td>
+ * ```html
+ * <td id="LC18" class="blob-code blob-code-inner js-file-line">
+ *    <#textnode>\t</#textnode>
+ *    <span class="pl-k">return</span>
+ *    <#textnode>&amp;Router{namedRoutes: </#textnode>
+ *    <span class="pl-c1">make</span>
+ *    <#textnode>(</#textnode>
+ *    <span class="pl-k">map</span>
+ *    <#textnode>[</#textnode>
+ *    <span class="pl-k">string</span>
+ *    <#textnode>]*Route), KeepContext: </#textnode>
+ *    <span class="pl-c1">false</span>
+ *    <#textnode>}</#textnode>
+ * </td>
+ * ```
  *
  * The browser extension works by registering a hover event listeners on the <td> element. When the user hovers over
  * "return" (in the first <span> node) the event target will be the <span> node. We can use the event target to determine which line
