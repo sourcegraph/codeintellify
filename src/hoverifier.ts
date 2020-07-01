@@ -29,6 +29,7 @@ import {
     switchMap,
     takeUntil,
     withLatestFrom,
+    mergeMap,
 } from 'rxjs/operators'
 import { Key } from 'ts-key-enum'
 import { asError, ErrorLike, isErrorLike } from './errors'
@@ -44,7 +45,7 @@ import {
     getTokenAtPosition,
     HoveredToken,
 } from './token_position'
-import { HoverAttachment, HoverOverlayProps, isPosition, LineOrPositionOrRange } from './types'
+import { HoverAttachment, HoverOverlayProps, isPosition, LineOrPositionOrRange, DocumentHighlight } from './types'
 import { emitLoading, MaybeLoadingResult, LOADING } from './loading'
 
 export { HoveredToken }
@@ -81,6 +82,11 @@ export interface HoverifierOptions<C extends object, D, A> {
      * Called to get the data to display in the hover.
      */
     getHover: HoverProvider<C, D>
+
+    /**
+     * TODO - document
+     */
+    getDocumentHighlights: DocumentHighlightProvider<C>
 
     /**
      * Called to get the actions to display in the hover.
@@ -347,6 +353,10 @@ export type HoverProvider<C extends object, D> = (
     position: HoveredToken & C
 ) => Subscribable<MaybeLoadingResult<(HoverAttachment & D) | null>> | PromiseLike<(HoverAttachment & D) | null>
 
+export type DocumentHighlightProvider<C extends object> = (
+    position: HoveredToken & C
+) => Subscribable<MaybeLoadingResult<DocumentHighlight[] | null>> | PromiseLike<DocumentHighlight[] | null>
+
 /**
  * @template C Extra context for the hovered token.
  * @template A The type of an action.
@@ -370,6 +380,7 @@ export function createHoverifier<C extends object, D, A>({
     closeButtonClicks,
     hoverOverlayRerenders,
     getHover,
+    getDocumentHighlights,
     getActions,
     pinningEnabled,
     tokenize = true,
@@ -720,6 +731,7 @@ export function createHoverifier<C extends object, D, A>({
             if (!position) {
                 return of({ hoverOrError: null, position: undefined, part: undefined, codeViewId, ...rest })
             }
+
             // Get the hover for that position
             return toMaybeLoadingProviderResult(getHover(position)).pipe(
                 catchError((error): [MaybeLoadingResult<ErrorLike>] => [{ isLoading: false, result: asError(error) }]),
@@ -731,7 +743,7 @@ export function createHoverifier<C extends object, D, A>({
         }),
         share()
     )
-    // Highlight the hover range returned by the language server
+    // Highlight the hover range returned by the hover provider
     subscription.add(
         hoverObservables
             .pipe(
@@ -810,6 +822,148 @@ export function createHoverifier<C extends object, D, A>({
                 }
             })
     )
+
+    //
+    //
+    //
+    //// EXPERIMENT
+
+    type documentHighlightObservableContext = {
+        eventType: SupportedMouseEvent | 'jump'
+        dom: DOMFunctions
+        target: HTMLElement
+        adjustPosition?: PositionAdjuster<C>
+        codeView: HTMLElement
+        codeViewId: symbol
+        scrollBoundaries?: HTMLElement[]
+        position?: HoveredToken & C
+        part?: DiffPart
+    }
+
+    const documentHighlightObservables: Observable<Observable<
+        documentHighlightObservableContext & {
+            documentHighlightsOrError?: typeof LOADING | DocumentHighlight[] | ErrorLike | null
+        }
+    >> = resolvedPositions.pipe(
+        map(({ position, codeViewId, ...rest }) => {
+            if (!position) {
+                return of({
+                    documentHighlightsOrError: null,
+                    position: undefined,
+                    part: undefined,
+                    codeViewId,
+                    ...rest,
+                })
+            }
+
+            // Get the document highlights for that position
+            return toMaybeLoadingProviderResult(getDocumentHighlights(position)).pipe(
+                catchError((error): [MaybeLoadingResult<ErrorLike>] => [{ isLoading: false, result: asError(error) }]),
+                emitLoading<DocumentHighlight[] | ErrorLike, null>(LOADER_DELAY, null),
+                map(documentHighlightsOrError => ({
+                    ...rest,
+                    codeViewId,
+                    position,
+                    documentHighlightsOrError,
+                    part: position.part,
+                })),
+                // Do not emit anything after the code view this action came from got unhoverified
+                takeUntil(allUnhoverifies.pipe(filter(unhoverifiedCodeViewId => unhoverifiedCodeViewId === codeViewId)))
+            )
+        }),
+        share()
+    )
+
+    // Highlight the ranges returned by the document highlight provider
+    subscription.add(
+        documentHighlightObservables
+            .pipe(
+                switchMap(highlightObservable => highlightObservable),
+                switchMap(({ documentHighlightsOrError, position, adjustPosition, codeView, part, ...rest }) => {
+                    let highlights =
+                        documentHighlightsOrError &&
+                        documentHighlightsOrError !== LOADING &&
+                        !isErrorLike(documentHighlightsOrError)
+                            ? documentHighlightsOrError
+                            : []
+
+                    if (highlights.length === 0 || !position) {
+                        return of({ adjustPosition, codeView, part, ...rest, positions: of<Position[]>([]) })
+                    }
+
+                    const positions: Observable<Position>[] = []
+                    for (const { range } of highlights) {
+                        let pos = { ...position, ...range.start }
+
+                        // The requested position is is 0-indexed; the code here is currently 1-indexed
+                        const { line, character } = pos
+                        pos = { ...pos, line: line + 1, character: character + 1 }
+
+                        const adjustingPosition = adjustPosition
+                            ? from(
+                                  adjustPosition({
+                                      codeView,
+                                      direction: AdjustmentDirection.ActualToCodeView,
+                                      position: {
+                                          ...pos,
+                                          part,
+                                      },
+                                  })
+                              )
+                            : of(pos)
+
+                        // TODO - combine with above
+                        positions.push(adjustingPosition)
+                    }
+
+                    return of({
+                        adjustPosition,
+                        codeView,
+                        part,
+                        ...rest,
+                        positions: combineLatest(positions),
+                    })
+                }),
+                mergeMap(({ positions, codeView, dom, part }) => {
+                    const q = positions.pipe(
+                        map(highlightedRanges => {
+                            return highlightedRanges.map(highlightedRange => {
+                                const hoveredTokenElement = highlightedRange
+                                    ? getTokenAtPosition(codeView, highlightedRange, dom, part, tokenize)
+                                    : undefined
+
+                                // TODO - flatten
+                                console.log({ highlightedRange, hoveredTokenElement })
+                                return hoveredTokenElement
+                            })
+                        })
+                    )
+
+                    // TODO - combine with above
+                    return q.pipe(map(elements => ({ elements, codeView, dom, part })))
+                })
+            )
+            .subscribe(({ codeView, elements }) => {
+                // Ensure the previously highlighted range is not highlighted and the new highlightedRange (if any)
+                // is highlighted.
+                const currentHighlighted = codeView.querySelector('.document-highlight')
+                if (currentHighlighted) {
+                    currentHighlighted.classList.remove('document-highlight')
+                }
+
+                for (const element of elements) {
+                    console.log({ element })
+                    if (element) {
+                        element.classList.add('document-highlight')
+                    }
+                }
+            })
+    )
+
+    //// END EXPERIMENT
+    //
+    //
+    //
 
     /**
      * For every position, emits an Observable that emits new values for the `actionsOrError` state.

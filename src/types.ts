@@ -42,6 +42,16 @@ export interface HoverAttachment {
 }
 
 /**
+ * TODO - document
+ */
+export interface DocumentHighlight {
+    /**
+     * TODO - document
+     */
+    range: Range
+}
+
+/**
  * Reports whether {@link value} is a {@link Position}.
  */
 export function isPosition(value: any): value is Position {
