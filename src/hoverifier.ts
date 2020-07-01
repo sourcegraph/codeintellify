@@ -84,7 +84,7 @@ export interface HoverifierOptions<C extends object, D, A> {
     getHover: HoverProvider<C, D>
 
     /**
-     * TODO - document
+     * Called to get the set of ranges to highlight within the document.
      */
     getDocumentHighlights: DocumentHighlightProvider<C>
 
@@ -353,6 +353,14 @@ export type HoverProvider<C extends object, D> = (
     position: HoveredToken & C
 ) => Subscribable<MaybeLoadingResult<(HoverAttachment & D) | null>> | PromiseLike<(HoverAttachment & D) | null>
 
+/**
+ * Function that returns a Subscribable or PromiseLike of the ranges to be highlighted in the document.
+ * If a Subscribable is returned, it may emit more than once to update the content,
+ * and must indicate when it starts and stopped loading new content.
+ * It should emit a `null` result if the token has no highlights.
+ *
+ * @template C Extra context for the hovered token.
+ */
 export type DocumentHighlightProvider<C extends object> = (
     position: HoveredToken & C
 ) => Subscribable<MaybeLoadingResult<DocumentHighlight[] | null>> | PromiseLike<DocumentHighlight[] | null>
@@ -823,6 +831,10 @@ export function createHoverifier<C extends object, D, A>({
             })
     )
 
+    /**
+     * For every position, emits an Observable with new values for the `documentHighlightsOrError` state.
+     * This is a higher-order Observable (Observable that emits Observables).
+     */
     const documentHighlightObservables: Observable<Observable<{
         eventType: SupportedMouseEvent | 'jump'
         dom: DOMFunctions
@@ -845,7 +857,6 @@ export function createHoverifier<C extends object, D, A>({
                     ...rest,
                 })
             }
-
             // Get the document highlights for that position
             return toMaybeLoadingProviderResult(getDocumentHighlights(position)).pipe(
                 catchError((error): [MaybeLoadingResult<ErrorLike>] => [{ isLoading: false, result: asError(error) }]),
