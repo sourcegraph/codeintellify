@@ -739,7 +739,6 @@ export function createHoverifier<C extends object, D, A>({
             if (!position) {
                 return of({ hoverOrError: null, position: undefined, part: undefined, codeViewId, ...rest })
             }
-
             // Get the hover for that position
             return toMaybeLoadingProviderResult(getHover(position)).pipe(
                 catchError((error): [MaybeLoadingResult<ErrorLike>] => [{ isLoading: false, result: asError(error) }]),
