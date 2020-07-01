@@ -1,8 +1,8 @@
 import { of } from 'rxjs'
 import { delay } from 'rxjs/operators'
 
-import { ActionsProvider, HoverProvider } from '../hoverifier'
-import { HoverAttachment } from '../types'
+import { ActionsProvider, HoverProvider, DocumentHighlightProvider } from '../hoverifier'
+import { HoverAttachment, DocumentHighlight } from '../types'
 import { MaybeLoadingResult } from '../loading'
 
 /**
@@ -13,6 +13,20 @@ import { MaybeLoadingResult } from '../loading'
 export const createHoverAttachment = (hover: Partial<HoverAttachment> = {}): HoverAttachment => ({
     range: hover.range
         ? hover.range
+        : {
+              start: { line: 24, character: 10 },
+              end: { line: 24, character: 14 },
+          },
+})
+
+/**
+ * Create a stubbed DocumentHighlight object.
+ *
+ * @param documentHighlight optional values for the DocumentHighlight object. If none is provided, we'll output defaults.
+ */
+export const createDocumentHighlight = (documentHighlight: Partial<DocumentHighlight> = {}): DocumentHighlight => ({
+    range: documentHighlight.range
+        ? documentHighlight.range
         : {
               start: { line: 24, character: 10 },
               end: { line: 24, character: 14 },
@@ -33,6 +47,23 @@ export function createStubHoverProvider(
         of<MaybeLoadingResult<{}>>({ isLoading: false, result: createHoverAttachment(hover) }).pipe(
             delay(delayTime ?? 0)
         )
+}
+
+/**
+ * Create a stubbed DocumentHighlightProvider
+ *
+ * @param documentHighlights optional values to be passed to createDocumentHighlight
+ * @param delayTime optionally delay the document highlight fetch
+ */
+export function createStubDocumentHighlightProvider(
+    documentHighlights: Partial<DocumentHighlight>[] = [],
+    delayTime?: number
+): DocumentHighlightProvider<{}> {
+    return () =>
+        of<MaybeLoadingResult<DocumentHighlight[]>>({
+            isLoading: false,
+            result: documentHighlights.map(createDocumentHighlight),
+        }).pipe(delay(delayTime ?? 0))
 }
 
 /**
