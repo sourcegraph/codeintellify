@@ -42,11 +42,11 @@ export interface HoverAttachment {
 }
 
 /**
- * TODO - document
+ * Describes a range in the document that should be highlighted.
  */
 export interface DocumentHighlight {
     /**
-     * TODO - document
+     * The range to be highlighted.
      */
     range: Range
 }
