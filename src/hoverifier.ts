@@ -823,12 +823,7 @@ export function createHoverifier<C extends object, D, A>({
             })
     )
 
-    //
-    //
-    //
-    //// EXPERIMENT
-
-    type documentHighlightObservableContext = {
+    const documentHighlightObservables: Observable<Observable<{
         eventType: SupportedMouseEvent | 'jump'
         dom: DOMFunctions
         target: HTMLElement
@@ -836,15 +831,10 @@ export function createHoverifier<C extends object, D, A>({
         codeView: HTMLElement
         codeViewId: symbol
         scrollBoundaries?: HTMLElement[]
+        documentHighlightsOrError?: typeof LOADING | DocumentHighlight[] | ErrorLike | null
         position?: HoveredToken & C
         part?: DiffPart
-    }
-
-    const documentHighlightObservables: Observable<Observable<
-        documentHighlightObservableContext & {
-            documentHighlightsOrError?: typeof LOADING | DocumentHighlight[] | ErrorLike | null
-        }
-    >> = resolvedPositions.pipe(
+    }>> = resolvedPositions.pipe(
         map(({ position, codeViewId, ...rest }) => {
             if (!position) {
                 return of({
@@ -880,7 +870,7 @@ export function createHoverifier<C extends object, D, A>({
             .pipe(
                 switchMap(highlightObservable => highlightObservable),
                 switchMap(({ documentHighlightsOrError, position, adjustPosition, codeView, part, ...rest }) => {
-                    let highlights =
+                    const highlights =
                         documentHighlightsOrError &&
                         documentHighlightsOrError !== LOADING &&
                         !isErrorLike(documentHighlightsOrError)
@@ -899,21 +889,20 @@ export function createHoverifier<C extends object, D, A>({
                         const { line, character } = pos
                         pos = { ...pos, line: line + 1, character: character + 1 }
 
-                        const adjustingPosition = adjustPosition
-                            ? from(
-                                  adjustPosition({
-                                      codeView,
-                                      direction: AdjustmentDirection.ActualToCodeView,
-                                      position: {
-                                          ...pos,
-                                          part,
-                                      },
-                                  })
-                              )
-                            : of(pos)
-
-                        // TODO - combine with above
-                        positions.push(adjustingPosition)
+                        positions.push(
+                            adjustPosition
+                                ? from(
+                                      adjustPosition({
+                                          codeView,
+                                          direction: AdjustmentDirection.ActualToCodeView,
+                                          position: {
+                                              ...pos,
+                                              part,
+                                          },
+                                      })
+                                  )
+                                : of(pos)
+                        )
                     }
 
                     return of({
@@ -924,46 +913,34 @@ export function createHoverifier<C extends object, D, A>({
                         positions: combineLatest(positions),
                     })
                 }),
-                mergeMap(({ positions, codeView, dom, part }) => {
-                    const q = positions.pipe(
-                        map(highlightedRanges => {
-                            return highlightedRanges.map(highlightedRange => {
-                                const hoveredTokenElement = highlightedRange
+                mergeMap(({ positions, codeView, dom, part }) =>
+                    positions.pipe(
+                        map(highlightedRanges =>
+                            highlightedRanges.map(highlightedRange =>
+                                highlightedRange
                                     ? getTokenAtPosition(codeView, highlightedRange, dom, part, tokenize)
                                     : undefined
-
-                                // TODO - flatten
-                                console.log({ highlightedRange, hoveredTokenElement })
-                                return hoveredTokenElement
-                            })
-                        })
+                            )
+                        ),
+                        map(elements => ({ elements, codeView, dom, part }))
                     )
-
-                    // TODO - combine with above
-                    return q.pipe(map(elements => ({ elements, codeView, dom, part })))
-                })
+                )
             )
             .subscribe(({ codeView, elements }) => {
                 // Ensure the previously highlighted range is not highlighted and the new highlightedRange (if any)
                 // is highlighted.
-                const currentHighlighted = codeView.querySelector('.document-highlight')
-                if (currentHighlighted) {
+                const currentHighlighteds = codeView.querySelectorAll('.document-highlight')
+                for (const currentHighlighted of currentHighlighteds) {
                     currentHighlighted.classList.remove('document-highlight')
                 }
 
                 for (const element of elements) {
-                    console.log({ element })
                     if (element) {
                         element.classList.add('document-highlight')
                     }
                 }
             })
     )
-
-    //// END EXPERIMENT
-    //
-    //
-    //
 
     /**
      * For every position, emits an Observable that emits new values for the `actionsOrError` state.
