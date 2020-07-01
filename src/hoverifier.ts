@@ -50,6 +50,9 @@ import { emitLoading, MaybeLoadingResult, LOADING } from './loading'
 
 export { HoveredToken }
 
+const selectionHighlightClass = 'selection-highlight'
+const documentHighlightClass = 'sourcegraph-document-highlight'
+
 /**
  * @template C Extra context for the hovered token.
  * @template D The type of the hover content data.
@@ -820,12 +823,12 @@ export function createHoverifier<C extends object, D, A>({
                 })
                 // Ensure the previously highlighted range is not highlighted and the new highlightedRange (if any)
                 // is highlighted.
-                const currentHighlighted = codeView.querySelector('.selection-highlight')
+                const currentHighlighted = codeView.querySelector(`.${selectionHighlightClass}`)
                 if (currentHighlighted) {
-                    currentHighlighted.classList.remove('selection-highlight')
+                    currentHighlighted.classList.remove(selectionHighlightClass)
                 }
                 if (hoveredTokenElement) {
-                    hoveredTokenElement.classList.add('selection-highlight')
+                    hoveredTokenElement.classList.add(selectionHighlightClass)
                 }
             })
     )
@@ -939,14 +942,14 @@ export function createHoverifier<C extends object, D, A>({
             .subscribe(({ codeView, elements }) => {
                 // Ensure the previously highlighted range is not highlighted and the new highlightedRange (if any)
                 // is highlighted.
-                const currentHighlighteds = codeView.querySelectorAll('.document-highlight')
+                const currentHighlighteds = codeView.querySelectorAll(`.${documentHighlightClass}`)
                 for (const currentHighlighted of currentHighlighteds) {
-                    currentHighlighted.classList.remove('document-highlight')
+                    currentHighlighted.classList.remove(documentHighlightClass)
                 }
 
                 for (const element of elements) {
                     if (element) {
-                        element.classList.add('document-highlight')
+                        element.classList.add(documentHighlightClass)
                     }
                 }
             })
