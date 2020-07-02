@@ -845,7 +845,7 @@ export function createHoverifier<C extends object, D, A>({
     )
 
     /**
-     * For every position, emits an Observable with new values for the `documentHighlightsOrError` state.
+     * For every position, emits an Observable with new values for the `documentHighlights` state.
      * This is a higher-order Observable (Observable that emits Observables).
      */
     const documentHighlightObservables: Observable<Observable<{
@@ -856,14 +856,14 @@ export function createHoverifier<C extends object, D, A>({
         codeView: HTMLElement
         codeViewId: symbol
         scrollBoundaries?: HTMLElement[]
-        documentHighlightsOrError?: DocumentHighlight[]
+        documentHighlights?: DocumentHighlight[]
         position?: HoveredToken & C
         part?: DiffPart
     }>> = resolvedPositions.pipe(
         map(({ position, codeViewId, ...rest }) => {
             if (!position) {
                 return of({
-                    documentHighlightsOrError: [],
+                    documentHighlights: [],
                     position: undefined,
                     part: undefined,
                     codeViewId,
@@ -876,11 +876,11 @@ export function createHoverifier<C extends object, D, A>({
                     console.error(error)
                     return []
                 }),
-                map(documentHighlightsOrError => ({
+                map(documentHighlights => ({
                     ...rest,
                     codeViewId,
                     position,
-                    documentHighlightsOrError,
+                    documentHighlights,
                     part: position.part,
                 })),
                 // Do not emit anything after the code view this action came from got unhoverified
@@ -895,52 +895,45 @@ export function createHoverifier<C extends object, D, A>({
         documentHighlightObservables
             .pipe(
                 switchMap(highlightObservable => highlightObservable),
-                switchMap(({ documentHighlightsOrError, position, adjustPosition, codeView, part, ...rest }) => {
-                    const highlights =
-                        documentHighlightsOrError && !isErrorLike(documentHighlightsOrError)
-                            ? documentHighlightsOrError
-                            : []
+                map(({ documentHighlights, position, adjustPosition, codeView, part, ...rest }) =>
+                    !documentHighlights || documentHighlights.length === 0 || !position
+                        ? { adjustPosition, codeView, part, ...rest, positions: of<Position[]>([]) }
+                        : {
+                              adjustPosition,
+                              codeView,
+                              part,
+                              ...rest,
+                              // Adjust the position of each highlight range so that it can be resolved to a
+                              // token in the current document in the next step. This currently on highlights the
+                              // token that intersects with the start of the highlight range, but this is all we
+                              // need in the majority of cases as we currently only highlight references.
+                              //
+                              // To expand this use case in the future, we should determine all intersecting tokens
+                              // between the range start and end positions.
+                              positions: combineLatest(
+                                  documentHighlights.map(({ range }) => {
+                                      let pos = { ...position, ...range.start }
 
-                    if (highlights.length === 0 || !position) {
-                        return of({ adjustPosition, codeView, part, ...rest, positions: of<Position[]>([]) })
-                    }
+                                      // The requested position is is 0-indexed; the code here is currently 1-indexed
+                                      const { line, character } = pos
+                                      pos = { ...pos, line: line + 1, character: character + 1 }
 
-                    return of({
-                        adjustPosition,
-                        codeView,
-                        part,
-                        ...rest,
-                        // Adjust the position of each highlight range so that it can be resolved to a
-                        // token in the current document in the next step. This currently on highlights the
-                        // token that intersects with the start of the highlight range, but this is all we
-                        // need in the majority of cases as we currently only highlight references.
-                        //
-                        // To expand this use case in the future, we should determine all intersecting tokens
-                        // between the range start and end positions.
-                        positions: combineLatest(
-                            highlights.map(({ range }) => {
-                                let pos = { ...position, ...range.start }
-
-                                // The requested position is is 0-indexed; the code here is currently 1-indexed
-                                const { line, character } = pos
-                                pos = { ...pos, line: line + 1, character: character + 1 }
-
-                                return adjustPosition
-                                    ? from(
-                                          adjustPosition({
-                                              codeView,
-                                              direction: AdjustmentDirection.ActualToCodeView,
-                                              position: {
-                                                  ...pos,
-                                                  part,
-                                              },
-                                          })
-                                      )
-                                    : of(pos)
-                            })
-                        ),
-                    })
-                }),
+                                      return adjustPosition
+                                          ? from(
+                                                adjustPosition({
+                                                    codeView,
+                                                    direction: AdjustmentDirection.ActualToCodeView,
+                                                    position: {
+                                                        ...pos,
+                                                        part,
+                                                    },
+                                                })
+                                            )
+                                          : of(pos)
+                                  })
+                              ),
+                          }
+                ),
                 mergeMap(({ positions, codeView, dom, part }) =>
                     positions.pipe(
                         map(highlightedRanges =>
