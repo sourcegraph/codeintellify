@@ -358,15 +358,14 @@ export type HoverProvider<C extends object, D> = (
 
 /**
  * Function that returns a Subscribable or PromiseLike of the ranges to be highlighted in the document.
- * If a Subscribable is returned, it may emit more than once to update the content,
- * and must indicate when it starts and stopped loading new content.
- * It should emit a `null` result if the token has no highlights.
+ * If a Subscribable is returned, it may emit more than once to update the content, and must indicate when
+ * it starts and stopped loading new content. It should emit a `null` result if the token has no highlights.
  *
  * @template C Extra context for the hovered token.
  */
 export type DocumentHighlightProvider<C extends object> = (
     position: HoveredToken & C
-) => Subscribable<MaybeLoadingResult<DocumentHighlight[] | null>> | PromiseLike<DocumentHighlight[] | null>
+) => Subscribable<DocumentHighlight[] | null> | PromiseLike<DocumentHighlight[] | null>
 
 /**
  * @template C Extra context for the hovered token.
@@ -845,7 +844,7 @@ export function createHoverifier<C extends object, D, A>({
         codeView: HTMLElement
         codeViewId: symbol
         scrollBoundaries?: HTMLElement[]
-        documentHighlightsOrError?: typeof LOADING | DocumentHighlight[] | ErrorLike | null
+        documentHighlightsOrError?: DocumentHighlight[] | ErrorLike | null
         position?: HoveredToken & C
         part?: DiffPart
     }>> = resolvedPositions.pipe(
@@ -860,9 +859,8 @@ export function createHoverifier<C extends object, D, A>({
                 })
             }
             // Get the document highlights for that position
-            return toMaybeLoadingProviderResult(getDocumentHighlights(position)).pipe(
-                catchError((error): [MaybeLoadingResult<ErrorLike>] => [{ isLoading: false, result: asError(error) }]),
-                emitLoading<DocumentHighlight[] | ErrorLike, null>(LOADER_DELAY, null),
+            return from(getDocumentHighlights(position)).pipe(
+                catchError((error): [ErrorLike] => [asError(error)]),
                 map(documentHighlightsOrError => ({
                     ...rest,
                     codeViewId,
@@ -884,9 +882,7 @@ export function createHoverifier<C extends object, D, A>({
                 switchMap(highlightObservable => highlightObservable),
                 switchMap(({ documentHighlightsOrError, position, adjustPosition, codeView, part, ...rest }) => {
                     const highlights =
-                        documentHighlightsOrError &&
-                        documentHighlightsOrError !== LOADING &&
-                        !isErrorLike(documentHighlightsOrError)
+                        documentHighlightsOrError && !isErrorLike(documentHighlightsOrError)
                             ? documentHighlightsOrError
                             : []
 

@@ -59,11 +59,7 @@ export function createStubDocumentHighlightProvider(
     documentHighlights: Partial<DocumentHighlight>[] = [],
     delayTime?: number
 ): DocumentHighlightProvider<{}> {
-    return () =>
-        of<MaybeLoadingResult<DocumentHighlight[]>>({
-            isLoading: false,
-            result: documentHighlights.map(createDocumentHighlight),
-        }).pipe(delay(delayTime ?? 0))
+    return () => of<DocumentHighlight[]>(documentHighlights.map(createDocumentHighlight)).pipe(delay(delayTime ?? 0))
 }
 
 /**
