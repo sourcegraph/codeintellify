@@ -50,8 +50,8 @@ import { emitLoading, MaybeLoadingResult, LOADING } from './loading'
 
 export { HoveredToken }
 
-const selectionHighlightClass = 'selection-highlight'
-const documentHighlightClass = 'sourcegraph-document-highlight'
+const selectionHighlightClassName = 'selection-highlight'
+const documentHighlightClassName = 'sourcegraph-document-highlight'
 
 /**
  * @template C Extra context for the hovered token.
@@ -823,12 +823,12 @@ export function createHoverifier<C extends object, D, A>({
                 })
                 // Ensure the previously highlighted range is not highlighted and the new highlightedRange (if any)
                 // is highlighted.
-                const currentHighlighted = codeView.querySelector(`.${selectionHighlightClass}`)
+                const currentHighlighted = codeView.querySelector(`.${selectionHighlightClassName}`)
                 if (currentHighlighted) {
-                    currentHighlighted.classList.remove(selectionHighlightClass)
+                    currentHighlighted.classList.remove(selectionHighlightClassName)
                 }
                 if (hoveredTokenElement) {
-                    hoveredTokenElement.classList.add(selectionHighlightClass)
+                    hoveredTokenElement.classList.add(selectionHighlightClassName)
                 }
             })
     )
@@ -942,14 +942,14 @@ export function createHoverifier<C extends object, D, A>({
             .subscribe(({ codeView, elements }) => {
                 // Ensure the previously highlighted range is not highlighted and the new highlightedRange (if any)
                 // is highlighted.
-                const currentHighlighteds = codeView.querySelectorAll(`.${documentHighlightClass}`)
+                const currentHighlighteds = codeView.querySelectorAll(`.${documentHighlightClassName}`)
                 for (const currentHighlighted of currentHighlighteds) {
-                    currentHighlighted.classList.remove(documentHighlightClass)
+                    currentHighlighted.classList.remove(documentHighlightClassName)
                 }
 
                 for (const element of elements) {
                     if (element) {
-                        element.classList.add(documentHighlightClass)
+                        element.classList.add(documentHighlightClassName)
                     }
                 }
             })
