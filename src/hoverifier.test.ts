@@ -339,6 +339,68 @@ describe('Hoverifier', () => {
         }
     })
 
+    it('highlights document highlights', async () => {
+        for (const codeViewProps of testcases) {
+            const hoverifier = createHoverifier({
+                closeButtonClicks: NEVER,
+                hoverOverlayElements: of(null),
+                hoverOverlayRerenders: EMPTY,
+                getHover: createStubHoverProvider(),
+                getDocumentHighlights: createStubDocumentHighlightProvider([
+                    { range: { start: { line: 24, character: 9 }, end: { line: 4, character: 15 } } },
+                    { range: { start: { line: 45, character: 5 }, end: { line: 45, character: 11 } } },
+                    { range: { start: { line: 120, character: 9 }, end: { line: 120, character: 15 } } },
+                ]),
+                getActions: () => of(null),
+                pinningEnabled: true,
+                documentHighlightClassName: 'test-highlight',
+            })
+            const positionJumps = new Subject<PositionJump>()
+            const positionEvents = of(codeViewProps.codeView).pipe(
+                findPositionsFromEvents({ domFunctions: codeViewProps })
+            )
+
+            const codeViewSubscription = hoverifier.hoverify({
+                dom: codeViewProps,
+                positionEvents: NEVER,
+                positionJumps: NEVER,
+                resolveContext: () => {
+                    throw new Error('not called')
+                },
+            })
+            hoverifier.hoverify({
+                dom: codeViewProps,
+                positionEvents,
+                positionJumps,
+                resolveContext: () => codeViewProps.revSpec,
+            })
+
+            dispatchMouseEventAtPositionImpure('mouseover', codeViewProps, {
+                line: 24,
+                character: 6,
+            })
+
+            await hoverifier.hoverStateUpdates
+                .pipe(
+                    filter(state => !!state.hoverOverlayProps),
+                    first()
+                )
+                .toPromise()
+
+            codeViewSubscription.unsubscribe()
+
+            assert.isDefined(hoverifier.hoverState.hoverOverlayProps)
+            await of(null).pipe(delay(200)).toPromise()
+            assert.isDefined(hoverifier.hoverState.hoverOverlayProps)
+
+            const selected = codeViewProps.codeView.querySelectorAll('.test-highlight')
+            assert.equal(selected.length, 3)
+            for (const e of selected) {
+                assert.equal(e.textContent, 'Router')
+            }
+        }
+    })
+
     it('hides the hover overlay when the hovered token intersects with a scrollBoundary', async () => {
         const gitHubCodeView = testcases[1]
         const hoverifier = createHoverifier({
