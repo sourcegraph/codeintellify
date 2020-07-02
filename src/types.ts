@@ -42,6 +42,16 @@ export interface HoverAttachment {
 }
 
 /**
+ * Describes a range in the document that should be highlighted.
+ */
+export interface DocumentHighlight {
+    /**
+     * The range to be highlighted.
+     */
+    range: Range
+}
+
+/**
  * Reports whether {@link value} is a {@link Position}.
  */
 export function isPosition(value: any): value is Position {

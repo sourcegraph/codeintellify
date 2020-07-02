@@ -16,7 +16,12 @@ import {
 } from './hoverifier'
 import { findPositionsFromEvents, SupportedMouseEvent } from './positions'
 import { CodeViewProps, DOM } from './testutils/dom'
-import { createHoverAttachment, createStubActionsProvider, createStubHoverProvider } from './testutils/fixtures'
+import {
+    createHoverAttachment,
+    createStubActionsProvider,
+    createStubHoverProvider,
+    createStubDocumentHighlightProvider,
+} from './testutils/fixtures'
 import { dispatchMouseEventAtPositionImpure } from './testutils/mouse'
 import { HoverAttachment } from './types'
 import { LOADING } from './loading'
@@ -53,6 +58,7 @@ describe('Hoverifier', () => {
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
                     getHover: createStubHoverProvider({ range: hoverRange }, LOADER_DELAY + delayTime),
+                    getDocumentHighlights: createStubDocumentHighlightProvider(),
                     getActions: () => of(null),
                     pinningEnabled: true,
                 })
@@ -115,6 +121,7 @@ describe('Hoverifier', () => {
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
                     getHover: createStubHoverProvider(hover, delayTime),
+                    getDocumentHighlights: createStubDocumentHighlightProvider(),
                     getActions: createStubActionsProvider(['foo', 'bar'], delayTime),
                     pinningEnabled: true,
                 })
@@ -204,6 +211,7 @@ describe('Hoverifier', () => {
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
                     getHover: createStubHoverProvider(hover, delayTime),
+                    getDocumentHighlights: createStubDocumentHighlightProvider(),
                     getActions: createStubActionsProvider(['foo', 'bar'], delayTime),
                     pinningEnabled: false,
                 })
@@ -284,6 +292,7 @@ describe('Hoverifier', () => {
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
                     getHover: createStubHoverProvider(hover, delayTime),
+                    getDocumentHighlights: createStubDocumentHighlightProvider(),
                     getActions: createStubActionsProvider(['foo', 'bar'], delayTime),
                     pinningEnabled: false,
                 })
@@ -330,6 +339,56 @@ describe('Hoverifier', () => {
         }
     })
 
+    it('highlights document highlights', async () => {
+        for (const codeViewProps of testcases) {
+            const hoverifier = createHoverifier({
+                closeButtonClicks: NEVER,
+                hoverOverlayElements: of(null),
+                hoverOverlayRerenders: EMPTY,
+                getHover: createStubHoverProvider(),
+                getDocumentHighlights: createStubDocumentHighlightProvider([
+                    { range: { start: { line: 24, character: 9 }, end: { line: 4, character: 15 } } },
+                    { range: { start: { line: 45, character: 5 }, end: { line: 45, character: 11 } } },
+                    { range: { start: { line: 120, character: 9 }, end: { line: 120, character: 15 } } },
+                ]),
+                getActions: () => of(null),
+                pinningEnabled: true,
+                documentHighlightClassName: 'test-highlight',
+            })
+            const positionJumps = new Subject<PositionJump>()
+            const positionEvents = of(codeViewProps.codeView).pipe(
+                findPositionsFromEvents({ domFunctions: codeViewProps })
+            )
+
+            hoverifier.hoverify({
+                dom: codeViewProps,
+                positionEvents,
+                positionJumps,
+                resolveContext: () => codeViewProps.revSpec,
+            })
+
+            dispatchMouseEventAtPositionImpure('mouseover', codeViewProps, {
+                line: 24,
+                character: 6,
+            })
+
+            await hoverifier.hoverStateUpdates
+                .pipe(
+                    filter(state => !!state.hoverOverlayProps),
+                    first()
+                )
+                .toPromise()
+
+            await of(null).pipe(delay(200)).toPromise()
+
+            const selected = codeViewProps.codeView.querySelectorAll('.test-highlight')
+            assert.equal(selected.length, 3)
+            for (const e of selected) {
+                assert.equal(e.textContent, 'Router')
+            }
+        }
+    })
+
     it('hides the hover overlay when the hovered token intersects with a scrollBoundary', async () => {
         const gitHubCodeView = testcases[1]
         const hoverifier = createHoverifier({
@@ -342,6 +401,7 @@ describe('Hoverifier', () => {
                     end: { line: 4, character: 9 },
                 },
             }),
+            getDocumentHighlights: createStubDocumentHighlightProvider(),
             getActions: createStubActionsProvider(['foo', 'bar']),
             pinningEnabled: true,
         })
@@ -396,6 +456,7 @@ describe('Hoverifier', () => {
                             position.line === 24
                                 ? createStubHoverProvider({}, delayTime)(position)
                                 : of({ isLoading: false, result: null }),
+                        getDocumentHighlights: createStubDocumentHighlightProvider(),
                         getActions: position =>
                             position.line === 24
                                 ? createStubActionsProvider(['foo', 'bar'], delayTime)(position)
@@ -473,6 +534,7 @@ describe('Hoverifier', () => {
                             position.line === 24
                                 ? createStubHoverProvider({})(position)
                                 : of({ isLoading: false, result: null }),
+                        getDocumentHighlights: createStubDocumentHighlightProvider(),
                         getActions: position =>
                             position.line === 24 ? createStubActionsProvider(['foo', 'bar'])(position) : of(null),
                         pinningEnabled: true,
@@ -555,6 +617,7 @@ describe('Hoverifier', () => {
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
                     getHover: createStubHoverProvider(hover, LOADER_DELAY + hoverDelayTime),
+                    getDocumentHighlights: createStubDocumentHighlightProvider(),
                     getActions: createStubActionsProvider(actions, LOADER_DELAY + actionsDelayTime),
                     pinningEnabled: true,
                 })
@@ -627,6 +690,7 @@ describe('Hoverifier', () => {
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
                     getHover: createStubHoverProvider(hover),
+                    getDocumentHighlights: createStubDocumentHighlightProvider(),
                     getActions: () => of(null),
                     pinningEnabled: true,
                 })
@@ -689,6 +753,7 @@ describe('Hoverifier', () => {
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
                     getHover: createStubHoverProvider(hover),
+                    getDocumentHighlights: createStubDocumentHighlightProvider(),
                     getActions: () => of(null),
                     pinningEnabled: true,
                 })
@@ -762,6 +827,7 @@ describe('Hoverifier', () => {
                 const adjustmentDirections = new Subject<AdjustmentDirection>()
 
                 const getHover = createStubHoverProvider({})
+                const getDocumentHighlights = createStubDocumentHighlightProvider()
                 const getActions = createStubActionsProvider(['foo', 'bar'])
 
                 const adjustPosition: PositionAdjuster<{}> = ({ direction, position }) => {
@@ -775,6 +841,7 @@ describe('Hoverifier', () => {
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
                     getHover,
+                    getDocumentHighlights,
                     getActions,
                     pinningEnabled: true,
                 })
@@ -831,6 +898,7 @@ describe('Hoverifier', () => {
                     hoverOverlayRerenders: EMPTY,
                     // It's important that getHover() and getActions() emit something
                     getHover: createStubHoverProvider({}),
+                    getDocumentHighlights: createStubDocumentHighlightProvider(),
                     getActions: () => of([{}]).pipe(delay(50)),
                     pinningEnabled: true,
                 })
@@ -870,6 +938,7 @@ describe('Hoverifier', () => {
                     hoverOverlayElements: of(null),
                     hoverOverlayRerenders: EMPTY,
                     getHover: createStubHoverProvider(),
+                    getDocumentHighlights: createStubDocumentHighlightProvider(),
                     getActions: () => of(null),
                     pinningEnabled: true,
                 })
