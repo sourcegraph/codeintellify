@@ -844,7 +844,7 @@ export function createHoverifier<C extends object, D, A>({
         codeView: HTMLElement
         codeViewId: symbol
         scrollBoundaries?: HTMLElement[]
-        documentHighlightsOrError?: DocumentHighlight[] | ErrorLike
+        documentHighlightsOrError?: DocumentHighlight[]
         position?: HoveredToken & C
         part?: DiffPart
     }>> = resolvedPositions.pipe(
@@ -860,7 +860,10 @@ export function createHoverifier<C extends object, D, A>({
             }
             // Get the document highlights for that position
             return from(getDocumentHighlights(position)).pipe(
-                catchError((error): [ErrorLike] => [asError(error)]),
+                catchError(error => {
+                    console.error(error)
+                    return []
+                }),
                 map(documentHighlightsOrError => ({
                     ...rest,
                     codeViewId,
