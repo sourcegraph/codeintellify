@@ -893,36 +893,35 @@ export function createHoverifier<C extends object, D, A>({
                         return of({ adjustPosition, codeView, part, ...rest, positions: of<Position[]>([]) })
                     }
 
-                    const positions: Observable<Position>[] = []
-                    for (const { range } of highlights) {
-                        let pos = { ...position, ...range.start }
-
-                        // The requested position is is 0-indexed; the code here is currently 1-indexed
-                        const { line, character } = pos
-                        pos = { ...pos, line: line + 1, character: character + 1 }
-
-                        positions.push(
-                            adjustPosition
-                                ? from(
-                                      adjustPosition({
-                                          codeView,
-                                          direction: AdjustmentDirection.ActualToCodeView,
-                                          position: {
-                                              ...pos,
-                                              part,
-                                          },
-                                      })
-                                  )
-                                : of(pos)
-                        )
-                    }
-
                     return of({
                         adjustPosition,
                         codeView,
                         part,
                         ...rest,
-                        positions: combineLatest(positions),
+                        // Adjust the position of each highlight range so that it can be resolved
+                        // to a token in the current document in the next step.
+                        positions: combineLatest(
+                            highlights.map(({ range }) => {
+                                let pos = { ...position, ...range.start }
+
+                                // The requested position is is 0-indexed; the code here is currently 1-indexed
+                                const { line, character } = pos
+                                pos = { ...pos, line: line + 1, character: character + 1 }
+
+                                return adjustPosition
+                                    ? from(
+                                          adjustPosition({
+                                              codeView,
+                                              direction: AdjustmentDirection.ActualToCodeView,
+                                              position: {
+                                                  ...pos,
+                                                  part,
+                                              },
+                                          })
+                                      )
+                                    : of(pos)
+                            })
+                        ),
                     })
                 }),
                 mergeMap(({ positions, codeView, dom, part }) =>
