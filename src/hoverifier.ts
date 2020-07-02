@@ -948,8 +948,8 @@ export function createHoverifier<C extends object, D, A>({
             .subscribe(({ codeView, elements }) => {
                 // Ensure the previously highlighted range is not highlighted and the new highlightedRange (if any)
                 // is highlighted.
-                const currentHighlighteds = codeView.querySelectorAll(`.${documentHighlightClassName}`)
-                for (const currentHighlighted of currentHighlighteds) {
+                const currentHighlights = codeView.querySelectorAll(`.${documentHighlightClassName}`)
+                for (const currentHighlighted of currentHighlights) {
                     currentHighlighted.classList.remove(documentHighlightClassName)
                 }
 
