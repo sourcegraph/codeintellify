@@ -25,9 +25,8 @@ export const createHoverAttachment = (hover: Partial<HoverAttachment> = {}): Hov
  * @param documentHighlight optional values for the DocumentHighlight object. If none is provided, we'll output defaults.
  */
 export const createDocumentHighlight = (documentHighlight: Partial<DocumentHighlight> = {}): DocumentHighlight => ({
-    range: documentHighlight.range
-        ? documentHighlight.range
-        : {
+    range: documentHighlight.range ??
+        {
               start: { line: 24, character: 10 },
               end: { line: 24, character: 14 },
           },
