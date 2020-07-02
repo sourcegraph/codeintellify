@@ -898,8 +898,13 @@ export function createHoverifier<C extends object, D, A>({
                         codeView,
                         part,
                         ...rest,
-                        // Adjust the position of each highlight range so that it can be resolved
-                        // to a token in the current document in the next step.
+                        // Adjust the position of each highlight range so that it can be resolved to a
+                        // token in the current document in the next step. This currently on highlights the
+                        // token that intersects with the start of the highlight range, but this is all we
+                        // need in the majority of cases as we currently only highlight references.
+                        //
+                        // To expand this use case in the future, we should determine all intersecting tokens
+                        // between the range start and end positions.
                         positions: combineLatest(
                             highlights.map(({ range }) => {
                                 let pos = { ...position, ...range.start }
@@ -928,9 +933,7 @@ export function createHoverifier<C extends object, D, A>({
                     positions.pipe(
                         map(highlightedRanges =>
                             highlightedRanges.map(highlightedRange =>
-                                highlightedRange
-                                    ? getTokenAtPosition(codeView, highlightedRange, dom, part, tokenize)
-                                    : undefined
+                                getTokenAtPosition(codeView, highlightedRange, dom, part, tokenize)
                             )
                         ),
                         map(elements => ({ elements, codeView, dom, part }))
