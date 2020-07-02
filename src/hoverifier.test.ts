@@ -360,14 +360,6 @@ describe('Hoverifier', () => {
                 findPositionsFromEvents({ domFunctions: codeViewProps })
             )
 
-            const codeViewSubscription = hoverifier.hoverify({
-                dom: codeViewProps,
-                positionEvents: NEVER,
-                positionJumps: NEVER,
-                resolveContext: () => {
-                    throw new Error('not called')
-                },
-            })
             hoverifier.hoverify({
                 dom: codeViewProps,
                 positionEvents,
@@ -387,11 +379,7 @@ describe('Hoverifier', () => {
                 )
                 .toPromise()
 
-            codeViewSubscription.unsubscribe()
-
-            assert.isDefined(hoverifier.hoverState.hoverOverlayProps)
             await of(null).pipe(delay(200)).toPromise()
-            assert.isDefined(hoverifier.hoverState.hoverOverlayProps)
 
             const selected = codeViewProps.codeView.querySelectorAll('.test-highlight')
             assert.equal(selected.length, 3)
