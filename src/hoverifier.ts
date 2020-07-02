@@ -365,7 +365,7 @@ export type HoverProvider<C extends object, D> = (
  */
 export type DocumentHighlightProvider<C extends object> = (
     position: HoveredToken & C
-) => Subscribable<DocumentHighlight[] | null> | PromiseLike<DocumentHighlight[] | null>
+) => Subscribable<DocumentHighlight[]> | PromiseLike<DocumentHighlight[]>
 
 /**
  * @template C Extra context for the hovered token.
@@ -844,14 +844,14 @@ export function createHoverifier<C extends object, D, A>({
         codeView: HTMLElement
         codeViewId: symbol
         scrollBoundaries?: HTMLElement[]
-        documentHighlightsOrError?: DocumentHighlight[] | ErrorLike | null
+        documentHighlightsOrError?: DocumentHighlight[] | ErrorLike
         position?: HoveredToken & C
         part?: DiffPart
     }>> = resolvedPositions.pipe(
         map(({ position, codeViewId, ...rest }) => {
             if (!position) {
                 return of({
-                    documentHighlightsOrError: null,
+                    documentHighlightsOrError: [],
                     position: undefined,
                     part: undefined,
                     codeViewId,
