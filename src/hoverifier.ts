@@ -50,8 +50,8 @@ import { emitLoading, MaybeLoadingResult, LOADING } from './loading'
 
 export { HoveredToken }
 
-const selectionHighlightClassName = 'selection-highlight'
-const documentHighlightClassName = 'sourcegraph-document-highlight'
+const defaultSelectionHighlightClassName = 'selection-highlight'
+const defaultDocumentHighlightClassName = 'sourcegraph-document-highlight'
 
 /**
  * @template C Extra context for the hovered token.
@@ -105,6 +105,16 @@ export interface HoverifierOptions<C extends object, D, A> {
      * Whether or not code views need to be tokenized. Defaults to true.
      */
     tokenize?: boolean
+
+    /**
+     * The class name to apply to hovered tokens.
+     */
+    selectionHighlightClassName?: string
+
+    /**
+     * The class name to apply to document highlight tokens.
+     */
+    documentHighlightClassName?: string
 }
 
 /**
@@ -394,6 +404,8 @@ export function createHoverifier<C extends object, D, A>({
     getActions,
     pinningEnabled,
     tokenize = true,
+    selectionHighlightClassName = defaultSelectionHighlightClassName,
+    documentHighlightClassName = defaultDocumentHighlightClassName,
 }: HoverifierOptions<C, D, A>): Hoverifier<C, D, A> {
     // Internal state that is not exposed to the caller
     // Shared between all hoverified code views
