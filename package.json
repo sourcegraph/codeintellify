@@ -54,7 +54,7 @@
     "@types/webpack-env": "1.15.2",
     "awesome-typescript-loader": "^5.2.1",
     "chai": "^4.2.0",
-    "eslint": "^7.4.0",
+    "eslint": "^7.6.0",
     "esm": "^3.2.25",
     "husky": "^4.2.5",
     "istanbul-instrumenter-loader": "^3.0.1",
