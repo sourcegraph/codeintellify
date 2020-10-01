@@ -51,7 +51,7 @@
     "@types/node": "13.11.1",
     "@types/sinon": "9.0.4",
     "@types/webpack": "4.41.20",
-    "@types/webpack-env": "1.15.2",
+    "@types/webpack-env": "1.15.3",
     "awesome-typescript-loader": "^5.2.1",
     "chai": "^4.2.0",
     "eslint": "^7.8.1",
