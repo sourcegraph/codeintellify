@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     container: sourcegraph/lsif-node
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - name: Install dependencies
         run: yarn install
       - name: Generate LSIF data
