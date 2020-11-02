@@ -35,7 +35,7 @@
     "lodash": "^4.17.10",
     "rxjs": "^6.5.5",
     "sourcegraph": "^24.0.0",
-    "ts-key-enum": "^2.0.0"
+    "ts-key-enum": "^2.0.0 || ^3.0.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^11.0.0",
