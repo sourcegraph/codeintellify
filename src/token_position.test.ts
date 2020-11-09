@@ -1,4 +1,4 @@
-import { Position } from '@sourcegraph/extension-api-types'
+import { Position, Range } from '@sourcegraph/extension-api-types'
 import * as assert from 'assert'
 import { CodeViewProps, DOM } from './testutils/dom'
 import {
@@ -6,7 +6,7 @@ import {
     findElementWithOffset,
     getCodeElementsInRange,
     getTextNodes,
-    getTokenAtPosition,
+    getTokenAtPositionOrRange,
     HoveredToken,
     locateTarget,
 } from './token_position'
@@ -89,151 +89,278 @@ describe('token_positions', () => {
     })
 
     describe('findElementWithOffset()', () => {
-        it('finds the correct token (with tokenization)', () => {
-            const content = `${tabChar}if rv := contextGet(r, routeKey); rv != nil {`
+        describe('position', () => {
+            // Only provide offsetStart
+            it('finds the correct token (with tokenization)', () => {
+                const content = `${tabChar}if rv := contextGet(r, routeKey); rv != nil {`
 
-            const elems = [
-                {
-                    offset: 11,
-                    token: 'contextGet',
-                },
-                {
-                    offset: 21,
-                    token: '(',
-                },
-                {
-                    offset: 2,
-                    token: 'if',
-                },
-                {
-                    offset: 4,
-                    token: ' ',
-                },
-            ]
+                const elems = [
+                    {
+                        offsetStart: 11,
+                        token: 'contextGet',
+                    },
+                    {
+                        offsetStart: 21,
+                        token: '(',
+                    },
+                    {
+                        offsetStart: 2,
+                        token: 'if',
+                    },
+                    {
+                        offsetStart: 4,
+                        token: ' ',
+                    },
+                ]
 
-            const elem = dom.createElementFromString(content)
+                const elem = dom.createElementFromString(content)
 
-            for (const { offset, token } of elems) {
-                const tokenElem = findElementWithOffset(elem, offset)
+                for (const { offsetStart, token } of elems) {
+                    const tokenElem = findElementWithOffset(elem, { offsetStart })
 
-                expect(tokenElem).to.not.equal(undefined)
+                    expect(tokenElem).to.not.equal(undefined)
 
-                expect(tokenElem!.textContent).to.equal(token)
-            }
+                    expect(tokenElem!.textContent).to.equal(token)
+                }
+            })
+
+            it('finds the correct token (without tokenization)', () => {
+                const content =
+                    '<span role="presentation" style="padding-right: 0.1px;"><span class="cm-tab" role="presentation" cm-text="	">    </span><span class="cm-keyword">if</span> <span class="cm-variable">rv</span> :<span class="cm-operator">=</span> <span class="cm-variable">contextGet</span>(<span class="cm-variable">r</span>, <span class="cm-variable">varsKey</span>); <span class="cm-variable">rv</span> <span class="cm-operator">!=</span> <span class="cm-atom">nil</span> {</span>'
+
+                // Each offset is 3 more than the corresponding offset in the
+                // tokenized test above because this test case comes from Bitbucket
+                // where tabs are converted to spaces.
+                //
+                // The '(' and ' ' tokens are absent from this test because, on
+                // Bitbucket, punctuation characters are not wrapped in tags and the
+                // current offset-finding logic can't determine the offset for such
+                // tokens. One way to fix that is to use the CodeMirror API
+                // directly.
+                const elems = [
+                    {
+                        offsetStart: 14,
+                        token: 'contextGet',
+                    },
+                    {
+                        offsetStart: 5,
+                        token: 'if',
+                    },
+                ]
+
+                const elem = dom.createElementFromString(content)
+
+                for (const { offsetStart, token } of elems) {
+                    const tokenElem = findElementWithOffset(elem, { offsetStart }, false)
+
+                    expect(tokenElem).to.not.equal(undefined)
+
+                    expect(tokenElem!.textContent).to.equal(token)
+                }
+            })
+
+            it('returns undefined for invalid offsets', () => {
+                const content = 'Hello, World!'
+
+                const offsets = [content.length + 1, 0]
+
+                const elem = dom.createElementFromString(content)
+
+                for (const offset of offsets) {
+                    const tokenElem = findElementWithOffset(elem, { offsetStart: offset })
+
+                    expect(tokenElem).to.equal(undefined)
+                }
+            })
         })
 
-        it('finds the correct token (without tokenization)', () => {
-            const content =
-                '<span role="presentation" style="padding-right: 0.1px;"><span class="cm-tab" role="presentation" cm-text="	">    </span><span class="cm-keyword">if</span> <span class="cm-variable">rv</span> :<span class="cm-operator">=</span> <span class="cm-variable">contextGet</span>(<span class="cm-variable">r</span>, <span class="cm-variable">varsKey</span>); <span class="cm-variable">rv</span> <span class="cm-operator">!=</span> <span class="cm-atom">nil</span> {</span>'
+        describe('range', () => {
+            // Provide offsetStart and offsetEnd
+            it('finds the correct token (with tokenization', () => {
+                const content = `${tabChar}if rv := contextGet(r, routeKey); rv != nil {`
 
-            // Each offset is 3 more than the corresponding offset in the
-            // tokenized test above because this test case comes from Bitbucket
-            // where tabs are converted to spaces.
-            //
-            // The '(' and ' ' tokens are absent from this test because, on
-            // Bitbucket, punctuation characters are not wrapped in tags and the
-            // current offset-finding logic can't determine the offset for such
-            // tokens. One way to fix that is to use the CodeMirror API
-            // directly.
-            const elems = [
-                {
-                    offset: 14,
-                    token: 'contextGet',
-                },
-                {
-                    offset: 5,
-                    token: 'if',
-                },
-            ]
+                const ranges = [
+                    { offsetStart: 2, offsetEnd: 3, textContent: 'if' },
+                    // Intentional limitation: match whole text node at a given offset
+                    // since that is much simpler to highlight.
+                    { offsetStart: 3, offsetEnd: 5, textContent: 'if rv' },
+                    { offsetStart: 2, offsetEnd: 5, textContent: 'if rv' },
+                    { offsetStart: 2, offsetEnd: 6, textContent: 'if rv' },
+                    { offsetStart: 11, offsetEnd: 33, textContent: 'contextGet(r, routeKey)' },
+                    // If offsetEnd is less or equal to offsetStart, range should be treated as a position (offsetStart)
+                    { offsetStart: 11, offsetEnd: 4, textContent: 'contextGet' },
+                ]
 
-            const elem = dom.createElementFromString(content)
+                const elem = dom.createElementFromString(content)
 
-            for (const { offset, token } of elems) {
-                const tokenElem = findElementWithOffset(elem, offset, false)
+                for (const { offsetStart, offsetEnd, textContent } of ranges) {
+                    const tokenElem = findElementWithOffset(elem, { offsetStart, offsetEnd })
 
-                expect(tokenElem).to.not.equal(undefined)
+                    expect(tokenElem).to.not.equal(undefined)
 
-                expect(tokenElem!.textContent).to.equal(token)
-            }
-        })
+                    expect(tokenElem!.textContent).to.equal(textContent)
+                }
+            })
 
-        it('returns undefined for invalid offsets', () => {
-            const content = 'Hello, World!'
+            it('finds the correct token (without tokenization)', () => {
+                const content =
+                    '<span role="presentation" style="padding-right: 0.1px;"><span class="cm-tab" role="presentation" cm-text="	">    </span><span class="cm-keyword">if</span> <span class="cm-variable">rv</span> :<span class="cm-operator">=</span> <span class="cm-variable">contextGet</span>(<span class="cm-variable">r</span>, <span class="cm-variable">varsKey</span>); <span class="cm-variable">rv</span> <span class="cm-operator">!=</span> <span class="cm-atom">nil</span> {</span>'
 
-            const offsets = [content.length + 1, 0]
+                // Each offset is 3 more than the corresponding offset in the
+                // tokenized test above because this test case comes from Bitbucket
+                // where tabs are converted to spaces.
+                //
+                // The '(' and ' ' tokens are absent from this test because, on
+                // Bitbucket, punctuation characters are not wrapped in tags and the
+                // current offset-finding logic can't determine the offset for such
+                // tokens. One way to fix that is to use the CodeMirror API
+                // directly.
+                const elems = [
+                    {
+                        offsetStart: 14,
+                        offsetEnd: 34,
+                        textContent: 'contextGet(r, varsKey',
+                    },
+                    {
+                        offsetStart: 5,
+                        offsetEnd: 9,
+                        textContent: 'if rv',
+                    },
+                ]
 
-            const elem = dom.createElementFromString(content)
+                const elem = dom.createElementFromString(content)
 
-            for (const offset of offsets) {
-                const tokenElem = findElementWithOffset(elem, offset)
+                for (const { offsetStart, offsetEnd, textContent } of elems) {
+                    const tokenElem = findElementWithOffset(elem, { offsetStart, offsetEnd }, false)
 
-                expect(tokenElem).to.equal(undefined)
-            }
+                    expect(tokenElem).to.not.equal(undefined)
+
+                    expect(tokenElem!.textContent).to.equal(textContent)
+                }
+            })
         })
     })
 
-    describe('getTokenAtPosition()', () => {
-        it('finds the correct tokens', () => {
-            const tokens = [
-                {
-                    token: 'NewRouter',
-                    position: { line: 24, character: 7 },
-                },
-                {
-                    token: 'import',
-                    position: { line: 7, character: 3 },
-                },
-                {
-                    token: 'if',
-                    position: { line: 154, character: 2 },
-                },
-                {
-                    token: '=',
-                    position: { line: 257, character: 5 },
-                },
-            ]
+    describe('getTokenAtPositionOrRange()', () => {
+        describe('position', () => {
+            it('finds the correct tokens', () => {
+                const tokens = [
+                    {
+                        token: 'NewRouter',
+                        position: { line: 24, character: 7 },
+                    },
+                    {
+                        token: 'import',
+                        position: { line: 7, character: 3 },
+                    },
+                    {
+                        token: 'if',
+                        position: { line: 154, character: 2 },
+                    },
+                    {
+                        token: '=',
+                        position: { line: 257, character: 5 },
+                    },
+                ]
 
-            for (const { codeView, ...domOptions } of testcases) {
-                for (const { token, position } of tokens) {
-                    const found = getTokenAtPosition(codeView, position, domOptions)
+                for (const { codeView, ...domOptions } of testcases) {
+                    for (const { token, position } of tokens) {
+                        const found = getTokenAtPositionOrRange(codeView, position, domOptions)
 
-                    expect(found).to.not.equal(undefined)
-                    expect(found!.textContent).to.equal(token)
+                        expect(found).to.not.equal(undefined)
+                        expect(found!.textContent).to.equal(token)
+                    }
                 }
-            }
+            })
+
+            it('gets the full token, even when it crosses multiple elements', () => {
+                const codeView = dom.createElementFromString('<div> To<span>ken </span></div>')
+
+                const positions = [
+                    // Test walking to the right
+                    { line: 1, character: 2 },
+                    // Test walking to the left
+                    { line: 1, character: 4 },
+                ]
+
+                for (const position of positions) {
+                    const token = getTokenAtPositionOrRange(codeView, position, {
+                        getCodeElementFromLineNumber: code => code.children.item(0) as HTMLElement,
+                    })
+
+                    chai.expect(token!.textContent).to.equal('Token')
+                }
+            })
+
+            it("doesn't wrap tokens that span multiple elements more than once", () => {
+                const codeView = dom.createElementFromString('<div> To<span>ken </span></div>')
+
+                const domFn = {
+                    getCodeElementFromLineNumber: (code: HTMLElement) => code.children.item(0) as HTMLElement,
+                }
+                const position = { line: 1, character: 2 }
+
+                const token1 = getTokenAtPositionOrRange(codeView, position, domFn)
+                const token2 = getTokenAtPositionOrRange(codeView, position, domFn)
+
+                chai.expect(token1).to.equal(token2, 'getTokenAtPositionOrRange is wrapping tokens more than once')
+            })
         })
 
-        it('gets the full token, even when it crosses multiple elements', () => {
-            const codeView = dom.createElementFromString('<div> To<span>ken </span></div>')
+        describe('range', () => {
+            it('finds the correct elements', () => {
+                const ranges: { textContent: string; range: Range }[] = [
+                    // When start and end are equal, `range` is treated like a `Position`
+                    {
+                        textContent: 'NewRouter',
+                        range: {
+                            start: {
+                                line: 24,
+                                character: 7,
+                            },
+                            end: { line: 24, character: 7 },
+                        },
+                    },
+                    // When start line is not equal to end line, `range` is treated like a `Position`
+                    {
+                        textContent: 'NewRouter',
+                        range: {
+                            start: {
+                                line: 24,
+                                character: 6,
+                            },
+                            end: { line: 25, character: 14 },
+                        },
+                    },
+                    {
+                        textContent: 'NewRouter',
+                        range: {
+                            start: {
+                                line: 24,
+                                character: 6,
+                            },
+                            end: { line: 24, character: 14 },
+                        },
+                    },
 
-            const positions = [
-                // Test walking to the right
-                { line: 1, character: 2 },
-                // Test walking to the left
-                { line: 1, character: 4 },
-            ]
+                    {
+                        textContent: 'http://code.google.com/p/go/issues/detail?id=5252',
+                        range: {
+                            start: { line: 132, character: 7 },
+                            end: { line: 132, character: 55 },
+                        },
+                    },
+                ]
 
-            for (const position of positions) {
-                const token = getTokenAtPosition(codeView, position, {
-                    getCodeElementFromLineNumber: code => code.children.item(0) as HTMLElement,
-                })
-
-                chai.expect(token!.textContent).to.equal('Token')
-            }
-        })
-
-        it("doesn't wrap tokens that span multiple elements more than once", () => {
-            const codeView = dom.createElementFromString('<div> To<span>ken </span></div>')
-
-            const domFn = {
-                getCodeElementFromLineNumber: (code: HTMLElement) => code.children.item(0) as HTMLElement,
-            }
-            const position = { line: 1, character: 2 }
-
-            const token1 = getTokenAtPosition(codeView, position, domFn)
-            const token2 = getTokenAtPosition(codeView, position, domFn)
-
-            chai.expect(token1).to.equal(token2, 'getTokenAtPosition is wrapping tokens more than once')
+                for (const { codeView, ...domOptions } of testcases) {
+                    for (const { textContent, range } of ranges) {
+                        const found = getTokenAtPositionOrRange(codeView, range, domOptions)
+                        console.log({ found })
+                        expect(found).to.not.equal(undefined)
+                        expect(found!.textContent).to.equal(textContent)
+                    }
+                }
+            })
         })
     })
 
@@ -255,7 +382,7 @@ describe('token_positions', () => {
 
             for (const { codeView, ...domOptions } of testcases) {
                 for (const { atPosition, foundPosition } of positions) {
-                    const target = getTokenAtPosition(codeView, atPosition, domOptions)
+                    const target = getTokenAtPositionOrRange(codeView, atPosition, domOptions)
 
                     const found = locateTarget(target!, domOptions)
 
