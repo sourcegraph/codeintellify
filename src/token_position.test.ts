@@ -238,6 +238,23 @@ describe('token_positions', () => {
                     expect(tokenElem!.textContent).to.equal(textContent)
                 }
             })
+
+            it('returns undefined for invalid offsets', () => {
+                const content = 'Hello, World!'
+
+                const offsets = [
+                    { offsetStart: content.length + 1, offsetEnd: content.length + 2 },
+                    { offsetStart: 1, offsetEnd: content.length + 1 },
+                ]
+
+                const elem = dom.createElementFromString(content)
+
+                for (const offset of offsets) {
+                    const tokenElem = findElementWithOffset(elem, offset)
+
+                    expect(tokenElem).to.equal(undefined)
+                }
+            })
         })
     })
 
@@ -355,7 +372,6 @@ describe('token_positions', () => {
                 for (const { codeView, ...domOptions } of testcases) {
                     for (const { textContent, range } of ranges) {
                         const found = getTokenAtPositionOrRange(codeView, range, domOptions)
-                        console.log({ found })
                         expect(found).to.not.equal(undefined)
                         expect(found!.textContent).to.equal(textContent)
                     }

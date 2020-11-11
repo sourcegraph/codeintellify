@@ -295,10 +295,6 @@ export function findElementWithOffset(
                 }
             }
 
-            if (targetStartNode && targetEndNode) {
-                break
-            }
-
             offsetStep += text.length
         }
 
