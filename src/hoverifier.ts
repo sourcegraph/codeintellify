@@ -42,7 +42,7 @@ import {
     DOMFunctions,
     findElementWithOffset,
     getCodeElementsInRange,
-    getTokenAtPosition,
+    getTokenAtPositionOrRange,
     HoveredToken,
 } from './token_position'
 import { HoverAttachment, HoverOverlayProps, isPosition, LineOrPositionOrRange, DocumentHighlight } from './types'
@@ -557,7 +557,7 @@ export function createHoverifier<C extends object, D, A>({
                   if (isPosition(position)) {
                       cell = dom.getCodeElementFromLineNumber(codeView, position.line, position.part)
                       if (cell) {
-                          target = findElementWithOffset(cell, position.character, tokenize)
+                          target = findElementWithOffset(cell, { offsetStart: position.character }, tokenize)
                           if (target) {
                               part = dom.getDiffCodePart && dom.getDiffCodePart(target)
                           } else {
@@ -628,7 +628,7 @@ export function createHoverifier<C extends object, D, A>({
                     // placed in the middle of a token.
                     target:
                         position && isPosition(position)
-                            ? getTokenAtPosition(codeView, position, dom, position.part, tokenize)
+                            ? getTokenAtPositionOrRange(codeView, position, dom, position.part, tokenize)
                             : target,
                     ...rest,
                 })),
@@ -770,7 +770,7 @@ export function createHoverifier<C extends object, D, A>({
             .pipe(
                 switchMap(hoverObservable => hoverObservable),
                 switchMap(({ hoverOrError, position, adjustPosition, codeView, part, ...rest }) => {
-                    let pos =
+                    const pos =
                         hoverOrError &&
                         hoverOrError !== LOADING &&
                         !isErrorLike(hoverOrError) &&
@@ -788,10 +788,6 @@ export function createHoverifier<C extends object, D, A>({
                             ...rest,
                         })
                     }
-
-                    // The requested position is is 0-indexed; the code here is currently 1-indexed
-                    const { line, character } = pos
-                    pos = { line: line + 1, character: character + 1, ...pos }
 
                     const adjustingPosition = adjustPosition
                         ? from(
@@ -813,7 +809,7 @@ export function createHoverifier<C extends object, D, A>({
                 switchMap(({ scrollBoundaries, hoverOrError, position, codeView, codeViewId, dom, part }) => {
                     const highlightedRange = getHighlightedRange({ hoverOrError, position })
                     const hoveredTokenElement = highlightedRange
-                        ? getTokenAtPosition(codeView, highlightedRange.start, dom, part, tokenize)
+                        ? getTokenAtPositionOrRange(codeView, highlightedRange, dom, part, tokenize)
                         : undefined
                     return resetOnBoundaryIntersection({
                         scrollBoundaries,
@@ -938,7 +934,7 @@ export function createHoverifier<C extends object, D, A>({
                     positions.pipe(
                         map(highlightedRanges =>
                             highlightedRanges.map(highlightedRange =>
-                                getTokenAtPosition(codeView, highlightedRange, dom, part, tokenize)
+                                getTokenAtPositionOrRange(codeView, highlightedRange, dom, part, tokenize)
                             )
                         ),
                         map(elements => ({ elements, codeView, dom, part }))

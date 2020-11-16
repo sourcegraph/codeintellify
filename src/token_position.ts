@@ -1,5 +1,6 @@
-import { Position } from '@sourcegraph/extension-api-types'
-import { LineOrPositionOrRange } from './types'
+import { Position, Range } from '@sourcegraph/extension-api-types'
+import { isEqual } from 'lodash'
+import { isPosition, LineOrPositionOrRange } from './types'
 
 /**
  * A collection of methods needed to tell codeintellify how to look at the DOM. These are required for
@@ -249,15 +250,15 @@ export const getTextNodes = (node: Node): Node[] => {
 
 /**
  * Returns the <span> (descendent of a <td> containing code) which contains text beginning
- * at the specified character offset (1-indexed).
+ * at the specified character offset, or within the specified offsets (1-indexed).
  * Will convert tokens in the code cell if needed.
  *
  * @param codeElement the element containing syntax highlighted code
- * @param offset character offset (1-indexed)
+ * @param offset object that specifies start character offset, and the optional end character offset (1-indexed)
  */
 export function findElementWithOffset(
     codeElement: HTMLElement,
-    offset: number,
+    { offsetStart, offsetEnd }: { offsetStart: number; offsetEnd?: number },
     tokenize = true
 ): HTMLElement | undefined {
     if (tokenize) {
@@ -267,64 +268,105 @@ export function findElementWithOffset(
 
     const textNodes = getTextNodes(codeElement)
 
-    // How far forward we have looked so far. Starting at one because codeintellify treats positions as being 1-indexed.
-    let offsetStep = 1
-    let nodeIndex = 0
+    let startNode: Node
+    let endNode: Node
+    if (typeof offsetEnd === 'number' && offsetEnd > offsetStart) {
+        // Find elements in RANGE
 
-    // Find the text node that is at the given offset.
-    let targetNode: Node | undefined
-    for (const [i, node] of textNodes.entries()) {
-        const text = node.textContent ?? ''
-        if (offsetStep <= offset && offsetStep + text.length > offset) {
-            targetNode = node
-            nodeIndex = i
-            break
+        /** How far forward we have looked so far. Starting at one because codeintellify treats positions as being 1-indexed. */
+        let offsetStep = 1
+
+        // Find the text nodes at the given start and end offsets
+        let targetStartNode: Node | undefined
+        let targetEndNode: Node | undefined
+        for (const node of textNodes) {
+            const text = node.textContent ?? ''
+
+            if (!targetStartNode) {
+                if (offsetStep <= offsetStart && offsetStep + text.length > offsetStart) {
+                    targetStartNode = node
+                }
+            }
+            // offsetEnd should be greater than offsetStart, so only check for it after targetStartNode has been found
+            if (targetStartNode) {
+                if (offsetStep <= offsetEnd && offsetStep + text.length > offsetEnd) {
+                    targetEndNode = node
+                    break
+                }
+            }
+
+            offsetStep += text.length
         }
 
-        offsetStep += text.length
-    }
+        if (!targetStartNode || !targetEndNode) {
+            return undefined
+        }
+        // Since the whole range has been specified, don't look for token edges (trust the input)
 
-    if (!targetNode) {
-        return undefined
-    }
+        startNode = targetStartNode
+        endNode = targetEndNode
+    } else {
+        // Find elements at POSITION
 
-    const tokenType = getTokenType(targetNode)
+        /** How far forward we have looked so far. Starting at one because codeintellify treats positions as being 1-indexed. */
+        let offsetStep = 1
+        let nodeIndex = 0
 
-    /**
-     * Walk forwards or backwards to find the edge of the actual token, not the DOM element.
-     * This is needed because tokens can span different elements. In diffs, tokens can be colored
-     * differently based if just part of the token changed.
-     *
-     * In other words, its not unexpexted to find a token that looks like: My<span>Token</span>.
-     * Without doing this, just "My" or "Token" will be highlighted depending on where you hover.
-     *
-     * @param idx the index to start at
-     * @param delta the direction we are walking
-     */
-    const findTokenEdgeIndex = (idx: number, delta: -1 | 1): number => {
-        let at = idx
+        // Find the text node that is at the given offset.
+        let targetNode: Node | undefined
+        for (const [i, node] of textNodes.entries()) {
+            const text = node.textContent ?? ''
+            if (offsetStep <= offsetStart && offsetStep + text.length > offsetStart) {
+                targetNode = node
+                nodeIndex = i
+                break
+            }
 
-        while (textNodes[at + delta] && isSameTokenType(tokenType, textNodes[at + delta])) {
-            at += delta
+            offsetStep += text.length
         }
 
-        return at
+        if (!targetNode) {
+            return undefined
+        }
+
+        const tokenType = getTokenType(targetNode)
+
+        /**
+         * Walk forwards or backwards to find the edge of the actual token, not the DOM element.
+         * This is needed because tokens can span different elements. In diffs, tokens can be colored
+         * differently based if just part of the token changed.
+         *
+         * In other words, its not unexpexted to find a token that looks like: My<span>Token</span>.
+         * Without doing this, just "My" or "Token" will be highlighted depending on where you hover.
+         *
+         * @param idx the index to start at
+         * @param delta the direction we are walking
+         */
+        const findTokenEdgeIndex = (idx: number, delta: -1 | 1): number => {
+            let at = idx
+
+            while (textNodes[at + delta] && isSameTokenType(tokenType, textNodes[at + delta])) {
+                at += delta
+            }
+
+            return at
+        }
+
+        startNode = textNodes[findTokenEdgeIndex(nodeIndex, -1)]
+        endNode = textNodes[findTokenEdgeIndex(nodeIndex, 1)]
     }
 
-    const startNode = textNodes[findTokenEdgeIndex(nodeIndex, -1)]
-    const endNode = textNodes[findTokenEdgeIndex(nodeIndex, 1)]
-
-    // Create a range spanning from the beginning of the token and the end.
+    // Create a range spanning from the beginning of the token to the end.
     const tokenRange = document.createRange()
     tokenRange.setStartBefore(startNode)
     tokenRange.setEndAfter(endNode)
 
-    // If the text nodes are the same, its safe to return the common ancester which is the container element.
+    // If the text nodes are the same, its safe to return the common ancestor which is the container element.
     if (startNode === endNode || (tokenRange.commonAncestorContainer as HTMLElement).classList.contains('wrapped')) {
         return tokenRange.commonAncestorContainer as HTMLElement
     }
 
-    // Otherwise, we can't guarantee that the common ancester container doesn't contain
+    // Otherwise, we can't guarantee that the common ancestor container doesn't contain
     // whitespace or other characters around it. To solve for this case, we'll just
     // surround the contents of the range with a new span.
     const wrapper = document.createElement('span')
@@ -469,16 +511,16 @@ export const getCodeElementsInRange = ({
 }
 
 /**
- * Returns the token `<span>` element in a code view for a given 1-indexed position.
+ * Returns the token `<span>` element in a code view for a given 1-indexed position or range.
  *
  * @param codeView The code view
- * @param position 1-indexed position
+ * @param positionOrRange 1-indexed position or range
  * @param domOptions Code-host specific implementations of DOM retrieval functions
  * @param part If the code view is a diff view, the part of the diff that the position refers to
  */
-export const getTokenAtPosition = (
+export const getTokenAtPositionOrRange = (
     codeView: HTMLElement,
-    { line, character }: Position,
+    positionOrRange: Position | Range,
     {
         getCodeElementFromLineNumber,
         isFirstCharacterDiffIndicator,
@@ -486,14 +528,49 @@ export const getTokenAtPosition = (
     part?: DiffPart,
     tokenize = true
 ): HTMLElement | undefined => {
+    if (
+        isPosition(positionOrRange) ||
+        isEqual(positionOrRange.start, positionOrRange.end) ||
+        positionOrRange.start.line !== positionOrRange.end.line
+    ) {
+        // In this branch, `positionOrRange` is either a position, or an invalid range that we treat as a position
+        let { line, character } = isPosition(positionOrRange) ? positionOrRange : positionOrRange.start
+
+        const codeElement = getCodeElementFromLineNumber(codeView, line, part)
+        if (!codeElement) {
+            return undefined
+        }
+
+        // On diff pages, account for the +/- indicator
+        if (isFirstCharacterDiffIndicator?.(codeElement)) {
+            character++
+        }
+
+        return findElementWithOffset(codeElement, { offsetStart: character }, tokenize)
+    }
+
+    const { start, end } = positionOrRange
+
+    let { character: startCharacter, line } = start
+    let { character: endCharacter } = end
+
     const codeElement = getCodeElementFromLineNumber(codeView, line, part)
     if (!codeElement) {
         return undefined
     }
-    // On diff pages, account for the +/- indicator
+
     if (isFirstCharacterDiffIndicator?.(codeElement)) {
-        character++
+        startCharacter++
+        endCharacter++
     }
 
-    return findElementWithOffset(codeElement, character, tokenize)
+    // Ensure that `startCharacter` is always smaller than `endCharacter`
+    return findElementWithOffset(
+        codeElement,
+        {
+            offsetStart: startCharacter < endCharacter ? startCharacter : endCharacter,
+            offsetEnd: startCharacter < endCharacter ? endCharacter : startCharacter,
+        },
+        tokenize
+    )
 }
