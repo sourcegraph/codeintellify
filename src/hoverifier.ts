@@ -119,7 +119,6 @@ export interface HoverifierOptions<C extends object, D, A> {
 
 /**
  * A Hoverifier is a function that hoverifies one code view element in the DOM.
- * It will do very dirty things to it. Only call it if you're into that.
  *
  * There can be multiple code views in the DOM, which will only show a single HoverOverlay if the same Hoverifier was used.
  *
