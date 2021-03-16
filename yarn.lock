@@ -8091,10 +8091,10 @@ source-map@^0.7.3:
   resolved "https://registry.yarnpkg.com/source-map/-/source-map-0.7.3.tgz#5302f8169031735226544092e64981f751750383"
   integrity sha512-CkCj6giN3S+n9qrYiBTX5gystlENnRW5jZeNLHpe6aue+SrHcG5VYwujhW9s4dY31mEGsxBDrHR6oI69fTXsaQ==
 
-sourcegraph@^24.0.0:
-  version "24.0.0"
-  resolved "https://registry.npmjs.org/sourcegraph/-/sourcegraph-24.0.0.tgz#2a2a2ba0f84e77bb2676d441b0b6c3e334466b49"
-  integrity sha512-SQtLGJ0mvCm2vQV5ABNDNXuGWqCL4rdkFWy1EAbGeDk5NrbY/KCfH6rH/4ZTl0YVyL5mYO5squMcdxjHJX2axw==
+"sourcegraph@^24.0.0 || ^25.0.0":
+  version "25.0.0"
+  resolved "https://registry.yarnpkg.com/sourcegraph/-/sourcegraph-25.0.0.tgz#5f16eb684ee23b59011e68d516df7755ebaa47f8"
+  integrity sha512-3deJcXdOdKoI5xZv4wiQXOnJw96I/BFLStwHHbUS1XlDP1yHHKQT3pKsTawm/YJ8CUirBYkIVsAA2rR/JYO4Ew==
 
 spawn-error-forwarder@~1.0.0:
   version "1.0.0"
