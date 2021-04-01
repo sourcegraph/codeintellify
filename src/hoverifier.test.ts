@@ -50,7 +50,7 @@ describe('Hoverifier', () => {
 
             const delayTime = 100
             const hoverRange = { start: { line: 1, character: 2 }, end: { line: 3, character: 4 } }
-            const hoverRange1Indexed = { start: { line: 2, character: 3 }, end: { line: 4, character: 5 } }
+            const hoverRange1Indexed = { start: { line: 2, character: 3 }, end: { line: 4, character: 4 } }
 
             scheduler.run(({ cold, expectObservable }) => {
                 const hoverifier = createHoverifier({
