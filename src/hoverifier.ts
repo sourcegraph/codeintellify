@@ -667,8 +667,8 @@ export function createHoverifier<C extends object, D, A>({
      *
      * Returns `undefined` if the hover result is not successful.
      *
-     * Uses the range specified by the hover result if present, or `position` oherwise,
-     * which will be expanded into a full token in getTokenAtPosition().
+     * Uses the range specified by the hover result if present, or `position` otherwise,
+     * which will be expanded into a full token in getTokenAtPositionOrRange().
      */
     const getHighlightedRange = ({
         hoverOrError,
