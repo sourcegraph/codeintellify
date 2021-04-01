@@ -687,7 +687,7 @@ export function createHoverifier<C extends object, D, A>({
                     },
                     end: {
                         line: hoverOrError.range.end.line + 1,
-                        character: hoverOrError.range.end.character + 1,
+                        character: hoverOrError.range.end.character,
                     },
                 }
             }
