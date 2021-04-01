@@ -45,7 +45,7 @@
     "@sourcegraph/tsconfig": "^4.0.1",
     "@types/chai": "4.2.14",
     "@types/karma": "5.0.1",
-    "@types/karma-webpack": "2.0.8",
+    "@types/karma-webpack": "2.0.9",
     "@types/lodash": "4.14.168",
     "@types/mocha": "7.0.2",
     "@types/node": "13.13.45",
