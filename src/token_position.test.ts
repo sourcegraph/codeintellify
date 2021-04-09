@@ -180,13 +180,13 @@ describe('token_positions', () => {
                 const content = `${tabChar}if rv := contextGet(r, routeKey); rv != nil {`
 
                 const ranges = [
-                    { offsetStart: 2, offsetEnd: 3, textContent: 'if' },
+                    { offsetStart: 2, offsetEnd: 4, textContent: 'if' },
+                    { offsetStart: 2, offsetEnd: 5, textContent: 'if ' },
                     // Intentional limitation: match whole text node at a given offset
                     // since that is much simpler to highlight.
-                    { offsetStart: 3, offsetEnd: 5, textContent: 'if rv' },
-                    { offsetStart: 2, offsetEnd: 5, textContent: 'if rv' },
+                    { offsetStart: 3, offsetEnd: 5, textContent: 'if ' },
                     { offsetStart: 2, offsetEnd: 6, textContent: 'if rv' },
-                    { offsetStart: 11, offsetEnd: 33, textContent: 'contextGet(r, routeKey)' },
+                    { offsetStart: 11, offsetEnd: 34, textContent: 'contextGet(r, routeKey)' },
                     // If offsetEnd is less or equal to offsetStart, range should be treated as a position (offsetStart)
                     { offsetStart: 11, offsetEnd: 4, textContent: 'contextGet' },
                 ]
@@ -244,7 +244,7 @@ describe('token_positions', () => {
 
                 const offsets = [
                     { offsetStart: content.length + 1, offsetEnd: content.length + 2 },
-                    { offsetStart: 1, offsetEnd: content.length + 1 },
+                    { offsetStart: 1, offsetEnd: content.length + 2 },
                 ]
 
                 const elem = dom.createElementFromString(content)

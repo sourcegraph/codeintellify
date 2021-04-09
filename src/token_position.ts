@@ -289,7 +289,8 @@ export function findElementWithOffset(
             }
             // offsetEnd should be greater than offsetStart, so only check for it after targetStartNode has been found
             if (targetStartNode) {
-                if (offsetStep <= offsetEnd && offsetStep + text.length > offsetEnd) {
+                // End position of range is exclusive
+                if (offsetStep < offsetEnd && offsetStep + text.length >= offsetEnd) {
                     targetEndNode = node
                     break
                 }
