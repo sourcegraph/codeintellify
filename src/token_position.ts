@@ -66,6 +66,19 @@ export function convertCodeElementIdempotent(element: HTMLElement): void {
 }
 
 /**
+ * Helper function to determine whether the code view should be tokenized.
+ */
+export function shouldTokenize({
+    tokenize,
+    overrideTokenize,
+}: {
+    tokenize: boolean
+    overrideTokenize: boolean | undefined
+}): boolean {
+    return typeof overrideTokenize === 'boolean' ? overrideTokenize : tokenize
+}
+
+/**
  * convertNode modifies a DOM node so that we can identify precisely token a user has clicked or hovered over.
  * On a code view, source code is typically wrapped in a HTML table cell. It may look like this:
  *

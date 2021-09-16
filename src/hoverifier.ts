@@ -44,6 +44,7 @@ import {
     getCodeElementsInRange,
     getTokenAtPositionOrRange,
     HoveredToken,
+    shouldTokenize,
 } from './token_position'
 import { HoverAttachment, HoverOverlayProps, isPosition, LineOrPositionOrRange, DocumentHighlight } from './types'
 import { emitLoading, MaybeLoadingResult, LOADING } from './loading'
@@ -209,6 +210,14 @@ export interface EventOptions<C extends object> {
      * but a higher z-index than the code view, such as a sticky file header.
      */
     scrollBoundaries?: HTMLElement[]
+
+    /**
+     * Whether the specific code view should be tokenized. If defined, this is used over
+     * the `tokenize` value passed to `createHoverifier`.
+     *
+     * Useful if some code views on a code host are already tokenized while other code views are not.
+     */
+    overrideTokenize?: boolean
 }
 
 /**
@@ -549,14 +558,18 @@ export function createHoverifier<C extends object, D, A>({
               // It's important to do this before filtering otherwise navigating from
               // a position, to a line-only position, back to the first position would get ignored
               distinctUntilChanged((a, b) => isEqual(a, b)),
-              map(({ position, codeView, dom, ...rest }) => {
+              map(({ position, codeView, dom, overrideTokenize, ...rest }) => {
                   let cell: HTMLElement | null
                   let target: HTMLElement | undefined
                   let part: DiffPart | undefined
                   if (isPosition(position)) {
                       cell = dom.getCodeElementFromLineNumber(codeView, position.line, position.part)
                       if (cell) {
-                          target = findElementWithOffset(cell, { offsetStart: position.character }, tokenize)
+                          target = findElementWithOffset(
+                              cell,
+                              { offsetStart: position.character },
+                              shouldTokenize({ tokenize, overrideTokenize })
+                          )
                           if (target) {
                               part = dom.getDiffCodePart && dom.getDiffCodePart(target)
                           } else {
@@ -571,6 +584,7 @@ export function createHoverifier<C extends object, D, A>({
                       position: { ...position, part },
                       codeView,
                       dom,
+                      overrideTokenize,
                   }
               })
           )
@@ -590,7 +604,7 @@ export function createHoverifier<C extends object, D, A>({
                 map(
                     ([
                         { hoverOverlayElement, relativeElement },
-                        { target, position, codeView, dom, adjustPosition, resolveContext },
+                        { target, position, codeView, dom, adjustPosition, resolveContext, overrideTokenize, ...rest },
                     ]) => ({
                         hoverOverlayElement,
                         relativeElement,
@@ -598,6 +612,7 @@ export function createHoverifier<C extends object, D, A>({
                         position,
                         codeView,
                         dom,
+                        overrideTokenize,
                         adjustPosition,
                         resolveContext,
                     })
@@ -621,13 +636,19 @@ export function createHoverifier<C extends object, D, A>({
                         }))
                     )
                 }),
-                map(({ target, position, codeView, dom, ...rest }) => ({
+                map(({ target, position, codeView, dom, overrideTokenize, ...rest }) => ({
                     // We should ensure we have the correct dom element to place the overlay above. It is possible
                     // that tokens span multiple elements meaning that it's possible for the hover overlay to be
                     // placed in the middle of a token.
                     target:
                         position && isPosition(position)
-                            ? getTokenAtPositionOrRange(codeView, position, dom, position.part, tokenize)
+                            ? getTokenAtPositionOrRange(
+                                  codeView,
+                                  position,
+                                  dom,
+                                  position.part,
+                                  shouldTokenize({ tokenize, overrideTokenize })
+                              )
                             : target,
                     ...rest,
                 })),
@@ -739,6 +760,7 @@ export function createHoverifier<C extends object, D, A>({
     const hoverObservables: Observable<Observable<{
         eventType: SupportedMouseEvent | 'jump'
         dom: DOMFunctions
+        overrideTokenize?: boolean
         target: HTMLElement
         adjustPosition?: PositionAdjuster<C>
         codeView: HTMLElement
@@ -805,21 +827,38 @@ export function createHoverifier<C extends object, D, A>({
                         map(position => ({ position, hoverOrError, codeView, part, ...rest }))
                     )
                 }),
-                switchMap(({ scrollBoundaries, hoverOrError, position, codeView, codeViewId, dom, part }) => {
-                    const highlightedRange = getHighlightedRange({ hoverOrError, position })
-                    const hoveredTokenElement = highlightedRange
-                        ? getTokenAtPositionOrRange(codeView, highlightedRange, dom, part, tokenize)
-                        : undefined
-                    return resetOnBoundaryIntersection({
+                switchMap(
+                    ({
                         scrollBoundaries,
-                        codeViewId,
-                        codeView,
-                        highlightedRange,
                         hoverOrError,
-                        hoveredTokenElement,
-                        hoverOverlayPosition: undefined,
-                    })
-                })
+                        position,
+                        codeView,
+                        codeViewId,
+                        dom,
+                        part,
+                        overrideTokenize,
+                    }) => {
+                        const highlightedRange = getHighlightedRange({ hoverOrError, position })
+                        const hoveredTokenElement = highlightedRange
+                            ? getTokenAtPositionOrRange(
+                                  codeView,
+                                  highlightedRange,
+                                  dom,
+                                  part,
+                                  shouldTokenize({ tokenize, overrideTokenize })
+                              )
+                            : undefined
+                        return resetOnBoundaryIntersection({
+                            scrollBoundaries,
+                            codeViewId,
+                            codeView,
+                            highlightedRange,
+                            hoverOrError,
+                            hoveredTokenElement,
+                            hoverOverlayPosition: undefined,
+                        })
+                    }
+                )
             )
             .subscribe(({ codeView, highlightedRange, hoveredTokenElement, ...rest }) => {
                 container.update({
@@ -846,6 +885,7 @@ export function createHoverifier<C extends object, D, A>({
     const documentHighlightObservables: Observable<Observable<{
         eventType: SupportedMouseEvent | 'jump'
         dom: DOMFunctions
+        overrideTokenize?: boolean
         target: HTMLElement
         adjustPosition?: PositionAdjuster<C>
         codeView: HTMLElement
@@ -929,11 +969,17 @@ export function createHoverifier<C extends object, D, A>({
                               ),
                           }
                 ),
-                mergeMap(({ positions, codeView, dom, part }) =>
+                mergeMap(({ positions, codeView, dom, part, overrideTokenize }) =>
                     positions.pipe(
                         map(highlightedRanges =>
                             highlightedRanges.map(highlightedRange =>
-                                getTokenAtPositionOrRange(codeView, highlightedRange, dom, part, tokenize)
+                                getTokenAtPositionOrRange(
+                                    codeView,
+                                    highlightedRange,
+                                    dom,
+                                    part,
+                                    shouldTokenize({ tokenize, overrideTokenize })
+                                )
                             )
                         ),
                         map(elements => ({ elements, codeView, dom, part }))
@@ -1053,22 +1099,24 @@ export function createHoverifier<C extends object, D, A>({
 
     // LOCATION CHANGES
     subscription.add(
-        allPositionJumps.subscribe(({ position, scrollElement, codeView, dom: { getCodeElementFromLineNumber } }) => {
-            container.update({
-                // Remember active position in state for blame and range expansion
-                selectedPosition: position,
-            })
-            const codeElements = getCodeElementsInRange({ codeView, position, getCodeElementFromLineNumber })
-            if (tokenize) {
-                for (const { element } of codeElements) {
-                    convertNode(element)
+        allPositionJumps.subscribe(
+            ({ position, scrollElement, codeView, dom: { getCodeElementFromLineNumber }, overrideTokenize }) => {
+                container.update({
+                    // Remember active position in state for blame and range expansion
+                    selectedPosition: position,
+                })
+                const codeElements = getCodeElementsInRange({ codeView, position, getCodeElementFromLineNumber })
+                if (shouldTokenize({ tokenize, overrideTokenize })) {
+                    for (const { element } of codeElements) {
+                        convertNode(element)
+                    }
+                }
+                // Scroll into view
+                if (codeElements.length > 0) {
+                    scrollIntoCenterIfNeeded(scrollElement, codeView, codeElements[0].element)
                 }
             }
-            // Scroll into view
-            if (codeElements.length > 0) {
-                scrollIntoCenterIfNeeded(scrollElement, codeView, codeElements[0].element)
-            }
-        })
+        )
     )
     subscription.add(
         resolvedPositions.subscribe(({ position }) => {
