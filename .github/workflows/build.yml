@@ -1,0 +1,26 @@
+name: build
+
+on: [push, pull_request]
+
+env:
+  FORCE_COLOR: 3
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: '14.7.0'
+      - run: yarn --frozen-lockfile
+      - run: yarn prettier-check
+      - run: yarn typecheck
+      - run: yarn eslint
+      - run: yarn build
+      - run: yarn arn test -- --single-run --browsers ChromeHeadlessNoSandbox
+      - run: 'bash <(curl -s https://codecov.io/bash)'
+      - name: release
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      run: yarn run semantic-release
