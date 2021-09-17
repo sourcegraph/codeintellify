@@ -19,7 +19,7 @@ jobs:
       - run: yarn typecheck
       - run: yarn eslint
       - run: yarn build
-      - run: yarn arn test -- --single-run --browsers ChromeHeadlessNoSandbox
+      - run: yarn test -- --single-run --browsers ChromeHeadlessNoSandbox
       - run: 'bash <(curl -s https://codecov.io/bash)'
       - name: release
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
