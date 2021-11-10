@@ -6,7 +6,9 @@ import { generateSourcegraphCodeTable } from './sourcegraph/generate'
 
 const generatedDir = path.join(__dirname, 'generated')
 
-fs.rmdirSync(generatedDir, { recursive: true })
+if (fs.existsSync(generatedDir)) {
+    fs.rmdirSync(generatedDir, { recursive: true })
+}
 fs.mkdirSync(generatedDir, { recursive: true })
 
 const code = fs.readFileSync(path.join(__dirname, 'mux.go.txt'), 'utf-8').split('\n')
