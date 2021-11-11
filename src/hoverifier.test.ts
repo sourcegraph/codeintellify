@@ -741,6 +741,80 @@ describe('Hoverifier', () => {
         }
     })
 
+    it('keeps the overlay open when the mouse briefly moves over another token on the way to the overlay', () => {
+        for (const codeView of testcases) {
+            const scheduler = new TestScheduler((a, b) => chai.assert.deepEqual(a, b))
+
+            const hover = {}
+
+            scheduler.run(({ cold, expectObservable }) => {
+                const hoverOverlayElement = document.createElement('div')
+
+                const hoverifier = createHoverifier({
+                    closeButtonClicks: new Observable<MouseEvent>(),
+                    hoverOverlayElements: of(hoverOverlayElement),
+                    hoverOverlayRerenders: EMPTY,
+                    getHover: createStubHoverProvider(hover),
+                    getDocumentHighlights: createStubDocumentHighlightProvider(),
+                    getActions: () => of(null),
+                    pinningEnabled: true,
+                })
+
+                const positionJumps = new Subject<PositionJump>()
+
+                const positionEvents = of(codeView.codeView).pipe(findPositionsFromEvents({ domFunctions: codeView }))
+
+                const subscriptions = new Subscription()
+
+                subscriptions.add(hoverifier)
+                subscriptions.add(
+                    hoverifier.hoverify({
+                        dom: codeView,
+                        positionEvents,
+                        positionJumps,
+                        resolveContext: () => codeView.revSpec,
+                    })
+                )
+
+                const hoverAndDefinitionUpdates = hoverifier.hoverStateUpdates.pipe(
+                    filter(propertyIsDefined('hoverOverlayProps')),
+                    map(({ hoverOverlayProps }) => hoverOverlayProps.hoveredToken?.character),
+                    distinctUntilChanged(isEqual)
+                )
+
+                const outputDiagram = `${TOOLTIP_DISPLAY_DELAY + MOUSEOVER_DELAY + 1}ms a`
+
+                const outputValues: { [key: string]: number } = {
+                    a: 6,
+                }
+
+                cold(`a b ${TOOLTIP_DISPLAY_DELAY}ms c d 1ms e`, {
+                    a: ['mouseover', 6],
+                    b: ['mousemove', 6],
+                    c: ['mouseover', 19],
+                    d: ['mousemove', 19],
+                    e: ['mouseover', 'overlay'],
+                } as Record<string, [SupportedMouseEvent, number | 'overlay']>).subscribe(([eventType, value]) => {
+                    if (value === 'overlay') {
+                        hoverOverlayElement.dispatchEvent(
+                            new MouseEvent(eventType, {
+                                bubbles: true, // Must be true so that React can see it.
+                            })
+                        )
+                    } else {
+                        dispatchMouseEventAtPositionImpure(eventType, codeView, {
+                            line: 24,
+                            character: value,
+                        })
+                    }
+                })
+
+                expectObservable(hoverAndDefinitionUpdates).toBe(outputDiagram, outputValues)
+            })
+            break
+        }
+    })
+
     it('dedupes mouseover and mousemove event on same token', () => {
         for (const codeView of testcases) {
             const scheduler = new TestScheduler((a, b) => chai.assert.deepEqual(a, b))

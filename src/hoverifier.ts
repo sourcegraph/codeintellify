@@ -15,6 +15,8 @@ import {
     SubscribableOrPromise,
     Subscription,
     zip,
+    race,
+    MonoTypeOperatorFunction,
 } from 'rxjs'
 import {
     catchError,
@@ -30,6 +32,8 @@ import {
     takeUntil,
     withLatestFrom,
     mergeMap,
+    delay,
+    startWith,
 } from 'rxjs/operators'
 import { Key } from 'ts-key-enum'
 import { asError, ErrorLike, isErrorLike } from './errors'
@@ -406,6 +410,7 @@ export type ContextResolver<C extends object> = (hoveredToken: HoveredToken) => 
  */
 export function createHoverifier<C extends object, D, A>({
     closeButtonClicks,
+    hoverOverlayElements,
     hoverOverlayRerenders,
     getHover,
     getDocumentHighlights,
@@ -433,11 +438,28 @@ export function createHoverifier<C extends object, D, A>({
     // These Subjects aggregate all events from all hoverified code views
     const allPositionsFromEvents = new Subject<MouseEventTrigger>()
 
+    // This keeps the overlay open while the mouse moves over another token on the way to the overlay
+    const suppressWhileOverlayShown = <T>(): MonoTypeOperatorFunction<T> => o =>
+        o.pipe(
+            withLatestFrom(from(hoverOverlayElements).pipe(startWith(null))),
+            switchMap(([t, overlayElement]) =>
+                overlayElement === null
+                    ? of(t)
+                    : race(
+                          fromEvent(overlayElement, 'mouseover').pipe(mapTo('suppress')),
+                          of('emit').pipe(delay(MOUSEOVER_DELAY))
+                      ).pipe(
+                          filter(action => action === 'emit'),
+                          mapTo(t)
+                      )
+            )
+        )
+
     const isEventType = <T extends SupportedMouseEvent>(type: T) => (
         event: MouseEventTrigger
     ): event is MouseEventTrigger & { eventType: T } => event.eventType === type
-    const allCodeMouseMoves = allPositionsFromEvents.pipe(filter(isEventType('mousemove')))
-    const allCodeMouseOvers = allPositionsFromEvents.pipe(filter(isEventType('mouseover')))
+    const allCodeMouseMoves = allPositionsFromEvents.pipe(filter(isEventType('mousemove')), suppressWhileOverlayShown())
+    const allCodeMouseOvers = allPositionsFromEvents.pipe(filter(isEventType('mouseover')), suppressWhileOverlayShown())
     const allCodeClicks = allPositionsFromEvents.pipe(filter(isEventType('click')))
 
     const allPositionJumps = new Subject<PositionJump & EventOptions<C>>()
