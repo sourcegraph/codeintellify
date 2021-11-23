@@ -1,4 +1,4 @@
-import { CharacterPositions } from '@sourcegraph/event-positions'
+import { CharacterPositions } from '../event-positions'
 import { Position } from '@sourcegraph/extension-api-types'
 import { convertNode } from '../token_position'
 import { CodeViewProps } from './dom'

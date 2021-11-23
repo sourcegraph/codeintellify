@@ -30,7 +30,6 @@
   },
   "author": "Felix Becker <felix@sourcegraph.com>",
   "dependencies": {
-    "@sourcegraph/event-positions": "^1.0.4",
     "@sourcegraph/extension-api-types": "^2.1.0",
     "lodash": "^4.17.10",
     "rxjs": "6.6.3",
@@ -44,6 +43,7 @@
     "@sourcegraph/prettierrc": "^3.0.3",
     "@sourcegraph/tsconfig": "^4.0.1",
     "@types/chai": "4.2.14",
+    "@types/fs-extra": "^9.0.13",
     "@types/karma": "5.0.1",
     "@types/karma-webpack": "2.0.10",
     "@types/lodash": "4.14.176",
@@ -56,6 +56,7 @@
     "chai": "^4.2.0",
     "eslint": "^7.32.0",
     "esm": "^3.2.25",
+    "fs-extra": "^10.0.0",
     "husky": "^4.3.5",
     "istanbul-instrumenter-loader": "^3.0.1",
     "karma": "^5.2.3",
