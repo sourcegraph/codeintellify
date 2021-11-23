@@ -38,7 +38,7 @@ export type BlobProps = Pick<
     'getCodeElementFromTarget' | 'getCodeElementFromLineNumber' | 'getLineNumberFromCodeElement'
 > & { insertRow: (text: string) => HTMLElement; element: HTMLElement }
 
-export const wrapCharsInSpans = (line: string) =>
+export const wrapCharsInSpans = (line: string): string =>
     Array.from(line)
         .map((c, j) => `<span data-char="${j}">${c}</span>`)
         .join('')
@@ -188,7 +188,7 @@ export class DOM {
     public createElementFromString(html: string): HTMLElement {
         const element = createElementFromString(html)
         this.insert(element)
-        return element as HTMLElement
+        return element
     }
 
     public cleanup = (): void => {

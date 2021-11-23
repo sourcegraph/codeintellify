@@ -181,6 +181,7 @@ const NONVARIABLE_TOKENIZER = /(^[^\x21-\x7E]+)/
  * consumeNextToken parses the text content of a text node and returns the next "distinct"
  * code token. It handles edge case #1 from convertNode(). The tokenization scheme is
  * heuristic-based and uses simple regular expressions.
+ *
  * @param txt Aribitrary text to tokenize.
  */
 function tokenizeText(txt: string): string {

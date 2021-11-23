@@ -32,12 +32,12 @@ export interface Token {
 
 export const FULL_LINE = Infinity
 
-const isAlphanumeric = (code: number) =>
+const isAlphanumeric = (code: number): boolean =>
     (code >= 48 && code <= 57) || // 0-9
     (code >= 65 && code <= 90) || // A-Z
     (code >= 97 && code <= 122) // a-z
 
-const isWhitespace = (code: number) =>
+const isWhitespace = (code: number): boolean =>
     code === 9 || // tab
     code === 32 || // space
     code === 10 || // LF
@@ -113,9 +113,9 @@ export class Characters {
             at = 'end'
         } else if (!range) {
             throw new Error(
-                `Out of bounds: attempted to get range of character ${character} for line ${
-                    line ? line : ''
-                } (line length ${ranges.length})`
+                `Out of bounds: attempted to get range of character ${character} for line ${line || ''} (line length ${
+                    ranges.length
+                })`
             )
         }
 

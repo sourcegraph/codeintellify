@@ -1,6 +1,6 @@
 import isEqual from 'lodash/isEqual'
 
-import { fromEvent, Observable } from 'rxjs'
+import { fromEvent, Observable, Subscription } from 'rxjs'
 
 import { distinctUntilChanged, filter, map } from 'rxjs/operators'
 
@@ -22,7 +22,7 @@ export interface PositionEvent extends Position {
     eventType: SupportedMouseEvents
 }
 
-const fromMouseEvent = (element: HTMLElement, eventType: SupportedMouseEvents) =>
+const fromMouseEvent = (element: HTMLElement, eventType: SupportedMouseEvents): Observable<MouseEvent> =>
     fromEvent<MouseEvent>(element, eventType)
 
 export interface PositionsProps {
@@ -41,7 +41,11 @@ export function findPositionsFromEvents(
 ): (source: Observable<HTMLElement>) => Observable<PositionEvent> {
     return elements =>
         new Observable(observer => {
-            const addEventListener = (element: HTMLElement, eventType: SupportedMouseEvents, characters: Characters) =>
+            const addEventListener = (
+                element: HTMLElement,
+                eventType: SupportedMouseEvents,
+                characters: Characters
+            ): Subscription =>
                 observer.add(
                     fromMouseEvent(element, eventType)
                         .pipe(
@@ -73,6 +77,7 @@ export function findPositionsFromEvents(
                         )
                 )
 
+            // eslint-disable-next-line rxjs/no-ignored-subscription
             elements.subscribe(element => {
                 const firstCell = props.getCodeElementFromLineNumber(element, 0)
                 if (!firstCell) {
