@@ -1,4 +1,3 @@
-import { CharacterPositions } from '@sourcegraph/event-positions'
 import { Position } from '@sourcegraph/extension-api-types'
 import { convertNode } from '../token_position'
 import { CodeViewProps } from './dom'
@@ -67,34 +66,4 @@ export const dispatchMouseEventAtPositionImpure = (
 
         characterOffset += value.length
     }
-}
-
-/**
- * Dispatch a click event at a position in the code view.
- *
- * @param codeViewProps the CodeViewProps from the generated test cases
- * @param position the 0-indexed position to click
- */
-export const clickPosition = ({ codeView, getCodeElementFromLineNumber }: CodeViewProps, position: Position): void => {
-    const line = getCodeElementFromLineNumber(codeView, position.line)
-    if (!line) {
-        throw new Error(invalidPosition(position, 'Line not found'))
-    }
-
-    const positions = new CharacterPositions(line)
-
-    const left = positions.getCharacterOffset(position.character, line, true)
-    const right = positions.getCharacterOffset(position.character, line, false)
-    const width = right - left
-
-    const rect = line.getBoundingClientRect()
-    const top = rect.top
-    const height = rect.height
-
-    const event = createMouseEvent('click', {
-        x: left + width / 2,
-        y: top + height / 2,
-    })
-
-    line.dispatchEvent(event)
 }
