@@ -12,8 +12,9 @@ export function generateGithubCodeTable(lines: string[]): string {
         .map(
             (line, i) => `<tr>
          <td id="L${i + 1}" class="blob-num js-line-number" data-line-number="${i + 1}"></td>
-        <td id="LC${i +
-            1}" class="blob-code blob-code-inner js-file-line"><span class="characters-wrapper">${line}</span></td>
+        <td id="LC${
+            i + 1
+        }" class="blob-code blob-code-inner js-file-line"><span class="characters-wrapper">${line}</span></td>
       </tr>`
         )
         .join('\n')

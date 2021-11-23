@@ -9,10 +9,7 @@ const generatedDir = path.join(__dirname, 'generated')
 fs.emptyDirSync(generatedDir)
 fs.mkdirpSync(generatedDir)
 
-const code = fs
-    .readFileSync(path.join(__dirname, 'mux.go.txt'))
-    .toString()
-    .split('\n')
+const code = fs.readFileSync(path.join(__dirname, 'mux.go.txt')).toString().split('\n')
 
 fs.writeFileSync(path.join(generatedDir, 'github.html'), generateGithubCodeTable(code))
 fs.writeFileSync(path.join(generatedDir, 'sourcegraph.html'), generateSourcegraphCodeTable(code))
